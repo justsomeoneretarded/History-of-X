@@ -179,3 +179,16 @@ def test_editorial_review_repairs_short_script_before_runtime_gate(monkeypatch,t
     result=writing.generate('Ethiopia','Explain decisions and consequences.',2,evidence,tmp_path)
     assert result['word_count']==280
     assert instance.calls==expected_calls
+
+def test_generated_emphasis_normalization_preserves_facts_and_sources():
+    from history_of_x.script import normalize_script
+    script=sample()
+    script['scenes'][0]['subtitle_highlights']=['invented phrase','Ethiopia']
+    original=script['scenes'][0]['narration']
+    script['scenes'][1]['scene_id']=1
+    result=normalize_script(script)
+    assert result['scenes'][0]['subtitle_highlights']==['Ethiopia']
+    assert result['scenes'][0]['narration']==original
+    assert result['scenes'][0]['source_ids']==['S1']
+    assert len({s['scene_id'] for s in result['scenes']})==5
+    assert validate(result,['S1'])==20
