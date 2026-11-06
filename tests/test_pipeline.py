@@ -204,3 +204,11 @@ def test_research_extracts_explicit_focus_people():
     from history_of_x.research import focus_topics
     assert focus_topics('Focus on Menelik, Taytu, logistics and Italian decisions.')==['Menelik','Taytu']
     assert focus_topics('Include Haile Selassie and Menelik II.')==['Haile Selassie','Menelik II']
+
+def test_curated_visuals_are_bound_to_the_exact_script():
+    from history_of_x.assets import curation_for
+    from history_of_x.core import ROOT,read_json
+    full=read_json(ROOT/'episodes'/'ethiopia.json')['script']
+    pilot=read_json(ROOT/'episodes'/'pilot.json')['script']
+    assert curation_for(full)
+    assert not curation_for(pilot)

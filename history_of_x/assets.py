@@ -73,9 +73,7 @@ def prepare(script, directory, min_assets=3):
     cache.mkdir(parents=True, exist_ok=True)
     index = cache / 'index.json'
     manifest = read_json(index) if index.exists() else {}
-    overrides={}
-    for config in (ROOT/'assets'/'curation').glob('*.json'):
-        overrides.update(read_json(config).get(script.get('title',''),{}))
+    overrides=curation_for(script)
     used = set()
     for scene in script['scenes']:
         sid = str(scene['scene_id'])
@@ -135,3 +133,13 @@ def relevant(record,query,excluded=()):
     animals=['baboon','gelada','monkey','ibex','butterfly','insect','pigeon']
     if any(x in title for x in animals) and not any(x in query.casefold() for x in animals):return False
     return True
+
+
+def curation_for(script):
+    result={}
+    for config in (ROOT/'assets'/'curation').glob('*.json'):
+        selected=read_json(config).get(script.get('title',''),{})
+        expected=selected.get('_script_key')
+        if expected and expected!=key([s['narration'] for s in script['scenes']]):continue
+        result.update({k:v for k,v in selected.items() if not k.startswith('_')})
+    return result

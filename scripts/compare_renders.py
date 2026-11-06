@@ -10,7 +10,8 @@ root=Path('work/job')
 recover('work/recovered-voices',root/'speech')
 script=read_json(root/'script.json');request=read_json('work/request.json')
 speech=merge(script,request['voice'],root/'speech')
-assets=read_json(root/'assets'/'index.json');evidence=read_json(root/'research.json')
+from history_of_x.assets import prepare
+assets=prepare(script,root,min_assets=3);evidence=read_json(root/'research.json')
 # For a long episode, use one complete verified scene per chapter rather than rerender the entire film three times.
 if len(script['scenes'])>5:
     selected=[]
