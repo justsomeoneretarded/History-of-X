@@ -13,7 +13,7 @@ else:
     request={'title':os.environ.get('VIDEO_TITLE',''),'brief':os.environ.get('VIDEO_BRIEF',''),
         'voice':os.environ.get('NARRATOR') or 'warguy','minutes':float(os.environ.get('VIDEO_MINUTES') or '8'),
         'profile':os.environ.get('VIDEO_PROFILE') or 'cinematic'}
-    if os.getenv('PRESET')=='ethiopia':request['episode']='episodes/ethiopia.json'
+    if os.getenv('PRESET') in ('ethiopia','pilot'):request['episode']='episodes/'+os.environ['PRESET']+'.json'
 if not request.get('title') or not request.get('brief'):raise SystemExit('Title and brief are required')
 Path('work').mkdir(exist_ok=True)
 Path('work/request.json').write_text(json.dumps(request,indent=2))

@@ -161,7 +161,7 @@ def render(script,speech,assets,directory,output,profile='cinematic'):
     directory.mkdir(parents=True,exist_ok=True);output.mkdir(parents=True,exist_ok=True)
     script={**script,'_speech':speech['scenes']}
     map_path=directory/'reference-map.jpg'
-    focus='Ethiopia' if 'ethiopi' in script['title'].casefold() else 'World'
+    focus='Ethiopia' if 'ethiopi' in (script['title']+' '+' '.join(x.get('location','') for x in script['scenes'])).casefold() else 'World'
     draw_map(map_path,directory,width,height,focus)
     videos=[];audios=[];cues=[];timeline=[];position=0
     for scene,spoken in zip(script['scenes'],speech['scenes']):

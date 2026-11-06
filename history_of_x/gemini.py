@@ -29,7 +29,7 @@ class Gemini:
             secret = os.getenv('GEMINI_API') or os.getenv('GEMINI_API_KEY')
             if not secret:
                 raise PipelineError('Missing GEMINI_API. Add it as an Actions repository secret.')
-            client = genai.Client(api_key=secret, http_options={'timeout': 180000})
+            client = genai.Client(api_key=secret, http_options={'timeout': 180000, 'retry_options': {'attempts': 1}})
         self.client = client
 
     def generate(self, instruction, payload, max_output=6000):
@@ -58,7 +58,7 @@ class Gemini:
             try:
                 config = types.GenerateContentConfig(
                     temperature=.55, max_output_tokens=max_output, response_mime_type='application/json',
-                    thinking_config=types.ThinkingConfig(thinking_budget=0) if '2.5' in self.model else None)
+                    thinking_config=(types.ThinkingConfig(thinking_budget=0) if '2.5' in self.model else types.ThinkingConfig(thinking_level='low')))
                 response = self.client.models.generate_content(model=self.model, contents=prompt, config=config)
                 finish = str(response.candidates[0].finish_reason) if response.candidates else ''
                 if 'MAX_TOKENS' in finish or not response.text:

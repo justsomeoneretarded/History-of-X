@@ -25,9 +25,9 @@ on:
         options: [cinematic, standard, draft]
         default: cinematic
       preset:
-        description: auto uses Gemini; ethiopia uses the curated source-linked episode
+        description: auto uses Gemini; ethiopia is the curated film; pilot is a short validation film
         type: choice
-        options: [auto, ethiopia]
+        options: [auto, ethiopia, pilot]
         default: auto
       resume_run:
         description: Optional previous run ID to recover checkpoints
