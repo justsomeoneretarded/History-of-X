@@ -158,3 +158,24 @@ def test_api_diagnostic_pacing_and_redaction(tmp_path):
     assert sleeps==[65,65] and len(result)==3
     assert not result[0]['ok'] and result[1]['ok']
     assert 'sensitive-key' not in json.dumps(result)
+
+@pytest.mark.parametrize('review_words,expected_calls',[(280,2),(95,3)])
+def test_editorial_review_repairs_short_script_before_runtime_gate(monkeypatch,tmp_path,review_words,expected_calls):
+    import copy
+    import history_of_x.script as writing
+    def draft(words):
+        result=sample();result['summary']='An evidence-linked history.'
+        per=words//5
+        for scene in result['scenes']:
+            scene['narration']='Ethiopia '+' '.join(['history']*(per-1))
+        return result
+    class Writer:
+        def __init__(self,*args):self.calls=0
+        def generate(self,instruction,payload,**kwargs):
+            self.calls+=1
+            return json.dumps(draft(95 if self.calls==1 else review_words if self.calls==2 else 280))
+    instance=Writer();monkeypatch.setattr(writing,'Gemini',lambda directory:instance)
+    evidence={'sources':[{'id':'S1','title':'Evidence','url':'https://example.org','extract':'Supporting source material.'}]}
+    result=writing.generate('Ethiopia','Explain decisions and consequences.',2,evidence,tmp_path)
+    assert result['word_count']==280
+    assert instance.calls==expected_calls
