@@ -1,6 +1,12 @@
 name: Live free-tier script integration
 on:
   workflow_dispatch:
+    inputs:
+      model:
+        description: Free text model for a real script comparison
+        type: choice
+        options: [gemini-3.5-flash-lite, gemini-3.1-flash-lite]
+        default: gemini-3.5-flash-lite
 permissions:
   contents: read
 concurrency:
@@ -24,7 +30,7 @@ jobs:
       - name: Exercise real Gemini key, research, revision and visual discovery
         env:
           GEMINI_API: ${{ secrets.GEMINI_API }}
-          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.5-flash-lite' }}
+          GEMINI_MODEL: ${{ inputs.model || vars.GEMINI_MODEL || 'gemini-3.5-flash-lite' }}
           CONFIRMED_FREE_MODEL: ${{ vars.CONFIRMED_FREE_MODEL }}
           GEMINI_INPUT_TOKEN_BUDGET: '14000'
           GEMINI_REQUEST_BUDGET: '4'
