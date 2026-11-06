@@ -192,3 +192,10 @@ def test_generated_emphasis_normalization_preserves_facts_and_sources():
     assert result['scenes'][0]['source_ids']==['S1']
     assert len({s['scene_id'] for s in result['scenes']})==5
     assert validate(result,['S1'])==20
+
+def test_visual_relevance_rejects_incidental_animals():
+    from history_of_x.assets import relevant
+    record={'title':'File:Gelada baboon, Simien Mountains.jpg'}
+    assert not relevant(record,'Ethiopia highlands mountains')
+    assert relevant(record,'Gelada baboon habitat')
+    assert not relevant({'title':'File:Naples hospital 1936.jpg'},'Oreste Baratieri',['Naples','1936'])

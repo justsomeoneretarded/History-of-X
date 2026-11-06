@@ -6,7 +6,7 @@ import re
 import time
 from pathlib import Path
 from PIL import Image, ImageOps
-from .core import PipelineError, key, save_json, read_json
+from .core import ROOT, PipelineError, key, save_json, read_json
 from .research import get
 
 ALLOWED = ('public domain','cc0','cc by-sa','cc-by-sa','cc by','cc-by')
@@ -64,10 +64,26 @@ def prepare(script, directory, min_assets=3):
     cache.mkdir(parents=True, exist_ok=True)
     index = cache / 'index.json'
     manifest = read_json(index) if index.exists() else {}
+    overrides={}
+    for config in (ROOT/'assets'/'curation').glob('*.json'):
+        overrides.update(read_json(config).get(script.get('title',''),{}))
     used = set()
     for scene in script['scenes']:
         sid = str(scene['scene_id'])
-        query = scene['asset_search_term']
+        selection=overrides.get(sid,{})
+        query = selection.get('query',scene['asset_search_term'])
+        if selection.get('graphic'):
+            from .graphics import make
+            path=cache/f'original-{selection["graphic"]}.jpg'
+            make(selection['graphic'],path)
+            manifest[sid]={'query':'original:'+selection['graphic'],'assets':[{'title':'Original explanatory graphics',
+                'path':str(path.relative_to(directory)),'source_url':'https://github.com/justsomeoneretarded/History-of-X/blob/main/history_of_x/graphics.py',
+                'license':'Original production graphic (project-owned)','license_url':'','artist':'History of X production',
+                'modifications':'Generated from the source-linked script; historical claims are cited in sources.json.'}]}
+            save_json(index,manifest)
+            continue
+        if sid in manifest:
+            manifest[sid]['assets']=[a for a in manifest[sid]['assets'] if relevant(a,query,selection.get('exclude',[]))]
         if sid in manifest and manifest[sid].get('query') == query and manifest[sid].get('assets') and all((directory / x['path']).exists() for x in manifest[sid]['assets']):
             used.update(x['source_url'] for x in manifest[sid]['assets'])
             continue
@@ -77,7 +93,7 @@ def prepare(script, directory, min_assets=3):
             queries.append(' '.join(query.split()[:-1]))
         for search in dict.fromkeys(queries):
             try:
-                candidates = discover(search)
+                candidates = [a for a in discover(search) if relevant(a,query,selection.get('exclude',[]))]
                 candidates.sort(key=lambda x: (x['source_url'] in used, abs(x['width']/x['height']-16/9)))
                 for record in candidates:
                     if record['source_url'] in {r['source_url'] for r in records}:
@@ -101,3 +117,11 @@ def prepare(script, directory, min_assets=3):
     if count < min_assets:
         raise PipelineError(f'Only {count} licensed assets found; {min_assets} required. Resume after checking asset access; no silent all-placeholder video.')
     return manifest
+
+
+def relevant(record,query,excluded=()):
+    title=record.get('title','').casefold().replace('_',' ')
+    if any(x.casefold() in title for x in excluded):return False
+    animals=['baboon','gelada','monkey','ibex','butterfly','insect','pigeon']
+    if any(x in title for x in animals) and not any(x in query.casefold() for x in animals):return False
+    return True

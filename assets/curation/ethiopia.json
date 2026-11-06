@@ -1,0 +1,13 @@
+{
+  "Ethiopia: Independence and the Price of Power": {
+    "4": {"query": "Ezana coin", "exclude": ["obelisk", "stela"]},
+    "5": {"query": "Bete Giyorgis Lalibela", "exclude": []},
+    "6": {"query": "Simien Mountains panorama", "exclude": ["baboon", "gelada", "ibex", "monkey"]},
+    "7": {"query": "Menelik II of Ethiopia", "exclude": ["Portret van", "book", "pages"]},
+    "8": {"graphic": "wuchale"},
+    "10": {"query": "Oreste Baratieri", "exclude": ["Naples", "1936", "hospital"]},
+    "15": {"query": "Haile Selassie 1963", "exclude": ["coronation", "painting", "2013", "detail"]},
+    "18": {"graphic": "transition"},
+    "20": {"query": "Simien Mountains panorama", "exclude": ["baboon", "gelada", "ibex", "monkey", "biome", "map", "satellite"]}
+  }
+}
