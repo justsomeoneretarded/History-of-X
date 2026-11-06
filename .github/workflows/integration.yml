@@ -6,7 +6,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: documentary-production
+  group: history-gemini
   cancel-in-progress: false
 jobs:
   live-plan:

@@ -17,6 +17,7 @@ else:
 if not request.get('title') or not request.get('brief'):raise SystemExit('Title and brief are required')
 Path('work').mkdir(exist_ok=True)
 Path('work/request.json').write_text(json.dumps(request,indent=2))
-identity=hashlib.sha256(json.dumps(request,sort_keys=True).encode()).hexdigest()[:24]
+seed=Path(request['episode']).read_text() if request.get('episode') else ''
+identity=hashlib.sha256((json.dumps(request,sort_keys=True)+seed).encode()).hexdigest()[:24]
 if os.getenv('GITHUB_OUTPUT'):
     with open(os.environ['GITHUB_OUTPUT'],'a') as stream:stream.write('id='+identity+'\n')

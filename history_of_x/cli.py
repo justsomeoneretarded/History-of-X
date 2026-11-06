@@ -15,6 +15,7 @@ def parser():
     p.add_argument('--voice',choices=['warguy','kit-laser'],default=os.getenv('NARRATOR','warguy'))
     p.add_argument('--minutes',type=float,default=float(os.getenv('VIDEO_MINUTES','8')))
     p.add_argument('--profile',choices=['draft','standard','cinematic'],default=os.getenv('VIDEO_PROFILE','cinematic'))
+    p.add_argument('--chapter',type=int,choices=range(1,6),help='Generate only this chapter in a parallel voice job.')
     p.add_argument('--stage',choices=['all','plan','voice','render'],default='all')
     p.add_argument('--episode',type=Path,help='Use a curated episode file with script/evidence, bypassing Gemini only when explicitly selected.')
     p.add_argument('--request',type=Path,help='Read title/brief/voice/minutes from a production request JSON.')
@@ -64,10 +65,18 @@ def main(argv=None):
         script=read_json(args.work/'script.json');evidence=read_json(args.work/'research.json')
         if args.stage in ('all','voice'):
             from .speech import produce
-            produce(script,args.voice,args.work/'speech')
+            if args.chapter:
+                from .script import CHAPTERS
+                subset={**script,'scenes':[s for s in script['scenes'] if s['chapter']==CHAPTERS[args.chapter-1]]}
+                produce(subset,args.voice,args.work/'speech'/f'chapter-{args.chapter}')
+            else:
+                produce(script,args.voice,args.work/'speech')
         if args.stage in ('all','render'):
             from .render import render
             from .quality import inspect,package
+            from .speech_merge import merge
+            if not (args.work/'speech'/'speech.json').exists():
+                merge(script,args.voice,args.work/'speech')
             speech=read_json(args.work/'speech'/'speech.json')
             assets=read_json(args.work/'assets'/'index.json')
             video=render(script,speech,assets,args.work/'render',args.output,args.profile)

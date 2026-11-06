@@ -119,3 +119,23 @@ def test_visible_credits_include_required_attribution():
     text=' '.join(credit_lines(a,['titan']))
     assert 'Example Creator' in text and 'Scott Buckley' in text
     assert 'creativecommons.org/licenses/by/4.0/' in text
+
+def test_chapter_checkpoint_merge_and_missing_audio(tmp_path):
+    from history_of_x.speech_merge import merge
+    script=sample()
+    for i in range(1,6):
+        directory=tmp_path/f'chapter-{i}'
+        directory.mkdir()
+        (directory/'take.wav').write_bytes(b'test fixture')
+        save_json(directory/'speech.json',{'voice':'warguy','scenes':[{'scene_id':i,'audio':'take.wav','verification':{'accepted':True}}]})
+    merged=merge(script,'warguy',tmp_path)
+    assert len(merged['scenes'])==5
+    assert merged['scenes'][2]['audio']=='chapter-3/take.wav'
+    (tmp_path/'chapter-3'/'take.wav').unlink()
+    with pytest.raises(Exception,match='missing audio'):merge(script,'warguy',tmp_path)
+
+def test_chapter_merge_rejects_voice_mismatch(tmp_path):
+    from history_of_x.speech_merge import merge
+    directory=tmp_path/'chapter-1';directory.mkdir()
+    save_json(directory/'speech.json',{'voice':'kit-laser','scenes':[]})
+    with pytest.raises(Exception,match='Narrator mismatch'):merge(sample(),'warguy',tmp_path)

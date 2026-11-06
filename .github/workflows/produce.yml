@@ -39,7 +39,7 @@ permissions:
   contents: read
   actions: read
 concurrency:
-  group: documentary-production
+  group: episode-${{ inputs.title || github.ref }}
   cancel-in-progress: false
 env:
   PYTHONUNBUFFERED: '1'
@@ -53,6 +53,9 @@ env:
   WHISPER_MODEL: base.en
 jobs:
   plan:
+    concurrency:
+      group: history-gemini
+      cancel-in-progress: false
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     outputs:
@@ -89,15 +92,17 @@ jobs:
           path: work/job
           run-id: ${{ inputs.resume_run }}
           github-token: ${{ github.token }}
-      - name: Recover requested speech checkpoint
+      - name: Recover requested chapter speech checkpoints
         if: ${{ inputs.resume_run != '' }}
         uses: actions/download-artifact@v4
         continue-on-error: true
         with:
-          name: checkpoint-voice
-          path: work/job
+          pattern: checkpoint-voice-*
+          path: work/recovered-voices
           run-id: ${{ inputs.resume_run }}
           github-token: ${{ github.token }}
+      - name: Restore chapter locations
+        run: python -c "from history_of_x.speech_merge import recover; recover('work/recovered-voices','work/job/speech')"
       - name: Restore shared Gemini project budget ledger
         uses: actions/cache/restore@v4
         with:
@@ -141,6 +146,11 @@ jobs:
           path: work/job
           key: episode-v1-${{ steps.request.outputs.id }}-${{ github.run_id }}-${{ github.run_attempt }}-plan
   voice:
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        chapter: [1, 2, 3, 4, 5]
     needs: plan
     runs-on: ubuntu-24.04
     timeout-minutes: 330
@@ -166,21 +176,29 @@ jobs:
             work/cache
           key: chatterbox-original-cpu-v1-${{ runner.os }}
       - run: bash scripts/install_voice.sh
-      - name: Generate and verify selected narration
-        run: python -m history_of_x.cli --request work/request.json --stage voice
+      - name: Restore this chapter's accepted narration
+        uses: actions/cache/restore@v4
+        with:
+          path: work/job/speech/chapter-${{ matrix.chapter }}
+          key: chapter-v1-${{ needs.plan.outputs.request_id }}-${{ matrix.chapter }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: chapter-v1-${{ needs.plan.outputs.request_id }}-${{ matrix.chapter }}-
+      - name: Generate and verify selected chapter narration
+        env:
+          CHAPTER: ${{ matrix.chapter }}
+        run: python -m history_of_x.cli --request work/request.json --stage voice --chapter "$CHAPTER"
       - name: Save accepted speech even when a later chunk fails
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: checkpoint-voice
-          path: work/job/
+          name: checkpoint-voice-${{ matrix.chapter }}
+          path: work/job/speech/chapter-${{ matrix.chapter }}/
           retention-days: 14
       - name: Save resumable episode state
         if: always()
         uses: actions/cache/save@v4
         with:
-          path: work/job
-          key: episode-v1-${{ needs.plan.outputs.request_id }}-${{ github.run_id }}-${{ github.run_attempt }}-voice
+          path: work/job/speech/chapter-${{ matrix.chapter }}
+          key: chapter-v1-${{ needs.plan.outputs.request_id }}-${{ matrix.chapter }}-${{ github.run_id }}-${{ github.run_attempt }}
   render:
     needs: voice
     runs-on: ubuntu-24.04
@@ -199,8 +217,14 @@ jobs:
           path: work
       - uses: actions/download-artifact@v4
         with:
-          name: checkpoint-voice
+          name: checkpoint-plan
           path: work/job
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: checkpoint-voice-*
+          path: work/recovered-voices
+      - name: Assemble verified chapter checkpoints
+        run: python -c "from history_of_x.speech_merge import recover; recover('work/recovered-voices','work/job/speech')"
       - name: Edit, mix, caption, package and verify final film
         run: python -m history_of_x.cli --request work/request.json --stage render
       - name: Final video and upload package
