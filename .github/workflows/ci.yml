@@ -1,0 +1,26 @@
+name: Test documentary runner
+on:
+  push:
+    paths: ['history_of_x/**', 'tests/**', 'pyproject.toml', '.github/workflows/**', 'scripts/**']
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: sudo apt-get update -qq && sudo apt-get install -y ffmpeg fonts-dejavu-core
+      - run: python -m pip install -e '.[test]'
+      - run: python -m compileall -q history_of_x
+      - run: pytest -q
+      - name: Validate workflows
+        run: |
+          curl -fLsS https://github.com/rhysd/actionlint/releases/download/v1.7.7/actionlint_1.7.7_linux_amd64.tar.gz -o "$RUNNER_TEMP/actionlint.tgz"
+          tar -xzf "$RUNNER_TEMP/actionlint.tgz" -C "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint" -shellcheck= -pyflakes=
