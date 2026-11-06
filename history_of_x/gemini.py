@@ -22,7 +22,8 @@ class Gemini:
         self.interval = max(60.0, float(os.getenv('GEMINI_INTERVAL_SECONDS', '65')))
         self.daily = int(os.getenv('GEMINI_REQUEST_BUDGET', '12'))
         self.input_limit = int(os.getenv('GEMINI_INPUT_TOKEN_BUDGET', '12000'))
-        self.state_path = directory / 'usage.json'
+        self.state_path = Path(os.getenv('GEMINI_LEDGER_PATH', str(directory / 'usage.json')))
+        self.state_path.parent.mkdir(parents=True, exist_ok=True)
         self.state = read_json(self.state_path) if self.state_path.exists() else {'calls': [], 'last_start': 0}
         if client is None:
             from google import genai
