@@ -70,10 +70,14 @@ def inspect(video,script,speech,assets,output):
         failures.append('Video/audio duration mismatch')
     bad=[s['scene_id'] for s in speech['scenes'] if not s['verification']['accepted']]
     if bad:failures.append('Unverified speech scenes')
-    # Full decode catches truncated media and decoder errors. A contact sheet supplies visual evidence.
-    ffmpeg('-v','error','-i',video,'-f','null','-',timeout=max(900,actual*3))
+    # One complete pass checks decoding, black intervals and actual final AAC loudness.
     import subprocess
-    detection=subprocess.run(['ffmpeg','-hide_banner','-nostdin','-i',str(video),'-vf','blackdetect=d=0.6:pix_th=0.10','-an','-f','null','-'],capture_output=True,text=True,timeout=max(600,actual*3))
+    detection=subprocess.run(['ffmpeg','-hide_banner','-nostdin','-i',str(video),'-vf','blackdetect=d=0.6:pix_th=0.10','-af','loudnorm=I=-16:TP=-1:LRA=9:print_format=json','-f','null','-'],capture_output=True,text=True,timeout=max(600,actual*3))
+    if detection.returncode:failures.append('Final media decode failed')
+    loudness=re.findall(r'\{\s*"input_i".*?\}',detection.stderr,re.S)
+    measured=json.loads(loudness[-1]) if loudness else {}
+    if not measured:failures.append('Could not measure final encoded soundtrack')
+    elif float(measured['input_tp'])>-.05:failures.append('Final soundtrack has insufficient clipping headroom')
     black=[float(x) for x in re.findall(r'black_duration:([\d.]+)',detection.stderr)]
     if any(x>1 for x in black):failures.append('Unexpected black interval over one second')
     unique=len({x['source_url'] for entry in assets.values() for x in entry['assets']})
@@ -82,7 +86,8 @@ def inspect(video,script,speech,assets,output):
         'speech_coverage_min':min(s['verification']['coverage'] for s in speech['scenes']),
         'speech_precision_min':min(s['verification']['precision'] for s in speech['scenes']),
         'caption_interpolated_words':sum(w.get('interpolated',False) for s in speech['scenes'] for w in s['words']),
-        'black_intervals_seconds':black,'video':video_stream,'audio':audio_stream,
+        'black_intervals_seconds':black,'final_audio_lufs':float(measured['input_i']) if measured else None,
+        'final_audio_true_peak_dbfs':float(measured['input_tp']) if measured else None,'video':video_stream,'audio':audio_stream,
         'review_needed':['Check historical visual relevance and pronunciation in contact sheet/video.',
                          'Script source references support review; automated checks do not certify historical accuracy.']}
     save_json(output/'quality.json',report)
