@@ -8,8 +8,8 @@ import subprocess
 import tarfile
 import urllib.request
 
-URL='https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz'
-SHA256='abda8d77ce8309141f83ab8edf0596834087c52467f6badf376a6a2a4c87cf67'
+URL='https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-11-06-12-50/ffmpeg-n8.1.3-34-ga35157abb9-linux64-gpl-8.1.tar.xz'
+SHA256='2d17c1f53aa6e15882ff76d2a0089d63c3553a401bf2bdc723d798beb5eb4f1b'
 root=Path('work/tools').resolve()
 root.mkdir(parents=True,exist_ok=True)
 
@@ -21,12 +21,14 @@ def usable():
 if not usable() or os.getenv('FORCE_PORTABLE_FFMPEG')=='1':
     if platform.system()!='Linux' or platform.machine() not in ('x86_64','AMD64'):
         raise SystemExit('Install FFmpeg with libass and ffprobe for this platform.')
-    archive=root/'ffmpeg-7.0.2.tar.xz'
+    archive=root/'ffmpeg-8.1.3.tar.xz'
     if not archive.exists():
-        print('Downloading verified portable FFmpeg 7.0.2 (approximately 40 MB).',flush=True)
+        print('Downloading verified portable FFmpeg 8.1.3 (approximately 145 MB).',flush=True)
         with urllib.request.urlopen(URL,timeout=60) as response,archive.open('wb') as output:
             shutil.copyfileobj(response,output)
-    if hashlib.sha256(archive.read_bytes()).hexdigest()!=SHA256:
+    observed=hashlib.sha256(archive.read_bytes()).hexdigest()
+    print(f'Portable archive: {archive.stat().st_size} bytes, sha256={observed}',flush=True)
+    if observed!=SHA256:
         archive.unlink(missing_ok=True)
         raise SystemExit('FFmpeg download checksum mismatch. No unverified executable was run.')
     with tarfile.open(archive) as source:

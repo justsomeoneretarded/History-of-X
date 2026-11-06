@@ -34,4 +34,4 @@ See VALIDATION.md for measured test results and comparisons. A real API or full 
 
 ## Portable runner media setup
 
-Media setup uses installed FFmpeg/ffprobe when suitable, otherwise a SHA-256-verified portable FFmpeg 7.0.2 build with libass. It avoids unbounded package-mirror installation. DejaVu fonts and their license are bundled so the map, thumbnail and subtitle typography are consistent across runners.
+Media setup uses installed FFmpeg/ffprobe when suitable, otherwise a SHA-256-verified portable FFmpeg 8.1.3 build with libass. It avoids unbounded package-mirror installation. DejaVu fonts and their license are bundled so the map, thumbnail and subtitle typography are consistent across runners.
