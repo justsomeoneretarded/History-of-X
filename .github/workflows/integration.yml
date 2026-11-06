@@ -7,6 +7,10 @@ on:
         type: choice
         options: [gemini-3.5-flash-lite, gemini-3.1-flash-lite]
         default: gemini-3.5-flash-lite
+      minutes:
+        description: Script length; 8 exercises the default chapter pipeline
+        type: string
+        default: '2'
 permissions:
   contents: read
 concurrency:
@@ -33,8 +37,9 @@ jobs:
           GEMINI_MODEL: ${{ inputs.model || vars.GEMINI_MODEL || 'gemini-3.5-flash-lite' }}
           CONFIRMED_FREE_MODEL: ${{ vars.CONFIRMED_FREE_MODEL }}
           GEMINI_INPUT_TOKEN_BUDGET: '14000'
-          GEMINI_REQUEST_BUDGET: '4'
-        run: python -m history_of_x.cli --title 'Battle of Adwa' --brief 'Explain why Ethiopia defeated the Italian invasion in 1896. Focus on Menelik, Taytu, logistics and Italian decisions. Avoid disputed casualty totals.' --minutes 2 --stage plan
+          GEMINI_REQUEST_BUDGET: '12'
+          VIDEO_MINUTES: ${{ inputs.minutes || '2' }}
+        run: python -m history_of_x.cli --title 'Battle of Adwa' --brief 'Explain why Ethiopia defeated the Italian invasion in 1896. Focus on Menelik, Taytu, logistics and Italian decisions. Avoid disputed casualty totals.' --minutes "$VIDEO_MINUTES" --stage plan
       - uses: actions/upload-artifact@v4
         if: always()
         with:

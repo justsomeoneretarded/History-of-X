@@ -239,3 +239,36 @@ def test_bundled_ethiopia_visuals_have_verified_provenance():
         assert allowed_license(record['license'])
         assert record['source_url'].startswith('https://commons.wikimedia.org/')
         assert hashlib.sha256((ROOT/record['bundled_path']).read_bytes()).hexdigest()==record['sha256']
+
+def test_long_script_chapters_resume_without_repeating_model_calls(monkeypatch,tmp_path):
+    import math
+    import history_of_x.script as writing
+    budgets=[70,242,262,315,231]
+    class Writer:
+        def __init__(self):self.calls=0
+        def generate(self,instruction,payload,**kwargs):
+            chapter_index=self.calls//2;self.calls+=1
+            count=math.ceil(budgets[chapter_index]/85)
+            scenes=[]
+            for i in range(count):
+                words=budgets[chapter_index]//count+(i<budgets[chapter_index]%count)
+                scenes.append({'scene_id':i+1,'chapter':CHAPTERS[chapter_index],
+                    'narration':'Ethiopia '+' '.join(['history']*(words-1)),
+                    'source_ids':['S1'],'visual_type':'map','subtitle_highlights':['Ethiopia'],'delivery':'normal'})
+            return json.dumps({'title':'Ethiopia','summary':'Source-linked history.','scenes':scenes})
+    writer=Writer();monkeypatch.setattr(writing,'Gemini',lambda directory:writer)
+    evidence={'sources':[{'id':'S1','title':'Evidence','extract':'Supporting historical evidence.'}]}
+    result=writing.generate('Ethiopia','Explain choices and consequences.',8,evidence,tmp_path)
+    assert result['word_count']==1120 and writer.calls==10
+    assert len(list((tmp_path/'chapters').glob('*.json')))==5
+    (tmp_path/'script.json').unlink()
+    result=writing.generate('Ethiopia','Explain choices and consequences.',8,evidence,tmp_path)
+    assert result['word_count']==1120 and writer.calls==10
+
+def test_ethiopia_preset_prepares_without_network(monkeypatch,tmp_path):
+    import history_of_x.assets as assets
+    from history_of_x.core import ROOT,read_json
+    monkeypatch.setattr(assets,'get',lambda *a,**kw:pytest.fail('Bundled preset unexpectedly used the network'))
+    script=read_json(ROOT/'episodes'/'ethiopia.json')['script']
+    manifest=assets.prepare(script,tmp_path,min_assets=12)
+    assert len(manifest)==20 and all(entry['assets'] for entry in manifest.values())
