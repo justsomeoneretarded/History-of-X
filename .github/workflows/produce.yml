@@ -101,7 +101,7 @@ jobs:
       - name: Research, script, editorial revision and licensed visuals
         env:
           GEMINI_API: ${{ secrets.GEMINI_API }}
-          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-2.5-flash' }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.8-flash' }}
           CONFIRMED_FREE_MODEL: ${{ vars.CONFIRMED_FREE_MODEL }}
           GEMINI_REQUEST_BUDGET: ${{ vars.GEMINI_REQUEST_BUDGET || '12' }}
           GEMINI_INPUT_TOKEN_BUDGET: ${{ vars.GEMINI_INPUT_TOKEN_BUDGET || '12000' }}

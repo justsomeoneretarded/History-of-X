@@ -19,10 +19,14 @@ jobs:
           python-version: '3.11'
           cache: pip
       - run: python -m pip install -e .
+      - name: Inspect accessible model metadata
+        env:
+          GEMINI_API: ${{ secrets.GEMINI_API }}
+        run: python scripts/model_preflight.py
       - name: Exercise real Gemini key, research, revision and visual discovery
         env:
           GEMINI_API: ${{ secrets.GEMINI_API }}
-          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-2.5-flash' }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.8-flash' }}
           CONFIRMED_FREE_MODEL: ${{ vars.CONFIRMED_FREE_MODEL }}
           GEMINI_INPUT_TOKEN_BUDGET: '14000'
           GEMINI_REQUEST_BUDGET: '4'
