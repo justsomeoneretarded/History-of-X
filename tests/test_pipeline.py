@@ -199,3 +199,8 @@ def test_visual_relevance_rejects_incidental_animals():
     assert not relevant(record,'Ethiopia highlands mountains')
     assert relevant(record,'Gelada baboon habitat')
     assert not relevant({'title':'File:Naples hospital 1936.jpg'},'Oreste Baratieri',['Naples','1936'])
+
+def test_research_extracts_explicit_focus_people():
+    from history_of_x.research import focus_topics
+    assert focus_topics('Focus on Menelik, Taytu, logistics and Italian decisions.')==['Menelik','Taytu']
+    assert focus_topics('Include Haile Selassie and Menelik II.')==['Haile Selassie','Menelik II']

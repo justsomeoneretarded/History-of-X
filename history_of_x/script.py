@@ -72,17 +72,17 @@ Vary sentence lengths. A scene is {(short_range if minutes<3 else '35–110')} w
 asset_search_term must describe a concrete historic subject, with an era; no graphic violence.
 Do not claim a modern map depicts historical borders. All subtitles must quote actual narration.
 {SCHEMA}'''
-    result = normalize_script(json.loads(client.generate(instruction, {'title':title,'brief':brief,'evidence':evidence['sources']}, max_output=14000,schema=scene_schema([s['id'] for s in evidence['sources']],target,scene_count))))
+    result = normalize_script(json.loads(client.generate(instruction, {'title':title,'brief':brief,'evidence':[{**s,'extract':s['extract'][:4000]} for s in evidence['sources']]}, max_output=14000,schema=scene_schema([s['id'] for s in evidence['sources']],target,scene_count))))
     count = validate(result, [s['id'] for s in evidence['sources']])
     # One evidence-constrained editorial revision, not a claim of independent fact verification.
     review = f'''Review this documentary against the supplied evidence. Correct chronology errors, unsupported claims,
-false certainty, repeated sentences, weak causal links and awkward TTS phrasing. Preserve approximate word count,
+false certainty, repeated sentences, weak causal links and awkward TTS phrasing. Ensure the brief's named people and focus are covered when supported by the evidence. Preserve approximate word count,
 five chapters, all fields, and verified source IDs. Target {target} spoken words within 15 percent. The draft has {count} words: expand or shorten as needed using evidence. For a film under three minutes use five scenes with approximately {round(target/5)} words in each. Do not introduce facts absent from evidence. ''' + SCHEMA
-    revised = normalize_script(json.loads(client.generate(review, {'script':result,'evidence':[{**s,'extract':s['extract'][:3000]} for s in evidence['sources']]}, max_output=14000,schema=scene_schema([s['id'] for s in evidence['sources']],target,scene_count))))
+    revised = normalize_script(json.loads(client.generate(review, {'script':result,'brief':brief,'evidence':[{**s,'extract':s['extract'][:3000]} for s in evidence['sources']]}, max_output=14000,schema=scene_schema([s['id'] for s in evidence['sources']],target,scene_count))))
     count = validate(revised, [s['id'] for s in evidence['sources']])
     if not target*.65<=count<=target*1.35:
         repair=f'Correct the narration length to {target} spoken words. Current length is {count}. Keep the five chapters and supported facts. Expand explanations of decisions and consequences from the evidence; do not pad or invent facts. '+SCHEMA
-        revised=normalize_script(json.loads(client.generate(repair,{'script':revised,'evidence':[{**s,'extract':s['extract'][:2500]} for s in evidence['sources']]},max_output=14000,schema=scene_schema([s['id'] for s in evidence['sources']],target,scene_count))))
+        revised=normalize_script(json.loads(client.generate(repair,{'script':revised,'brief':brief,'evidence':[{**s,'extract':s['extract'][:2500]} for s in evidence['sources']]},max_output=14000,schema=scene_schema([s['id'] for s in evidence['sources']],target,scene_count))))
     count = validate(revised, [s['id'] for s in evidence['sources']], target)
     revised.update(fingerprint=fingerprint, word_count=count, provenance='Gemini draft and evidence-constrained revision; automated checks passed')
     save_json(output, revised)

@@ -23,12 +23,15 @@ def discover(query, limit=8):
         'action':'query','format':'json','formatversion':2,'generator':'search',
         'gsrsearch':query+' filetype:bitmap','gsrnamespace':6,'gsrlimit':limit,
         'prop':'imageinfo','iiprop':'url|size|extmetadata','iiurlwidth':1920}).json()
+    return image_records(data)
+
+def image_records(data):
     result = []
     for page in data.get('query', {}).get('pages', []):
         info = (page.get('imageinfo') or [{}])[0]
         meta = info.get('extmetadata', {})
         license_name = plain(meta.get('LicenseShortName',{}).get('value',''))
-        if not allowed_license(license_name) or info.get('width',0)<900 or info.get('height',0)<500:
+        if not allowed_license(license_name) or min(info.get('width',0),info.get('height',0))<500 or max(info.get('width',0),info.get('height',0))<750:
             continue
         result.append({'title':page['title'], 'url':info.get('thumburl') or info['url'],
             'source_url':info['descriptionurl'], 'license':license_name,
@@ -36,6 +39,12 @@ def discover(query, limit=8):
             'description':plain(meta.get('ImageDescription',{}).get('value',''))[:500],
             'width':info['width'], 'height':info['height']})
     return result
+
+def file_asset(title):
+    data=get('https://commons.wikimedia.org/w/api.php',params={
+        'action':'query','format':'json','formatversion':2,'redirects':1,'titles':title,
+        'prop':'imageinfo','iiprop':'url|size|extmetadata','iiurlwidth':1920}).json()
+    return image_records(data)
 
 def download_asset(record, cache):
     path = cache / (key(record['url'])+'.jpg')
@@ -71,7 +80,7 @@ def prepare(script, directory, min_assets=3):
     for scene in script['scenes']:
         sid = str(scene['scene_id'])
         selection=overrides.get(sid,{})
-        query = selection.get('query',scene['asset_search_term'])
+        query = ('files:'+'|'.join(selection['files'])) if selection.get('files') else selection.get('query',scene['asset_search_term'])
         if selection.get('graphic'):
             from .graphics import make
             path=cache/f'original-{selection["graphic"]}.jpg'
@@ -88,12 +97,13 @@ def prepare(script, directory, min_assets=3):
             used.update(x['source_url'] for x in manifest[sid]['assets'])
             continue
         records = []
+        preferred=[a for name in selection.get('files',[]) for a in file_asset(name)]
         queries = [query, re.sub(r'\b(historical|painting|photograph|artwork|cinematic)\b','',query,flags=re.I).strip()]
         if len(query.split())>=3:
             queries.append(' '.join(query.split()[:-1]))
         for search in dict.fromkeys(queries):
             try:
-                candidates = [a for a in discover(search) if relevant(a,query,selection.get('exclude',[]))]
+                candidates = [a for a in (preferred or discover(search)) if relevant(a,query,selection.get('exclude',[]))]
                 candidates.sort(key=lambda x: (x['source_url'] in used, abs(x['width']/x['height']-16/9)))
                 for record in candidates:
                     if record['source_url'] in {r['source_url'] for r in records}:

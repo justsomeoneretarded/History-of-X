@@ -42,7 +42,14 @@ jobs:
       - name: Reuse accepted narration
         run: python -c "from history_of_x.speech_merge import recover; recover('work/recovered-voices','work/job/speech')"
       - name: Refresh visual selection and original graphics
-        run: python -m history_of_x.cli --request work/request.json --stage plan
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from history_of_x.assets import prepare
+          from history_of_x.core import read_json
+          root=Path('work/job')
+          prepare(read_json(root/'script.json'),root,min_assets=3)
+          PY
       - name: Render and verify final video
         run: python -m history_of_x.cli --request work/request.json --stage render
       - uses: actions/upload-artifact@v4
