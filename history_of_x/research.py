@@ -13,7 +13,7 @@ def get(url, **kwargs):
     return response
 
 def wiki(params):
-    data = get('https://en.wikipedia.org/w/api.php', params={'format': 'json', 'formatversion': 2, **params}).json()
+    data = get('https://en.wikipedia.org/w/api.php', params={'format': 'json', 'formatversion': 2, 'redirects': 1, **params}).json()
     if 'error' in data:
         raise PipelineError('Wikipedia API returned an error')
     return data
@@ -33,12 +33,12 @@ def research(title, brief, directory):
         names = ['History of Ethiopia', 'Kingdom of Aksum', 'Battle of Adwa', 'Italian occupation of Ethiopia', 'Derg', 'Ethiopian Civil War']
     sources = []
     for index, name in enumerate(names):
-        pages = wiki({'action':'query','prop':'extracts|info','inprop':'url','explaintext':1,'exchars':6500,'titles':name})['query']['pages']
+        pages = wiki({'action':'query','prop':'extracts|info','inprop':'url','explaintext':1,'titles':name})['query']['pages']
         for page in pages:
             if not page.get('extract'):
                 continue
             sources.append({'id':f'S{index+1}', 'title':page['title'], 'url':page['fullurl'],
-                            'extract':page['extract'], 'source_kind':'reference overview; follow its cited works for deeper verification'})
+                            'extract':page['extract'][:7000], 'source_kind':'reference overview; follow its cited works for deeper verification'})
     if not sources:
         raise PipelineError('Sources did not contain usable evidence')
     result = {'fingerprint':fingerprint, 'title':title, 'brief':brief, 'sources':sources,

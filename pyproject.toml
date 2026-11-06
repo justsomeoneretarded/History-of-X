@@ -8,7 +8,7 @@ description = "Resumable, free-first documentary production on GitHub Actions"
 requires-python = ">=3.11,<3.13"
 dependencies = ["requests>=2.32,<3", "Pillow>=11,<12", "numpy>=1.26,<2", "scipy>=1.11,<2", "soundfile>=0.12,<1", "google-genai>=1.50,<2", "beautifulsoup4>=4.12,<5"]
 [project.optional-dependencies]
-voice = ["chatterbox-tts @ git+https://github.com/resemble-ai/chatterbox.git@5de7a54aa4e5e2baadb0182dde554908b48b85c2", "faster-whisper>=1.2,<2"]
+voice = ["chatterbox-tts @ git+https://github.com/resemble-ai/chatterbox.git@5de7a54aa4e5e2baadb0182dde554908b48b85c2", "faster-whisper>=1.2,<2", "av>=16,<17"]
 test = ["pytest>=8,<9", "PyYAML>=6,<7"]
 [project.scripts]
 history-of-x = "history_of_x.cli:main"

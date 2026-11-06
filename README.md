@@ -38,6 +38,6 @@ All maps are labeled present-day geographic references. Historical boundaries ar
 
 ## Attribution
 
-Music: Titan, Celestial and Aurora by Scott Buckley, CC BY 4.0. See `assets/music/LICENSE.md`. Complete visual and soundtrack credits are generated with the video. If the YouTube description cannot fit them, publish `credits.html` at a stable URL and add its link before uploading. This runner does not upload to YouTube.
+Music: Titan, Celestial and Aurora by Scott Buckley, CC BY 4.0. See `assets/music/LICENSE.md`. Complete visual and soundtrack credits are generated with the video. Complete attribution is also rendered into the video end credits, so it travels with the film. `credits.html` is included for convenient reference. This runner does not upload to YouTube.
 
 See `docs/PRODUCTION.md` for limits and the implementation record. No API secret is stored in the code or artifacts.

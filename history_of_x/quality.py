@@ -64,7 +64,8 @@ def inspect(video,script,speech,assets,output):
     failures=[]
     if not video_stream or not audio_stream:
         failures.append('Missing video or audio stream')
-    expected=sum(s['duration'] for s in speech['scenes']);actual=float(metadata['format']['duration'])
+    render_info=read_json(output/'render.json')
+    expected=sum(s['duration'] for s in speech['scenes'])+render_info.get('credits_seconds',0);actual=float(metadata['format']['duration'])
     if abs(actual-expected)>.5:
         failures.append('Video/audio duration mismatch')
     bad=[s['scene_id'] for s in speech['scenes'] if not s['verification']['accepted']]
@@ -76,7 +77,7 @@ def inspect(video,script,speech,assets,output):
     black=[float(x) for x in re.findall(r'black_duration:([\d.]+)',detection.stderr)]
     if any(x>1 for x in black):failures.append('Unexpected black interval over one second')
     unique=len({x['source_url'] for entry in assets.values() for x in entry['assets']})
-    report={'passed':not failures,'failures':failures,'duration_seconds':actual,'expected_audio_seconds':expected,
+    report={'passed':not failures,'failures':failures,'duration_seconds':actual,'expected_total_seconds':expected, 'narration_seconds':sum(s['duration'] for s in speech['scenes']), 'credits_seconds':render_info.get('credits_seconds',0),
         'voice':speech['voice'],'scene_count':len(script['scenes']),'unique_licensed_assets':unique,
         'speech_coverage_min':min(s['verification']['coverage'] for s in speech['scenes']),
         'speech_precision_min':min(s['verification']['precision'] for s in speech['scenes']),
@@ -116,7 +117,7 @@ def package(script,evidence,speech,assets,job,output):
     (output/'sources-and-credits.txt').write_text(description)
     # YouTube's description length is bounded. Preserve the complete attribution file separately.
     if len(description)>4900:
-        description=script.get('summary','')+'\n\n'+'\n'.join(chapter_lines)+'\n\n'+'\n\n'.join(sources)+'\n\n'+'\n\n'.join(music_credits)+'\n\nFull visual attribution is embedded in the credits.html supplied with this video. Publish that file at a stable URL and add its link before uploading.'
+        description=script.get('summary','')+'\n\n'+'\n'.join(chapter_lines)+'\n\n'+'\n\n'.join(sources)+'\n\n'+'\n\n'.join(music_credits)+'\n\nComplete visual attribution appears in the video end credits. The delivery package also includes a full sources-and-credits file.'
     (output/'description.txt').write_text(description[:4900])
     from html import escape
     (output/'credits.html').write_text('<!doctype html><meta charset="utf-8"><title>Sources and credits</title><style>body{max-width:900px;margin:40px auto;font:17px/1.6 sans-serif;white-space:pre-wrap}</style>'+escape((output/'sources-and-credits.txt').read_text()))

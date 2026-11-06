@@ -229,7 +229,9 @@ def render(script,speech,assets,directory,output,profile='cinematic'):
     ffmpeg('-i',silent,'-i',mixed,'-vf',f"ass=filename='{escaped}'",'-af',af,'-map','0:v','-map','1:a',
            '-c:v','libx264','-preset','fast','-crf','19' if profile!='draft' else '24','-threads','2',
            '-c:a','aac','-b:a','192k','-ar','48000','-pix_fmt','yuv420p','-movflags','+faststart','-t',str(position),final)
+    from .credits import append
+    credits_seconds, credits_pages=append(final,assets,list(dict.fromkeys(music_used)),directory,width,height,fps)
     save_json(output/'timeline.json',timeline)
     save_json(output/'render.json',{'profile':profile,'width':width,'height':height,'fps':fps,'duration':duration(final),
-                                  'music':list(dict.fromkeys(music_used)), 'voice':speech['voice'], 'shots':sum(len(read_json(p.with_suffix('.json'))['shots']) for p in videos)})
+                                  'music':list(dict.fromkeys(music_used)), 'narration_seconds':position, 'credits_seconds':credits_seconds, 'credits_pages':credits_pages, 'voice':speech['voice'], 'shots':sum(len(read_json(p.with_suffix('.json'))['shots']) for p in videos)})
     return final
