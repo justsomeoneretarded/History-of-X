@@ -4,8 +4,8 @@ from PIL import Image, ImageDraw, ImageFont
 from .core import ROOT, save_json, read_json
 from .research import get
 
-FONT='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
-BOLD='/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
+FONT=str(ROOT/'assets'/'fonts'/'DejaVuSans.ttf')
+BOLD=str(ROOT/'assets'/'fonts'/'DejaVuSans-Bold.ttf')
 
 def font(size,bold=False):
     return ImageFont.truetype(BOLD if bold else FONT,max(10,int(size)))

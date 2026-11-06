@@ -26,8 +26,12 @@ Natural Earth modern country polygons are location references, not historical bo
 
 1080p cinematic output uses moving stills, gentle grading/vignette, chapter and date typography, short captions with highlighted keywords, a ducked music bed and two-pass audio loudness normalization. Draft output is 540p. Per-shot rendering bounds FFmpeg memory use. Final output is decoded and checked for stream presence, duration mismatch and unexpected black intervals.
 
-Full credits must remain available when sharing. No YouTube upload occurs. The generated description may require a link to the complete supplied attribution page when credits exceed the platform's description limit.
+Full credits must remain available when sharing. No YouTube upload occurs. Complete attribution is also rendered into visible video end credits. The supplied attribution page remains available for convenient reference.
 
 ## Honest validation record
 
 See VALIDATION.md for measured test results and comparisons. A real API or full video run is only marked successful after its actual result is inspected. Unit tests and fixture rendering do not establish Gemini account access or complete documentary quality.
+
+## Portable runner media setup
+
+Media setup uses installed FFmpeg/ffprobe when suitable, otherwise a SHA-256-verified portable FFmpeg 7.0.2 build with libass. It avoids unbounded package-mirror installation. DejaVu fonts and their license are bundled so the map, thumbnail and subtitle typography are consistent across runners.

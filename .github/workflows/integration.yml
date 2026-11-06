@@ -24,7 +24,7 @@ jobs:
       - name: Exercise real Gemini key, research, revision and visual discovery
         env:
           GEMINI_API: ${{ secrets.GEMINI_API }}
-          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.8-flash' }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.5-flash-lite' }}
           CONFIRMED_FREE_MODEL: ${{ vars.CONFIRMED_FREE_MODEL }}
           GEMINI_INPUT_TOKEN_BUDGET: '14000'
           GEMINI_REQUEST_BUDGET: '4'

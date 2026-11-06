@@ -14,7 +14,7 @@ class Gemini:
     def __init__(self, directory: Path, client=None, clock=time.time, sleeper=time.sleep):
         self.directory = directory
         self.directory.mkdir(parents=True, exist_ok=True)
-        self.model = os.getenv('GEMINI_MODEL', 'gemini-3.8-flash')
+        self.model = os.getenv('GEMINI_MODEL', 'gemini-3.5-flash-lite')
         # New free models can be explicitly selected after checking their project's rate page.
         if self.model not in FREE_CANDIDATES and os.getenv('CONFIRMED_FREE_MODEL') != self.model:
             raise PipelineError('Model is not in the free allowlist. Confirm its free access with CONFIRMED_FREE_MODEL.')

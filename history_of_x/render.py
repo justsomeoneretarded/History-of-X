@@ -246,7 +246,7 @@ def render(script,speech,assets,directory,output,profile='cinematic'):
     # Subtitle path uses generated safe job directory; escape filter metacharacters for local CLI paths.
     escaped=str(subtitle.resolve()).replace('\\','\\\\').replace(':','\\:').replace("'","\\'")
     final=output/'final.mp4'
-    ffmpeg('-i',silent,'-i',mixed,'-vf',f"ass=filename='{escaped}'",'-af',af,'-map','0:v','-map','1:a',
+    ffmpeg('-i',silent,'-i',mixed,'-vf',f"ass=filename='{escaped}':fontsdir='{ROOT / 'assets' / 'fonts'}'",'-af',af,'-map','0:v','-map','1:a',
            '-c:v','libx264','-preset','fast','-crf','19' if profile!='draft' else '24','-threads','2',
            '-c:a','aac','-b:a','192k','-ar','48000','-pix_fmt','yuv420p','-color_range','tv','-colorspace','bt709','-color_primaries','bt709','-color_trc','bt709','-movflags','+faststart','-t',str(position),final,timeout=max(900,position*8))
     from .credits import append

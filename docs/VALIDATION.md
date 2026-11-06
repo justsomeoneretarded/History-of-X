@@ -32,6 +32,18 @@ The actual Kit Laser reference was also used to synthesize and transcribe the sa
 
 The local suite includes script/schema and citation constraints, banned phrases, license acceptance/rejection, exact caption text preservation, shared quota ledgers, pacing, cached requests, daily-budget exhaustion, truncated responses, voice checkpoint merging, and actual FFmpeg motion rendering. The current count is recorded in CI and should be checked there as tests evolve.
 
+## Live free-model API comparison
+
+A real, tiny JSON request was sent through GitHub Actions using the repository's GEMINI_API secret. Request starts were separated by at least 65 seconds. Results:
+
+| Model | Actual result | Request time |
+|---|---|---:|
+| Gemini 3.8 Flash | HTTP 504 deadline exceeded | 43.12 s |
+| Gemini 3.5 Flash-Lite | Successful JSON output | 0.66 s |
+| Gemini 3.1 Flash-Lite | Successful JSON output | 7.19 s |
+
+These are single tiny probes, not a general model-quality benchmark. They establish access and motivated choosing 3.5 Flash-Lite as the default. The full research/script/revision integration is tested separately.
+
 ## Live GitHub validation
 
 CI has succeeded on multiple commits. Provider probes and a complete GitHub production pilot are separate tests: their actual run conclusions, rather than unit-test results, establish whether the live API and remote production path work. Earlier diagnostic runs that were replaced/cancelled are not counted as successes.
