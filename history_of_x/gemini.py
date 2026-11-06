@@ -30,7 +30,7 @@ class Gemini:
             secret = os.getenv('GEMINI_API') or os.getenv('GEMINI_API_KEY')
             if not secret:
                 raise PipelineError('Missing GEMINI_API. Add it as an Actions repository secret.')
-            client = genai.Client(api_key=secret, http_options={'timeout': 180000, 'retry_options': {'attempts': 1}})
+            client = genai.Client(api_key=secret, http_options={'timeout': int(os.getenv('GEMINI_TIMEOUT_MS', '90000')), 'retry_options': {'attempts': 1}})
         self.client = client
 
     def generate(self, instruction, payload, max_output=6000):
@@ -71,7 +71,12 @@ class Gemini:
                 raise
             except Exception as e:
                 code = getattr(e, 'code', None)
+                print(f'Gemini {self.model}: attempt {attempt+1} failed ({code or type(e).__name__}); bounded recovery.', flush=True)
                 if code == 429:
+                    message=str(getattr(e,'message',''))
+                    for secret_name in ('GEMINI_API','GEMINI_API_KEY'):
+                        if os.getenv(secret_name):message=message.replace(os.environ[secret_name],'[REDACTED]')
+                    print('Quota detail: '+message[:1200],flush=True)
                     # Daily quotas often identify their daily metric; never keep a runner asleep all day.
                     detail = str(e).lower()
                     if 'perday' in detail or 'per_day' in detail or 'daily' in detail or attempt == 3:
