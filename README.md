@@ -4,12 +4,16 @@ Generate a cinematic historical documentary from a title and a short brief. GitH
 
 **Default narrator: Warguy.** Kit Laser is also available. Both reference recordings and the CPU narration design come from the owner's Top10-Movies repository. Speech does not consume Gemini quota.
 
+Completed film: [download the Ethiopia upload package](https://github.com/justsomeoneretarded/History-of-X/actions/runs/42305472051/artifacts/13546308132) — 1080p, 8:38 including credits, Warguy narration. Includes the MP4, thumbnail, captions, description and sources. Its historical scope ends at the November 2022 Pretoria agreement. Actions artifacts are retained for 14 days.
+
 ## Run a video
 
 1. Add a repository Actions secret named `GEMINI_API` containing your Gemini API key.
 2. Open **Actions → Produce documentary → Run workflow**.
 3. Enter the title and small brief. Select Warguy or Kit Laser, a target runtime, and a render profile.
 4. Download the `documentary-final` artifact after the render job succeeds. It contains `final.mp4`, captions, thumbnail, description, source/asset credits and a quality report.
+
+The default `auto` preset generates a new script from your title and brief. The `ethiopia` and `pilot` presets use fixed, curated scripts; their length does not change with the minutes input. Ethiopia includes reviewed, bundled visual assets to avoid depending on live Wikimedia downloads. **Render saved production** can rebuild the visuals from accepted narration without more Gemini or TTS calls.
 
 For repeatable comparisons, use **Actions → Compare production renders** with a completed production run ID. It reuses verified narration and renders draft, standard and cinematic versions with measured quality reports.
 
