@@ -95,7 +95,8 @@ def prepare(script, directory, min_assets=3):
             used.update(x['source_url'] for x in manifest[sid]['assets'])
             continue
         records = []
-        preferred=[a for name in selection.get('files',[]) for a in file_asset(name)]
+        preferred=selection.get('records') or [a for name in selection.get('files',[]) for a in file_asset(name)]
+        preferred=[a for a in preferred if allowed_license(a.get('license',''))]
         queries = [query, re.sub(r'\b(historical|painting|photograph|artwork|cinematic)\b','',query,flags=re.I).strip()]
         if len(query.split())>=3:
             queries.append(' '.join(query.split()[:-1]))

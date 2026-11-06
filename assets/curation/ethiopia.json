@@ -5,11 +5,61 @@
       "exclude": [
         "obelisk",
         "stela"
-      ]
+      ],
+      "records": [
+        {
+          "title": "File:AXUM. Ezanas. Circa 330-360.jpg",
+          "url": "https://upload.wikimedia.org/wikipedia/commons/0/02/AXUM._Ezanas._Circa_330-360.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+          "source_url": "https://commons.wikimedia.org/wiki/File:AXUM._Ezanas._Circa_330-360.jpg",
+          "license": "CC BY-SA 3.0",
+          "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+          "artist": "CNG Coins",
+          "description": "AXUM. Ezanas. Circa 330-360",
+          "width": 1656,
+          "height": 852
+        },
+        {
+          "title": "File:Axumite coinage.jpg",
+          "url": "https://upload.wikimedia.org/wikipedia/commons/b/b7/Axumite_coinage.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+          "source_url": "https://commons.wikimedia.org/wiki/File:Axumite_coinage.jpg",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+          "artist": "www.britishmuseum.org",
+          "description": "Aksumite coin decepting Aphilas",
+          "width": 1500,
+          "height": 708
+        }
+      ],
+      "reviewed_at": "2026-11-06"
     },
     "5": {
       "query": "Bete Giyorgis Lalibela",
-      "exclude": []
+      "exclude": [],
+      "records": [
+        {
+          "title": "File:Bete Giyorgis Lalibela Ethiopia.jpg",
+          "url": "https://upload.wikimedia.org/wikipedia/commons/1/17/Bete_Giyorgis_Lalibela_Ethiopia.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+          "source_url": "https://commons.wikimedia.org/wiki/File:Bete_Giyorgis_Lalibela_Ethiopia.jpg",
+          "license": "CC BY-SA 3.0",
+          "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+          "artist": "Jialiang Gao www.peace-on-earth.org",
+          "description": "L'Eglise Beta Giorgis (Saint George), une des 11 églises monolithiques de Lalibela classées au patrimoine mondial de l'UNESCO http://whc.unesco.org/en/list/18",
+          "width": 900,
+          "height": 585
+        },
+        {
+          "title": "File:Bete Giyorgis 01.jpg",
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a4/Bete_Giyorgis_01.jpg/1920px-Bete_Giyorgis_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+          "source_url": "https://commons.wikimedia.org/wiki/File:Bete_Giyorgis_01.jpg",
+          "license": "CC BY-SA 3.0",
+          "license_url": "https://creativecommons.org/licenses/by-sa/3.0",
+          "artist": "Bernard Gagnon",
+          "description": "Bete Giyorgis (Church of St. George), Lalibela, Ethiopia",
+          "width": 3297,
+          "height": 2326
+        }
+      ],
+      "reviewed_at": "2026-11-06"
     },
     "6": {
       "query": "Simien Mountains panorama",
@@ -18,14 +68,53 @@
         "gelada",
         "ibex",
         "monkey"
-      ]
+      ],
+      "records": [
+        {
+          "title": "File:Panorama over Simien Mountains - Kosoye - Ethiopia (8692844614).jpg",
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ad/Panorama_over_Simien_Mountains_-_Kosoye_-_Ethiopia_%288692844614%29.jpg/1920px-Panorama_over_Simien_Mountains_-_Kosoye_-_Ethiopia_%288692844614%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+          "source_url": "https://commons.wikimedia.org/wiki/File:Panorama_over_Simien_Mountains_-_Kosoye_-_Ethiopia_(8692844614).jpg",
+          "license": "CC BY-SA 2.0",
+          "license_url": "https://creativecommons.org/licenses/by-sa/2.0",
+          "artist": "Adam Jones from Kelowna, BC, Canada",
+          "description": "Panorama over Simien Mountains - Kosoye - Ethiopia",
+          "width": 4912,
+          "height": 1080
+        }
+      ],
+      "reviewed_at": "2026-11-06"
     },
     "7": {
       "files": [
         "File:Menelik II of Ethiopia.jpg",
         "File:Menelik - Adoua-2 (cropped).jpg"
       ],
-      "exclude": []
+      "exclude": [],
+      "records": [
+        {
+          "title": "File:Menelik II of Ethiopia.jpg",
+          "url": "https://upload.wikimedia.org/wikipedia/commons/1/16/Menelik_II_of_Ethiopia.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+          "source_url": "https://commons.wikimedia.org/wiki/File:Menelik_II_of_Ethiopia.jpg",
+          "license": "Public domain",
+          "license_url": "",
+          "artist": "Unknown authorUnknown author",
+          "description": "Menelik II of Ethiopia",
+          "width": 1236,
+          "height": 1236
+        },
+        {
+          "title": "File:Menelik - Adoua-2 (cropped).jpg",
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2d/Menelik_-_Adoua-2_%28cropped%29.jpg/1920px-Menelik_-_Adoua-2_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+          "source_url": "https://commons.wikimedia.org/wiki/File:Menelik_-_Adoua-2_(cropped).jpg",
+          "license": "Public domain",
+          "license_url": "",
+          "artist": "Menelik_-_Adoua.jpg: Le Petit Journal - F. Méaulle, scan by Vob08\nderivative work: Zheim (talk)",
+          "description": "Page from old french newspaper \"Le Petit Journal\" depicting Menelik II at the battle of Adwa",
+          "width": 3103,
+          "height": 3524
+        }
+      ],
+      "reviewed_at": "2026-11-06"
     },
     "8": {
       "graphic": "wuchale"
@@ -36,13 +125,52 @@
         "Naples",
         "1936",
         "hospital"
-      ]
+      ],
+      "records": [
+        {
+          "title": "File:Baratieri 1.jpg",
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cc/Baratieri_1.jpg/1920px-Baratieri_1.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+          "source_url": "https://commons.wikimedia.org/wiki/File:Baratieri_1.jpg",
+          "license": "Public domain",
+          "license_url": "",
+          "artist": "Unknown authorUnknown author",
+          "description": "Le colonel Baratieri (assis, casquette blanche, vareuse grise, pantalon blanc) et son état-major, Saati, Erythrée, 1888.",
+          "width": 1936,
+          "height": 1297
+        },
+        {
+          "title": "File:Il generale Baratieri entra nella Camera dei deputati.jpg",
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0d/Il_generale_Baratieri_entra_nella_Camera_dei_deputati.jpg/1920px-Il_generale_Baratieri_entra_nella_Camera_dei_deputati.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+          "source_url": "https://commons.wikimedia.org/wiki/File:Il_generale_Baratieri_entra_nella_Camera_dei_deputati.jpg",
+          "license": "Public domain",
+          "license_url": "",
+          "artist": "Unknown authorUnknown author",
+          "description": "Il generale Baratieri entra nella Camera dei deputati (26 luglio). – Il presidente on. Villa gli va incontro (xilografia).",
+          "width": 2623,
+          "height": 2787
+        }
+      ],
+      "reviewed_at": "2026-11-06"
     },
     "15": {
       "files": [
         "File:Haile Selassie in full dress (3x4 cropped).jpg"
       ],
-      "exclude": []
+      "exclude": [],
+      "records": [
+        {
+          "title": "File:Haile Selassie in full dress (3x4 cropped).jpg",
+          "url": "https://upload.wikimedia.org/wikipedia/commons/b/b9/Haile_Selassie_in_full_dress_%283x4_cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+          "source_url": "https://commons.wikimedia.org/wiki/File:Haile_Selassie_in_full_dress_(3x4_cropped).jpg",
+          "license": "Public domain",
+          "license_url": "",
+          "artist": "unknown; according to [1] and [2] an official portrait of which b/w copies were distributed by the Ethiopian government",
+          "description": "His Imperial Majesty Emperor Haile Selassie I",
+          "width": 600,
+          "height": 800
+        }
+      ],
+      "reviewed_at": "2026-11-06"
     },
     "18": {
       "graphic": "transition"
@@ -57,7 +185,21 @@
         "biome",
         "map",
         "satellite"
-      ]
+      ],
+      "records": [
+        {
+          "title": "File:Panorama over Simien Mountains - Kosoye - Ethiopia (8692844614).jpg",
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ad/Panorama_over_Simien_Mountains_-_Kosoye_-_Ethiopia_%288692844614%29.jpg/1920px-Panorama_over_Simien_Mountains_-_Kosoye_-_Ethiopia_%288692844614%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+          "source_url": "https://commons.wikimedia.org/wiki/File:Panorama_over_Simien_Mountains_-_Kosoye_-_Ethiopia_(8692844614).jpg",
+          "license": "CC BY-SA 2.0",
+          "license_url": "https://creativecommons.org/licenses/by-sa/2.0",
+          "artist": "Adam Jones from Kelowna, BC, Canada",
+          "description": "Panorama over Simien Mountains - Kosoye - Ethiopia",
+          "width": 4912,
+          "height": 1080
+        }
+      ],
+      "reviewed_at": "2026-11-06"
     },
     "_script_key": "8cf51af30166d4019c46db7f"
   }

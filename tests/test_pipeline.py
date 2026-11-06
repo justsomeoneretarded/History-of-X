@@ -212,3 +212,19 @@ def test_curated_visuals_are_bound_to_the_exact_script():
     pilot=read_json(ROOT/'episodes'/'pilot.json')['script']
     assert curation_for(full)
     assert not curation_for(pilot)
+
+def test_wikimedia_retry_after_and_pacing(monkeypatch):
+    import history_of_x.research as research
+    now=[1000.0];delays=[]
+    def sleep(seconds):delays.append(seconds);now[0]+=seconds
+    class Response:
+        def __init__(self,status,headers={}):self.status_code=status;self.headers=headers
+        def raise_for_status(self):
+            if self.status_code>=400:raise RuntimeError('HTTP error')
+        def close(self):pass
+    responses=iter([Response(429,{'Retry-After':'7'}),Response(200)])
+    monkeypatch.setattr(research.SESSION,'get',lambda *args,**kw:next(responses))
+    monkeypatch.setattr(research.time,'monotonic',lambda:now[0]);monkeypatch.setattr(research.time,'sleep',sleep)
+    research._LAST_REQUEST.clear()
+    assert research.get('https://commons.wikimedia.org/w/api.php').status_code==200
+    assert delays==[7.0]
