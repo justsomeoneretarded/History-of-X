@@ -101,7 +101,7 @@ def prepare(script, directory, min_assets=3):
             continue
         if sid in manifest:
             manifest[sid]['assets']=[a for a in manifest[sid]['assets'] if relevant(a,query,selection.get('exclude',[]))]
-        if sid in manifest and manifest[sid].get('query') == query and manifest[sid].get('assets') and all((directory / x['path']).exists() for x in manifest[sid]['assets']):
+        if sid in manifest and manifest[sid].get('query') == query and manifest[sid].get('assets') and (not selection or manifest[sid].get('selection_key')==key(selection)) and all((directory / x['path']).exists() for x in manifest[sid]['assets']):
             used.update(x['source_url'] for x in manifest[sid]['assets'])
             continue
         records = []
@@ -129,7 +129,7 @@ def prepare(script, directory, min_assets=3):
                 print(f'Asset discovery unavailable for scene {sid} ({type(e).__name__})',flush=True)
             if records:
                 break
-        manifest[sid] = {'query':query,'assets':records}
+        manifest[sid] = {'query':query,'selection_key':key(selection),'context_label':selection.get('context_label',''),'assets':records}
         save_json(index, manifest)
     count = len({x['source_url'] for entry in manifest.values() for x in entry['assets']})
     save_json(cache/'quality.json', {'unique_assets':count,'minimum':min_assets,'missing_scenes':[k for k,v in manifest.items() if not v['assets']]})

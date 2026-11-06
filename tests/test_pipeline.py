@@ -272,3 +272,9 @@ def test_ethiopia_preset_prepares_without_network(monkeypatch,tmp_path):
     script=read_json(ROOT/'episodes'/'ethiopia.json')['script']
     manifest=assets.prepare(script,tmp_path,min_assets=12)
     assert len(manifest)==20 and all(entry['assets'] for entry in manifest.values())
+    # A legacy partial selection must refresh when the reviewed selection changes.
+    manifest['4']['assets']=manifest['4']['assets'][:1]
+    manifest['4'].pop('selection_key',None)
+    save_json(tmp_path/'assets'/'index.json',manifest)
+    refreshed=assets.prepare(script,tmp_path,min_assets=12)
+    assert len(refreshed['4']['assets'])==2

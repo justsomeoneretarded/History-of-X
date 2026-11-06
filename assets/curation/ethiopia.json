@@ -71,7 +71,8 @@
           "modifications": "Resized to maximum 2400 pixels and converted to JPEG. Final video crops, grades and animates the image."
         }
       ],
-      "reviewed_at": "2026-11-06"
+      "reviewed_at": "2026-11-06",
+      "context_label": "Present-day geographic reference"
     },
     "6": {
       "query": "Simien Mountains panorama",
@@ -97,7 +98,8 @@
           "modifications": "Resized to maximum 2400 pixels and converted to JPEG. Final video crops, grades and animates the image."
         }
       ],
-      "reviewed_at": "2026-11-06"
+      "reviewed_at": "2026-11-06",
+      "context_label": "Present-day geographic reference"
     },
     "7": {
       "files": [
@@ -232,7 +234,8 @@
           "modifications": "Resized to maximum 2400 pixels and converted to JPEG. Final video crops, grades and animates the image."
         }
       ],
-      "reviewed_at": "2026-11-06"
+      "reviewed_at": "2026-11-06",
+      "context_label": "Present-day geographic reference"
     },
     "_script_key": "8cf51af30166d4019c46db7f",
     "1": {
@@ -299,7 +302,8 @@
           "modifications": "Resized to maximum 2400 pixels and converted to JPEG. Final video crops, grades and animates the image."
         }
       ],
-      "reviewed_at": "2026-11-06"
+      "reviewed_at": "2026-11-06",
+      "context_label": "Present-day geographic reference"
     },
     "3": {
       "records": [
@@ -332,7 +336,8 @@
           "modifications": "Resized to maximum 2400 pixels and converted to JPEG. Final video crops, grades and animates the image."
         }
       ],
-      "reviewed_at": "2026-11-06"
+      "reviewed_at": "2026-11-06",
+      "context_label": "Present-day geographic reference"
     },
     "9": {
       "records": [
@@ -549,7 +554,8 @@
           "modifications": "Resized to maximum 2400 pixels and converted to JPEG. Final video crops, grades and animates the image."
         }
       ],
-      "reviewed_at": "2026-11-06"
+      "reviewed_at": "2026-11-06",
+      "context_label": "Present-day geographic reference"
     },
     "19": {
       "records": [
@@ -582,7 +588,8 @@
           "modifications": "Resized to maximum 2400 pixels and converted to JPEG. Final video crops, grades and animates the image."
         }
       ],
-      "reviewed_at": "2026-11-06"
+      "reviewed_at": "2026-11-06",
+      "context_label": "Present-day geographic reference"
     }
   }
 }

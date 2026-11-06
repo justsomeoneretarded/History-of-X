@@ -39,6 +39,7 @@ ScaledBorderAndShadow: yes
 Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding
 Style: Caption,DejaVu Sans,{round(64*scale)},&H00FFFFFF,&H00FFFFFF,&H00201612,&H80000000,-1,0,0,0,100,100,0,0,1,{max(1,round(3*scale))},1,2,{round(100*scale)},{round(100*scale)},{round(100*scale)},1
 Style: Chapter,DejaVu Sans,{round(27*scale)},&H0075D8F2,&H00FFFFFF,&H00201612,&H80000000,-1,0,0,0,100,100,3,0,1,1,1,7,{round(80*scale)},{round(80*scale)},{round(65*scale)},1
+Style: Context,DejaVu Sans,{round(23*scale)},&H00D7DDDD,&H00FFFFFF,&H00201612,&H80000000,0,0,0,0,100,100,1,0,1,1,1,7,{round(80*scale)},{round(80*scale)},{round(112*scale)},1
 Style: Date,DejaVu Sans,{round(34*scale)},&H00FFFFFF,&H00FFFFFF,&H00201612,&H80000000,0,0,0,0,100,100,1,0,1,1,1,9,{round(80*scale)},{round(80*scale)},{round(65*scale)},1
 [Events]
 Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
@@ -55,6 +56,8 @@ Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
         end=position+spoken['duration']
         label=f'{scene["chapter"].upper()}  /  HISTORY OF X'
         events.append(f'Dialogue: 1,{ass_time(position)},{ass_time(end)},Chapter,,0,0,0,,{public_text(label)}')
+        if scene.get('_visual_context'):
+            events.append(f'Dialogue: 1,{ass_time(position)},{ass_time(end)},Context,,0,0,0,,{public_text(scene["_visual_context"])}')
         if scene.get('date_label'):
             events.append(f'Dialogue: 1,{ass_time(position)},{ass_time(min(end,position+8))},Date,,0,0,0,,{public_text(scene["date_label"])}')
         position=end
@@ -188,6 +191,7 @@ def render(script,speech,assets,directory,output,profile='cinematic'):
         if scene['scene_id']!=spoken['scene_id']:
             raise PipelineError('Speech/scene ordering mismatch')
         entry=assets.get(str(scene['scene_id']),{'assets':[]})
+        scene['_visual_context']=entry.get('context_label','')
         records=[{**x,'absolute_path':str(directory.parent/x['path'])} for x in entry['assets']]
         print(f'Rendering scene {scene["scene_id"]}/{len(script["scenes"])}',flush=True)
         videos.append(render_scene(scene,spoken,records,map_path,directory,profile))
