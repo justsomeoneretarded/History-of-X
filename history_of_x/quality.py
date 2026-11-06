@@ -71,9 +71,9 @@ def inspect(video,script,speech,assets,output):
     bad=[s['scene_id'] for s in speech['scenes'] if not s['verification']['accepted']]
     if bad:failures.append('Unverified speech scenes')
     # Full decode catches truncated media and decoder errors. A contact sheet supplies visual evidence.
-    ffmpeg('-v','error','-i',video,'-f','null','-')
+    ffmpeg('-v','error','-i',video,'-f','null','-',timeout=max(900,actual*3))
     import subprocess
-    detection=subprocess.run(['ffmpeg','-hide_banner','-nostdin','-i',str(video),'-vf','blackdetect=d=0.6:pix_th=0.10','-an','-f','null','-'],capture_output=True,text=True,timeout=600)
+    detection=subprocess.run(['ffmpeg','-hide_banner','-nostdin','-i',str(video),'-vf','blackdetect=d=0.6:pix_th=0.10','-an','-f','null','-'],capture_output=True,text=True,timeout=max(600,actual*3))
     black=[float(x) for x in re.findall(r'black_duration:([\d.]+)',detection.stderr)]
     if any(x>1 for x in black):failures.append('Unexpected black interval over one second')
     unique=len({x['source_url'] for entry in assets.values() for x in entry['assets']})
@@ -102,6 +102,7 @@ def package(script,evidence,speech,assets,job,output):
     for x in timeline:
         if x['chapter'] not in seen:
             seen.add(x['chapter']);t=int(x['start']);chapter_lines.append(f'{t//60:02}:{t%60:02} {x["chapter"]}')
+    t=int(sum(s['duration'] for s in speech['scenes']));chapter_lines.append(f'{t//60:02}:{t%60:02} Sources and credits')
     credits=[]
     for entry in assets.values():
         for a in entry['assets']:

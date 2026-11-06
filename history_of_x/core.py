@@ -37,8 +37,8 @@ def run(args, timeout=900, **kwargs):
         raise PipelineError(f'{args[0]} failed: {result.stderr[-2500:]}')
     return result.stdout
 
-def ffmpeg(*args):
-    return run(['ffmpeg', '-hide_banner', '-loglevel', 'error', '-nostdin', '-y', *args])
+def ffmpeg(*args, timeout=900):
+    return run(['ffmpeg', '-hide_banner', '-loglevel', 'error', '-nostdin', '-y', *args], timeout=timeout)
 
 def probe(path):
     return json.loads(run(['ffprobe', '-v', 'error', '-show_format', '-show_streams', '-of', 'json', path]))

@@ -68,11 +68,13 @@ def prepare(script, directory, min_assets=3):
     for scene in script['scenes']:
         sid = str(scene['scene_id'])
         query = scene['asset_search_term']
-        if sid in manifest and manifest[sid].get('query') == query and all((directory / x['path']).exists() for x in manifest[sid]['assets']):
+        if sid in manifest and manifest[sid].get('query') == query and manifest[sid].get('assets') and all((directory / x['path']).exists() for x in manifest[sid]['assets']):
             used.update(x['source_url'] for x in manifest[sid]['assets'])
             continue
         records = []
         queries = [query, re.sub(r'\b(historical|painting|photograph|artwork|cinematic)\b','',query,flags=re.I).strip()]
+        if len(query.split())>=3:
+            queries.append(' '.join(query.split()[:-1]))
         for search in dict.fromkeys(queries):
             try:
                 candidates = discover(search)

@@ -22,3 +22,15 @@ def test_real_motion_render_and_resume(tmp_path):
     modified=output.stat().st_mtime_ns
     assert render_scene(scene,spoken,records,source,tmp_path,'draft')==output
     assert output.stat().st_mtime_ns==modified
+
+@pytest.mark.skipif(not shutil.which('ffmpeg'),reason='ffmpeg required')
+def test_real_geographic_highlight_animation(tmp_path):
+    source=tmp_path/'map.jpg'
+    image=Image.new('RGB',(1200,675),(30,45,50))
+    from PIL import ImageDraw
+    ImageDraw.Draw(image).polygon([(300,200),(700,160),(850,450),(400,500)],fill=(170,110,40))
+    image.save(source)
+    scene={'scene_id':1,'visual_type':'map'}
+    result=render_scene(scene,{'duration':1.5},[],source,tmp_path,'draft')
+    assert abs(duration(result)-1.5)<.1
+    assert probe(result)['streams'][0]['pix_fmt']=='yuv420p'

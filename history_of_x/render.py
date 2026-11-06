@@ -248,7 +248,7 @@ def render(script,speech,assets,directory,output,profile='cinematic'):
     final=output/'final.mp4'
     ffmpeg('-i',silent,'-i',mixed,'-vf',f"ass=filename='{escaped}'",'-af',af,'-map','0:v','-map','1:a',
            '-c:v','libx264','-preset','fast','-crf','19' if profile!='draft' else '24','-threads','2',
-           '-c:a','aac','-b:a','192k','-ar','48000','-pix_fmt','yuv420p','-color_range','tv','-colorspace','bt709','-color_primaries','bt709','-color_trc','bt709','-movflags','+faststart','-t',str(position),final)
+           '-c:a','aac','-b:a','192k','-ar','48000','-pix_fmt','yuv420p','-color_range','tv','-colorspace','bt709','-color_primaries','bt709','-color_trc','bt709','-movflags','+faststart','-t',str(position),final,timeout=max(900,position*8))
     from .credits import append
     credits_seconds, credits_pages=append(final,assets,list(dict.fromkeys(music_used)),directory,width,height,fps)
     save_json(output/'timeline.json',timeline)

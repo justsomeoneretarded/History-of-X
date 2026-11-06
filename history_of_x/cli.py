@@ -60,7 +60,7 @@ def main(argv=None):
                 evidence=research(args.title,args.brief,args.work)
                 script=generate(args.title,args.brief,float(args.minutes),evidence,args.work)
             from .assets import prepare
-            prepare(script,args.work,min_assets=1 if float(args.minutes)<1 else 3)
+            prepare(script,args.work,min_assets=1 if float(args.minutes)<1 else min(60,max(3,round(float(args.minutes)*1.2))))
             print('Plan and licensed assets ready.',flush=True)
         script=read_json(args.work/'script.json');evidence=read_json(args.work/'research.json')
         if args.stage in ('all','voice'):
