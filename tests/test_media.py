@@ -18,6 +18,7 @@ def test_real_motion_render_and_resume(tmp_path):
     output=render_scene(scene,spoken,records,source,tmp_path,'draft')
     assert abs(duration(output)-1.25)<.1
     assert probe(output)['streams'][0]['width']==960
+    assert probe(output)['streams'][0]['pix_fmt']=='yuv420p'
     modified=output.stat().st_mtime_ns
     assert render_scene(scene,spoken,records,source,tmp_path,'draft')==output
     assert output.stat().st_mtime_ns==modified

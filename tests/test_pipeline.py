@@ -90,3 +90,32 @@ def test_truncated_response_not_cached(monkeypatch,tmp_path):
     g=Gemini(tmp_path,client=SimpleNamespace(models=models),clock=lambda:1000,sleeper=lambda _:None)
     with pytest.raises(Exception,match='truncated'):g.generate('A',{})
     assert len(list(tmp_path.glob('*.json')))==1
+
+def test_shared_ledger_applies_to_separate_episode_directories(monkeypatch,tmp_path):
+    monkeypatch.setenv('GEMINI_MODEL','gemini-2.5-flash')
+    monkeypatch.setenv('GEMINI_LEDGER_PATH',str(tmp_path/'shared'/'usage.json'))
+    monkeypatch.setenv('GEMINI_REQUEST_BUDGET','1')
+    client=SimpleNamespace(models=FakeModels())
+    Gemini(tmp_path/'one',client=client,clock=lambda:1000,sleeper=lambda _:None).generate('one',{})
+    other=Gemini(tmp_path/'two',client=client,clock=lambda:1000,sleeper=lambda _:None)
+    with pytest.raises(QuotaDeferred):other.generate('two',{})
+
+def test_portrait_layout_keeps_full_subject(tmp_path):
+    from PIL import Image,ImageDraw
+    from history_of_x.render import prepare_image
+    source=tmp_path/'portrait.jpg';output=tmp_path/'prepared.jpg'
+    im=Image.new('RGB',(600,1000),(220,220,220));d=ImageDraw.Draw(im)
+    d.rectangle((100,100,500,900),fill=(200,20,20));im.save(source)
+    prepare_image(source,output,960,540,'standard')
+    with Image.open(output) as result:
+        # A centered full portrait has pale margins at its top and bottom; a fill crop loses these.
+        assert result.getpixel((result.width//2,round(result.height*.09)))[0]>100
+        assert result.size==(1133,637)
+
+def test_visible_credits_include_required_attribution():
+    from history_of_x.credits import credit_lines
+    a={'1':{'assets':[{'source_url':'https://commons.wikimedia.org/wiki/File:Example.jpg','title':'File:Example.jpg',
+        'artist':'Example Creator','license':'CC BY 4.0','license_url':'https://creativecommons.org/licenses/by/4.0/'}]}}
+    text=' '.join(credit_lines(a,['titan']))
+    assert 'Example Creator' in text and 'Scott Buckley' in text
+    assert 'creativecommons.org/licenses/by/4.0/' in text

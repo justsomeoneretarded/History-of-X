@@ -41,7 +41,7 @@ def append(main_video,assets,music,directory,width,height,fps):
         picture=directory/f'credit-{i}.jpg';video=directory/f'credit-{i}.mp4'
         im.save(picture,quality=94)
         ffmpeg('-loop','1','-i',picture,'-f','lavfi','-i','anullsrc=r=48000:cl=stereo','-t','7','-r',str(fps),
-               '-c:v','libx264','-preset','veryfast','-crf','20','-threads','2','-pix_fmt','yuv420p',
+               '-vf','scale=in_range=pc:out_range=tv:out_color_matrix=bt709,format=yuv420p','-color_range','tv','-colorspace','bt709','-color_primaries','bt709','-color_trc','bt709','-c:v','libx264','-preset','veryfast','-crf','20','-threads','2','-pix_fmt','yuv420p',
                '-c:a','aac','-b:a','192k','-ar','48000','-shortest',video)
         pieces.append(video)
     joined=directory/'with-credits.mp4'

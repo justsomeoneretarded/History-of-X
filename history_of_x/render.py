@@ -62,7 +62,13 @@ Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
 
 def prepare_image(source, output, width,height,style='cinematic'):
     with Image.open(source) as im:
-        im=ImageOps.fit(im.convert('RGB'),(round(width*1.18),round(height*1.18)),method=Image.Resampling.LANCZOS)
+        source=im.convert('RGB')
+        canvas=(round(width*1.18),round(height*1.18))
+        im=ImageOps.fit(source,canvas,method=Image.Resampling.LANCZOS,centering=(.5,.40))
+        if source.width/source.height<1.15:
+            im=im.filter(ImageFilter.GaussianBlur(max(12,width/70)))
+            portrait=ImageOps.contain(source,(round(canvas[0]*.82),round(canvas[1]*.88)),method=Image.Resampling.LANCZOS)
+            im.paste(portrait,((canvas[0]-portrait.width)//2,(canvas[1]-portrait.height)//2))
     if style=='cinematic':
         im=ImageEnhance.Color(im).enhance(.78)
         im=ImageEnhance.Contrast(im).enhance(1.08)
@@ -107,7 +113,7 @@ def concat_video(paths, output):
 
 def render_scene(scene, spoken, records, map_path, directory,profile):
     width,height,fps=PROFILES[profile]
-    signature=key('render-v5',scene,spoken['duration'],records,str(map_path),profile)
+    signature=key('render-v6',scene,spoken['duration'],records,str(map_path),profile)
     output=directory/(signature+'.mp4')
     if output.exists() and abs(duration(output)-spoken['duration'])<.15:
         return output
@@ -126,8 +132,9 @@ def render_scene(scene, spoken, records, map_path, directory,profile):
                 vf+=',fade=t=in:st=0:d=0.12'
             if i==len(shots)-1:
                 vf+=f',fade=t=out:st={max(0,frames/fps-.12):.4f}:d=0.12'
+            vf+=',scale=in_range=pc:out_range=tv:out_color_matrix=bt709,format=yuv420p'
             ffmpeg('-i',picture,'-vf',vf,'-frames:v',str(frames),'-an','-c:v','libx264',
-                   '-preset','veryfast','-crf','20' if profile!='draft' else '24','-pix_fmt','yuv420p','-threads','2',part)
+                   '-preset','veryfast','-crf','20' if profile!='draft' else '24','-pix_fmt','yuv420p','-color_range','tv','-colorspace','bt709','-color_primaries','bt709','-color_trc','bt709','-threads','2',part)
         pieces.append(part)
         picture.unlink(missing_ok=True)
     concat_video(pieces,output)
@@ -228,7 +235,7 @@ def render(script,speech,assets,directory,output,profile='cinematic'):
     final=output/'final.mp4'
     ffmpeg('-i',silent,'-i',mixed,'-vf',f"ass=filename='{escaped}'",'-af',af,'-map','0:v','-map','1:a',
            '-c:v','libx264','-preset','fast','-crf','19' if profile!='draft' else '24','-threads','2',
-           '-c:a','aac','-b:a','192k','-ar','48000','-pix_fmt','yuv420p','-movflags','+faststart','-t',str(position),final)
+           '-c:a','aac','-b:a','192k','-ar','48000','-pix_fmt','yuv420p','-color_range','tv','-colorspace','bt709','-color_primaries','bt709','-color_trc','bt709','-movflags','+faststart','-t',str(position),final)
     from .credits import append
     credits_seconds, credits_pages=append(final,assets,list(dict.fromkeys(music_used)),directory,width,height,fps)
     save_json(output/'timeline.json',timeline)

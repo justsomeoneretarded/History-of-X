@@ -45,6 +45,10 @@ def draw_map(output, cache, width=1920,height=1080,focus='Ethiopia'):
         if allpoints and focus.casefold()=='ethiopia':
             x=sum(p[0] for p in allpoints)/len(allpoints);y=sum(p[1] for p in allpoints)/len(allpoints)
             if 70<x<width-100 and 100<y<height-170:
+                if name=='Ethiopia':
+                    x,y=project(38,6)
+                elif name=='Eritrea':
+                    x,y=project(38.5,16)
                 labels.append((x,y,name))
     for x,y,name in labels:
         draw.text((x,y),name.upper(),font=font(width/90,True),anchor='mm',fill=(232,222,196))
@@ -55,7 +59,7 @@ def draw_map(output, cache, width=1920,height=1080,focus='Ethiopia'):
                 continue # Aksum and Adwa overlap at this reference scale.
             draw.ellipse((x-4,y-4,x+4,y+4),fill=(246,210,125))
             draw.text((x+12,y-10),name,font=font(width/95,True),fill='white')
-    draw.text((width*.045,height*.06),'GEOGRAPHIC REFERENCE',font=font(width/70,True),fill=(211,175,100))
-    draw.text((width*.045,height*.89),'Present-day boundaries • Natural Earth • not historical borders',font=font(width/95),fill=(210,214,213))
+    draw.text((width*.045,height*.16),'GEOGRAPHIC REFERENCE',font=font(width/70,True),fill=(211,175,100))
+    draw.text((width*.045,height*.80),'Present-day boundaries • Natural Earth • not historical borders',font=font(width/95),fill=(210,214,213))
     im.save(output,quality=95)
     return output
