@@ -1,0 +1,37 @@
+name: Live free-tier script integration
+on:
+  push:
+    paths: ['.github/workflows/integration.yml', 'scripts/live-script-check.json']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: documentary-production
+  cancel-in-progress: false
+jobs:
+  live-plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: python -m pip install -e .
+      - name: Exercise real Gemini key, research, revision and visual discovery
+        env:
+          GEMINI_API: ${{ secrets.GEMINI_API }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-2.5-flash' }}
+          CONFIRMED_FREE_MODEL: ${{ vars.CONFIRMED_FREE_MODEL }}
+          GEMINI_INPUT_TOKEN_BUDGET: '14000'
+          GEMINI_REQUEST_BUDGET: '4'
+        run: python -m history_of_x.cli --title 'Battle of Adwa' --brief 'Explain why Ethiopia defeated the Italian invasion in 1896. Focus on Menelik, Taytu, logistics and Italian decisions. Avoid disputed casualty totals.' --minutes 2 --stage plan
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-script-check
+          path: |
+            work/job/
+            output/
+          retention-days: 7
