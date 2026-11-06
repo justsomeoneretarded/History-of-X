@@ -113,7 +113,7 @@ def concat_video(paths, output):
 
 def render_scene(scene, spoken, records, map_path, directory,profile):
     width,height,fps=PROFILES[profile]
-    signature=key('render-v6',scene,spoken['duration'],records,str(map_path),profile)
+    signature=key('render-v7',scene,spoken['duration'],records,str(map_path),profile)
     output=directory/(signature+'.mp4')
     if output.exists() and abs(duration(output)-spoken['duration'])<.15:
         return output
@@ -133,8 +133,21 @@ def render_scene(scene, spoken, records, map_path, directory,profile):
             if i==len(shots)-1:
                 vf+=f',fade=t=out:st={max(0,frames/fps-.12):.4f}:d=0.12'
             vf+=',scale=in_range=pc:out_range=tv:out_color_matrix=bt709,format=yuv420p'
-            ffmpeg('-i',picture,'-vf',vf,'-frames:v',str(frames),'-an','-c:v','libx264',
-                   '-preset','veryfast','-crf','20' if profile!='draft' else '24','-pix_fmt','yuv420p','-color_range','tv','-colorspace','bt709','-color_primaries','bt709','-color_trc','bt709','-threads','2',part)
+            encoding=['-frames:v',str(frames),'-an','-c:v','libx264','-preset','veryfast',
+                '-crf','20' if profile!='draft' else '24','-pix_fmt','yuv420p','-color_range','tv',
+                '-colorspace','bt709','-color_primaries','bt709','-color_trc','bt709','-threads','2',part]
+            if Path(shot['source'])==map_path and i==0:
+                # Fade the geographic highlight into a neutral map. Both states use identical
+                # geometry; this animation never implies invented historical border changes.
+                neutral=picture.with_name(picture.stem+'-neutral.jpg')
+                with Image.open(picture) as im:
+                    ImageEnhance.Color(im).enhance(.08).save(neutral,quality=94)
+                moving=vf.replace(f':d={frames}:',':d=1:')
+                graph=f'[0:v]fps={fps},settb=AVTB[a];[1:v]fps={fps},settb=AVTB[b];[a][b]xfade=transition=fade:duration=1:offset=0,{moving}[out]'
+                ffmpeg('-loop','1','-i',neutral,'-loop','1','-i',picture,'-filter_complex',graph,'-map','[out]',*encoding)
+                neutral.unlink(missing_ok=True)
+            else:
+                ffmpeg('-i',picture,'-vf',vf,*encoding)
         pieces.append(part)
         picture.unlink(missing_ok=True)
     concat_video(pieces,output)

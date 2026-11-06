@@ -1,7 +1,5 @@
 name: Live free-tier script integration
 on:
-  push:
-    paths: ['.github/workflows/integration.yml', 'scripts/live-script-check.json']
   workflow_dispatch:
 permissions:
   contents: read
