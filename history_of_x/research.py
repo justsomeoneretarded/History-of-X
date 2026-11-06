@@ -29,7 +29,7 @@ def research(title, brief, directory):
     if not hits:
         raise PipelineError('No research sources found. Supply a more specific title or an evidence file.')
     names = [h['title'] for h in hits]
-    if re.search(r'ethiopi', title+' '+brief, re.I):
+    if re.search(r'^(?:the\s+)?(?:entire\s+)?(?:history\s+of\s+)?ethiopia(?:\s*[:—-]|$)', title, re.I):
         names = ['History of Ethiopia', 'Kingdom of Aksum', 'Battle of Adwa', 'Italian occupation of Ethiopia', 'Derg', 'Ethiopian Civil War']
     sources = []
     for index, name in enumerate(names):
