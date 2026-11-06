@@ -228,3 +228,14 @@ def test_wikimedia_retry_after_and_pacing(monkeypatch):
     research._LAST_REQUEST.clear()
     assert research.get('https://commons.wikimedia.org/w/api.php').status_code==200
     assert delays==[7.0]
+
+def test_bundled_ethiopia_visuals_have_verified_provenance():
+    import hashlib
+    from history_of_x.core import ROOT,read_json
+    from history_of_x.assets import allowed_license
+    records=read_json(ROOT/'assets'/'presets'/'ethiopia'/'manifest.json')
+    assert len(records)>=20
+    for record in records:
+        assert allowed_license(record['license'])
+        assert record['source_url'].startswith('https://commons.wikimedia.org/')
+        assert hashlib.sha256((ROOT/record['bundled_path']).read_bytes()).hexdigest()==record['sha256']

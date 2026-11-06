@@ -3,6 +3,8 @@ from __future__ import annotations
 import html
 import io
 import re
+import shutil
+import hashlib
 import time
 from pathlib import Path
 from PIL import Image, ImageOps
@@ -48,6 +50,14 @@ def file_asset(title):
 
 def download_asset(record, cache):
     path = cache / (key(record['url'])+'.jpg')
+    if record.get('bundled_path'):
+        source=(ROOT/record['bundled_path']).resolve()
+        try:source.relative_to(ROOT/'assets'/'presets')
+        except ValueError:raise PipelineError('Bundled asset path is outside the preset directory') from None
+        if not source.is_file() or hashlib.sha256(source.read_bytes()).hexdigest()!=record.get('sha256'):
+            raise PipelineError('Bundled visual checksum failed; source metadata was preserved.')
+        shutil.copyfile(source,path)
+        return path
     if path.exists():
         with Image.open(path) as im:
             im.verify()
