@@ -139,3 +139,22 @@ def test_chapter_merge_rejects_voice_mismatch(tmp_path):
     directory=tmp_path/'chapter-1';directory.mkdir()
     save_json(directory/'speech.json',{'voice':'kit-laser','scenes':[]})
     with pytest.raises(Exception,match='Narrator mismatch'):merge(sample(),'warguy',tmp_path)
+
+def test_api_diagnostic_pacing_and_redaction(tmp_path):
+    import importlib.util
+    spec=importlib.util.spec_from_file_location('free_probes',Path(__file__).resolve().parents[1]/'scripts'/'check_free_models.py')
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+    class Failure(Exception):
+        code=429
+        message='quota exceeded sensitive-key'
+    class Models:
+        def __init__(self):self.calls=0
+        def generate_content(self,**kwargs):
+            self.calls+=1
+            if self.calls==1:raise Failure()
+            return SimpleNamespace(text='{"status":"ok"}',usage_metadata=None)
+    sleeps=[]
+    result=module.probe(SimpleNamespace(models=Models()),'sensitive-key',tmp_path/'check.json',sleeper=sleeps.append)
+    assert sleeps==[65,65] and len(result)==3
+    assert not result[0]['ok'] and result[1]['ok']
+    assert 'sensitive-key' not in json.dumps(result)
