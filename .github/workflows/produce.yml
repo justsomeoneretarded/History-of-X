@@ -83,10 +83,22 @@ jobs:
           path: work/animated
           run-id: ${{ inputs.resume_run }}
           github-token: ${{ github.token }}
-      - name: Gemini research, script, narration, visual direction, animation and packaging
+      - name: Gemini research and original script
         env:
           GEMINI_API: ${{ secrets.GEMINI_API }}
-        run: python -m history_of_x.animated
+        run: python -m history_of_x.animated --stage plan
+      - name: Gemini narration and local speech verification
+        env:
+          GEMINI_API: ${{ secrets.GEMINI_API }}
+        run: python -m history_of_x.animated --stage voice
+      - name: Gemini speech-timed storyboard
+        env:
+          GEMINI_API: ${{ secrets.GEMINI_API }}
+        run: python -m history_of_x.animated --stage direct
+      - name: Animate, mix, package and review
+        env:
+          GEMINI_API: ${{ secrets.GEMINI_API }}
+        run: python -m history_of_x.animated --stage render
       - name: Save quota ledger
         if: always()
         uses: actions/cache/save@v4

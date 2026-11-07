@@ -24,10 +24,13 @@ def produce(api,script,voice,directory):
   if checkpoint.exists() and audio.exists():record=read_json(checkpoint)
   else:
    print('Gemini narration: '+chapter,flush=True);started=time.monotonic()
-   meta=api.speech(text,voice,audio)
-   cues,heard=transcript(audio,recognizer);check=speech_check(text,cues)
-   save_json(directory/(signature+'-asr.json'),{'cues':cues,'words':heard,'verification':check})
-   if not check['accepted']:raise PipelineError(f'Gemini {chapter} speech failed verification: {check["reason"]}. Checkpoint retained for inspection.')
+   for attempt in range(2):
+    meta=api.speech(text,voice,audio,attempt=attempt)
+    cues,heard=transcript(audio,recognizer);check=speech_check(text,cues)
+    save_json(directory/(signature+f'-asr-{attempt}.json'),{'cues':cues,'words':heard,'verification':check})
+    if check['accepted']:break
+    print(f'Gemini speech completeness retry: {chapter}: {check["reason"]}',flush=True)
+   else:raise PipelineError(f'Gemini {chapter} speech failed verification after two takes. Checkpoint retained for inspection.')
    aligned=align_written(text,heard)
    record={'words':aligned,'duration':duration(audio),'verification':check,'generation_seconds':round(time.monotonic()-started,2),**meta}
    save_json(checkpoint,record)

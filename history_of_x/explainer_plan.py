@@ -18,7 +18,7 @@ def write(api,title,brief,minutes,evidence,directory):
  target=round(minutes*150);count=max(5,min(35,round(target/65)));sources=evidence['sources'];ids=[s['id'] for s in sources]
  identity=key('animated-script-v1',title,brief,minutes,evidence);output=directory/'script.json'
  if output.exists() and read_json(output).get('fingerprint')==identity:return read_json(output)
- compact=[{**s,'extract':s['extract'][:4200]} for s in sources]
+ compact=[{**s,'extract':s['extract'][:3500]} for s in sources]
  schema=scene_schema(ids,target,count)
  prompt=DIRECTION+f'\nTarget {target} spoken words (within 15%), {count} scenes total. All schema fields are required. visual_type is an internal compatibility field, use artwork. date_label must reflect the narrated era. Return only the schema object.'
  draft=api.text(prompt,{'title':title,'brief':brief,'evidence':compact},schema,max_output=min(26000,max(6000,target*10)))
