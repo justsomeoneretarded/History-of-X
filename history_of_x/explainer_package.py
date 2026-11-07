@@ -49,13 +49,19 @@ def package(api,script,evidence,speech,shots,directory,output):
  (output/'script.txt').write_text('\n\n'.join(s['chapter'].upper()+'\n'+s['narration'] for s in script['scenes']))
  chapters=[];position=0;seen=set()
  for scene,spoken in zip(script['scenes'],speech['scenes']):
+  position+=sum(g['seconds'] for g in read_json(output/'render.json').get('interludes',[]) if g.get('before_scene_id')==scene['scene_id'])
   if scene['chapter'] not in seen:
    seen.add(scene['chapter']);t=int(position);chapters.append(f'{t//60:02}:{t%60:02} {scene["chapter"]}')
   position+=spoken['duration']
  sources='\n\n'.join(s['title']+'\n'+s['url'] for s in evidence['sources'])
- description=plan['description']+'\n\n'+'\n'.join(chapters)+'\n\nSOURCES\n'+sources+'\n\nNarration: Gemini '+speech['model']+' ('+speech['voice']+'). Original simplified illustrations and locally synthesized instrumental music; illustrations are explanatory, not archival depictions. Source excerpts adapted from Wikipedia are CC BY-SA 4.0; article histories identify contributors. https://creativecommons.org/licenses/by-sa/4.0/\n'
+ description=plan['description']+'\n\n'+'\n'.join(chapters)+'\n\nSOURCES\n'+sources+'\n\nNarration: Gemini '+speech['model']+' ('+speech['voice']+'). Frame-by-frame animated reconstructions, historical portraits and public-domain archival film; archival dates are indicated by the year counter. Original instrumental music. Source excerpts adapted from Wikipedia are CC BY-SA 4.0; article histories identify contributors. https://creativecommons.org/licenses/by-sa/4.0/\n'
  if len(description)>4900:raise PipelineError('Upload description exceeds bounded length')
+ from .archival_motion import credits
+ media=credits(shots);save_json(output/'media-credits.json',media)
+ if media:
+  description+='\nHISTORICAL MEDIA\n'+'\n'.join(m['title']+' — '+(m.get('creator') or m.get('artist') or 'historical archive')+' — '+m['license']+'\n'+m['source_url'] for m in media)
+ if len(description)>4900:raise PipelineError('Historical media credits exceed description budget')
  (output/'description.txt').write_text(description)
- (output/'sources-and-credits.txt').write_text(description+'\n\nSource revision and license details are recorded in sources.json. No third-party photographs or music are used in this animated version.\n')
+ (output/'sources-and-credits.txt').write_text(description+'\n\nSource revision and license details are recorded in sources.json. Historical photograph and footage credits are included above; sources are recorded in media-credits.json. The instrumental music and character animation are original.\n')
  from html import escape
  (output/'credits.html').write_text('<!doctype html><meta charset="utf-8"><title>Sources</title><pre>'+escape((output/'sources-and-credits.txt').read_text())+'</pre>')

@@ -20,7 +20,7 @@ jobs:
       PYTHONUNBUFFERED: '1'
       GEMINI_MEDIA_LEDGER: work/media-ledger/usage.json
       GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.5-flash-lite' }}
-      GEMINI_TEXT_REQUEST_BUDGET: ${{ vars.GEMINI_TEXT_REQUEST_BUDGET || '28' }}
+      GEMINI_TEXT_REQUEST_BUDGET: ${{ vars.GEMINI_TEXT_REQUEST_BUDGET || '48' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -58,6 +58,8 @@ jobs:
             work/animated/research.json
             work/animated/script.json
             work/animated/storyboard.json
+            work/animated/motion-storyboard.json
+            work/animated/motion-plans
             work/animated/packaging.json
             work/animated/boards
             work/animated/speech

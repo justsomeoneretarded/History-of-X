@@ -26,7 +26,7 @@ class MediaAPI:
   for attempt in range(3):
    state=read_json(self.ledger) if self.ledger.exists() else {'calls':[],'last_start':0}
    calls=[c for c in state['calls'] if self.clock()-c['time']<86400]
-   budget=int(os.getenv('GEMINI_TEXT_REQUEST_BUDGET' if kind=='text' else 'GEMINI_TTS_REQUEST_BUDGET','24' if kind=='text' else '16'))
+   budget=int(os.getenv('GEMINI_TEXT_REQUEST_BUDGET' if kind=='text' else 'GEMINI_TTS_REQUEST_BUDGET','48' if kind=='text' else '16'))
    if sum(c['kind']==kind for c in calls)>=budget:raise QuotaDeferred(f'Local {kind} daily budget exhausted; resume checkpoint later')
    delay=max(0,state['last_start']+self.interval-self.clock())
    if delay:
@@ -102,6 +102,15 @@ class MediaAPI:
   candidates=result.get('candidates',[])
   if not candidates or candidates[0].get('finishReason')!='STOP':raise PipelineError('Gemini visual review incomplete')
   return json.loads(''.join(p.get('text','') for p in candidates[0]['content']['parts'] if not p.get('thought')))
+
+ def review_video(self,path,payload):
+  model=os.getenv('GEMINI_MODEL','gemini-3.5-flash-lite')
+  schema={'type':'object','required':['genuine_character_action','slideshow_like','continuous_motion','observations','issues'],'properties':{'genuine_character_action':{'type':'boolean'},'slideshow_like':{'type':'boolean'},'continuous_motion':{'type':'boolean'},'observations':{'type':'array','items':{'type':'string'}},'issues':{'type':'array','items':{'type':'string'}}}}
+  prompt='Watch this moving video preview. Judge motion, NOT historical facts. Is it a slideshow of static cards/images, or genuine animation with articulated limbs and physical actions? Look for walking leg cycles, gesturing arms, carried props, moving boats/water, cannon recoil/projectiles and real archival moving footage. Mere image pans, icon entrances and idle bouncing do not count as substantive character action. Describe observed actions with approximate timestamps; identify concrete defects. Do not praise a slideshow. '
+  parts=[{'text':prompt+json.dumps(payload)},{'inlineData':{'mimeType':'video/mp4','data':base64.b64encode(Path(path).read_bytes()).decode()}}]
+  body={'contents':[{'role':'user','parts':parts}],'generationConfig':{'temperature':.15,'maxOutputTokens':3500,'responseMimeType':'application/json','responseJsonSchema':schema,'thinkingConfig':{'thinkingLevel':'LOW'}}}
+  result=self.request(model,'models/'+model+':generateContent',body,'text')
+  return json.loads(''.join(p.get('text','') for p in result['candidates'][0]['content']['parts'] if not p.get('thought')))
 
 
 def portable_schema(value):

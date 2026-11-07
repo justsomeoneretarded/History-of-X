@@ -78,10 +78,11 @@ def shot_video(shot,directory,profile,elapsed,total):
  for p in [bg,*layers]:p.unlink(missing_ok=True)
  return target
 
-def captions(output,script,speech,width,height):
+def captions(output,script,speech,width,height,interludes=None):
  # Caption-only ASS; no legacy chapter, channel, source or reference overlays.
  cues=[];offset=0
  for scene,spoken in zip(script['scenes'],speech['scenes']):
+  offset+=sum(g['seconds'] for g in (interludes or []) if g.get('before_scene_id')==scene['scene_id'])
   cues.extend({**c,'start':offset+c['start'],'end':offset+c['end'],'highlights':scene['subtitle_highlights']} for c in spoken['captions']);offset+=spoken['duration']
  clean={**script,'scenes':[],'_speech':[]};write_ass(output/'captions.ass',cues,clean,width,height,offset)
  track=output/'captions.ass';lines=track.read_text().replace('DejaVu Sans','Space Grotesk').splitlines()
@@ -96,7 +97,7 @@ def captions(output,script,speech,width,height):
 
 def soundtrack(speech,shots,directory):
  import numpy as np,soundfile as sf
- total=sum(s['duration'] for s in speech['scenes']);rate=48000
+ total=max(s['global_end'] for s in shots);rate=48000
  # Original restrained plucked ostinato, composed algorithmically. No third-party attribution chrome.
  length=round((total+.2)*rate);music=np.zeros(length,dtype=np.float32);sfx=np.zeros(length,dtype=np.float32)
  def note(buffer,at,hz,seconds,volume):
@@ -122,18 +123,31 @@ def soundtrack(speech,shots,directory):
  sf.write(directory/'music.wav',music,rate);sf.write(directory/'sfx.wav',sfx,rate)
  return total
 
-def render(script,speech,shots,directory,output,profile='cinematic'):
+def render(script,speech,shots,directory,output,profile='cinematic',interludes=None):
  directory.mkdir(parents=True,exist_ok=True);output.mkdir(parents=True,exist_ok=True)
- width,height,fps=PROFILES[profile];total=sum(s['duration'] for s in speech['scenes']);videos=[]
+ width,height,fps=PROFILES[profile];total=max(s['global_end'] for s in shots);videos=[]
+ interludes=interludes or []
+ if any(not s.get('motion') and not s.get('archive') for s in shots):raise PipelineError('Missing frame-by-frame motion plan; static card fallback is disabled')
  # Frame rounding is cumulative, preventing one rounding error per shot from drifting the edit.
  frame_cursor=0
  for i,shot in enumerate(shots):
   endframe=round(shot['global_end']*fps);framed={**shot,'global_start':frame_cursor/fps,'global_end':endframe/fps}
   print(f'Animating beat {i+1}/{len(shots)}: {shot["text"][:65]}',flush=True)
-  videos.append(shot_video(framed,directory,profile,shot['global_start'],total));frame_cursor=endframe
+  from .motion_canvas import render_shot
+  from .archival_motion import render_clip
+  videos.append(render_clip(framed,directory,profile) if shot.get('archive') else render_shot(framed,directory,profile,shot['global_start'],total));frame_cursor=endframe
  silent=directory/'picture.mp4';concat_video(videos,silent)
- captions(output,script,speech,width,height)
- listing=directory/'voice.concat.txt';listing.write_text('\n'.join("file '"+str((directory.parent/'speech'/s['audio']).resolve()).replace("'","'\\''")+"'" for s in speech['scenes']))
+ captions(output,script,speech,width,height,interludes)
+ parts=[]
+ for spoken in speech['scenes']:
+  for i,gap in enumerate(interludes):
+   if gap.get('before_scene_id')==spoken['scene_id']:
+    silence=directory/f'interlude-{i}.wav';ffmpeg('-f','lavfi','-i','anullsrc=r=48000:cl=mono','-t',str(gap['seconds']),silence);parts.append(silence)
+  parts.append(directory.parent/'speech'/spoken['audio'])
+ for i,gap in enumerate(interludes):
+  if gap.get('before_scene_id') is None:
+   silence=directory/f'interlude-tail-{i}.wav';ffmpeg('-f','lavfi','-i','anullsrc=r=48000:cl=mono','-t',str(gap['seconds']),silence);parts.append(silence)
+ listing=directory/'voice.concat.txt';listing.write_text('\n'.join("file '"+str(p.resolve()).replace("'","'\\''")+"'" for p in parts))
  narration=directory/'narration.wav';ffmpeg('-f','concat','-safe','0','-i',listing,'-ar','48000','-ac','1',narration)
  soundtrack(speech,shots,directory)
  mixed=directory/'mixed.wav';chain='[0:a]asplit=2[v][side];[1:a][side]sidechaincompress=threshold=0.015:ratio=6:attack=15:release=250[m];[v][m][2:a]amix=inputs=3:duration=first:normalize=0,alimiter=limit=0.9[out]'
@@ -147,6 +161,6 @@ def render(script,speech,shots,directory,output,profile='cinematic'):
  escaped=str((output/'captions.ass').resolve()).replace('\\','\\\\').replace(':','\\:').replace("'","\\'")
  final=output/'final.mp4'
  ffmpeg('-i',silent,'-i',mixed,'-vf',f"ass=filename='{escaped}':fontsdir='{ROOT/'assets'/'fonts'}'",'-af',af,'-map','0:v','-map','1:a','-t',str(total),'-c:v','libx264','-preset','fast','-crf','19' if profile!='draft' else '24','-threads','2','-c:a','aac','-b:a','192k','-ar','48000','-pix_fmt','yuv420p','-movflags','+faststart',final,timeout=max(900,total*6))
- timeline=[{'scene_id':s['beat_id'],'start':s['global_start'],'end':s['global_end'],'year':s['year_label'],'spoken_text':s['text'],'headline':s['headline'],'nodes':s['nodes'],'rationale':s['rationale']} for s in shots]
- save_json(output/'timeline.json',timeline);save_json(output/'render.json',{'style':'original-flat-animation','profile':profile,'width':width,'height':height,'fps':fps,'duration':duration(final),'narration_seconds':total,'credits_seconds':0,'voice':speech['voice'],'tts_provider':'Gemini','tts_model':speech['model'],'shots':len(shots),'music':['original local instrumental and stings']})
+ timeline=[{'scene_id':s['beat_id'],'narration_scene_id':s['scene_id'],'start':s['global_start'],'end':s['global_end'],'year':s['year_label'],'spoken_text':s['text'],'headline':s['headline'],'nodes':s['nodes'],'rationale':s['rationale']} for s in shots]
+ save_json(output/'timeline.json',timeline);save_json(output/'render.json',{'style':'frame-by-frame-character-animation-with-archive','profile':profile,'width':width,'height':height,'fps':fps,'duration':duration(final),'narration_seconds':sum(s['duration'] for s in speech['scenes']),'interlude_seconds':sum(g['seconds'] for g in interludes),'interludes':interludes,'credits_seconds':0,'voice':speech['voice'],'tts_provider':'Gemini','tts_model':speech['model'],'shots':len(shots),'music':['original local instrumental and stings']})
  return final

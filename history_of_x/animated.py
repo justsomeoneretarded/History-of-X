@@ -44,19 +44,22 @@ def main(argv=None):
    from .explainer_plan import direct
    direct(api,script,read_json(args.work/'speech'/'speech.json'),args.work)
   if args.stage in ('all','render'):
-   speech=read_json(args.work/'speech'/'speech.json');shots=read_json(args.work/'storyboard.json')
+   speech=read_json(args.work/'speech'/'speech.json');base=read_json(args.work/'storyboard.json')
+   from .motion_director import direct as choreograph
+   from .archival_motion import bridge
+   shots,interludes=bridge(script,base if all(s.get('motion') for s in base) else choreograph(api,script,base,args.work))
    from .animated_render import render
-   video=render(script,speech,shots,args.work/'render',args.output,args.profile)
+   video=render(script,speech,shots,args.work/'render',args.output,args.profile,interludes=interludes)
    from .quality import inspect
    report=inspect(video,script,speech,{},args.output)
    lengths=[s['global_end']-s['global_start'] for s in shots]
-   report.update(style='original-flat-animation',tts_provider='Gemini',tts_model=speech['model'],visual_beats=len(shots),visual_duration_min=min(lengths),visual_duration_max=max(lengths),on_screen_branding=False,review_needed=['Review historical interpretation and pronunciation; automated ASR is not perfect.'])
+   report.update(style='frame-by-frame-character-animation-with-archive',tts_provider='Gemini',tts_model=speech['model'],visual_beats=len(shots),visual_duration_min=min(lengths),visual_duration_max=max(lengths),on_screen_branding=False,review_needed=['Motion and technical checks are recorded; no added manual factual review.'])
    if any(not 3<=v<=6 for v in lengths):raise PipelineError('A visual beat falls outside the 3–6 second rhythm')
    save_json(args.output/'quality.json',report)
    from .explainer_package import package
    package(api,script,evidence,speech,shots,args.work,args.output)
    review_schema={'type':'object','required':['issues','strengths','ready_for_human_review'],'properties':{'issues':{'type':'array','items':{'type':'string'}},'strengths':{'type':'array','items':{'type':'string'}},'ready_for_human_review':{'type':'boolean'}}}
-   review=api.vision('Critique this contact sheet from an original animated history explainer. Check clutter, text readability, factual-looking anachronisms, visual diversity and relevance to its storyboard. Do not claim to have watched motion or heard audio. Identify specific issues honestly. Only year counter, essential narrative labels and captions should be visible.',{'title':script['title'],'sample_storyboard':[{'spoken':s['text'],'visual':s['headline'],'nodes':s['nodes']} for s in shots[::max(1,len(shots)//12)]]},[args.output/'contact-sheet.jpg'],review_schema)
+   review=api.vision('Critique this contact sheet from an original animated history explainer. Check clutter, text readability, visual diversity and relevance to its storyboard. Do not claim to have watched motion or heard audio. Identify specific issues honestly. Only year counter, essential narrative labels and captions should be visible.',{'title':script['title'],'sample_storyboard':[{'spoken':s['text'],'visual':s['headline'],'nodes':s['nodes']} for s in shots[::max(1,len(shots)//12)]]},[args.output/'contact-sheet.jpg'],review_schema)
    save_json(args.output/'gemini-visual-review.json',review)
    save_json(args.output/'production.json',{'request':request,'quality_passed':report['passed'],'request_id':identity,'gemini_review':review})
    print('FINAL_VIDEO '+str(video),flush=True)

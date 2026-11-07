@@ -1,0 +1,32 @@
+[
+  {
+    "id": "ethiopia-1935-1",
+    "path": "assets/footage/ethiopia-1935-1.mp4",
+    "title": "Haile Selassie and Ethiopian cavalry, 1935",
+    "date": "1935",
+    "source_url": "https://archive.org/details/1960-09-22_25_years_ago",
+    "creator": "Universal Newsreel",
+    "license": "Public domain",
+    "license_url": "http://creativecommons.org/licenses/publicdomain/",
+    "source_metadata_url": "https://archive.org/metadata/1960-09-22_25_years_ago",
+    "source_segment_start": 98.0,
+    "duration": 4.5,
+    "sha256": "e936a21ae4ca13df8d05e60875b33e5b3388245c72324a76ffc7cbd5e2d0dbb8",
+    "context": "Wordless, explicitly dated 1935 bridge. Never used as footage of the 1896 Battle of Adwa."
+  },
+  {
+    "id": "ethiopia-1935-2",
+    "path": "assets/footage/ethiopia-1935-2.mp4",
+    "title": "Ethiopian troops carrying spears, 1935",
+    "date": "1935",
+    "source_url": "https://archive.org/details/1960-09-22_25_years_ago",
+    "creator": "Universal Newsreel",
+    "license": "Public domain",
+    "license_url": "http://creativecommons.org/licenses/publicdomain/",
+    "source_metadata_url": "https://archive.org/metadata/1960-09-22_25_years_ago",
+    "source_segment_start": 124.0,
+    "duration": 4.5,
+    "sha256": "d80eeef08076c52fd9f272b3e8efea8adb217ecb635dbd18eb8abd9f21f0197a",
+    "context": "Wordless, explicitly dated 1935 bridge. Never used as footage of the 1896 Battle of Adwa."
+  }
+]

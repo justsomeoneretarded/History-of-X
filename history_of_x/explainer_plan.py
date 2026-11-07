@@ -48,41 +48,11 @@ def board_schema(ids):
  return {'type':'object','required':['shots'],'properties':{'shots':{'type':'array','minItems':len(ids),'maxItems':len(ids),'items':shot}}}
 
 def direct(api,script,speech,directory):
- allshots=[];position=0
- for i,(scene,spoken) in enumerate(zip(script['scenes'],speech['scenes'])):
-  beats=timing_beats(spoken['words'],spoken['duration'],scene['scene_id'])
-  ids=[b['beat_id'] for b in beats]
-  # Generate an entire chapter batch, below, rather than a request for every shot.
-  allshots.extend([{**b,'scene_id':scene['scene_id'],'narration_context':scene['narration'],'date_context':scene.get('date_label',''),'global_start':position+b['start'],'global_end':position+b['end']} for b in beats])
+ """One Gemini choreography call per chapter; no redundant icon-card planning."""
+ from .motion_director import direct as choreograph
+ shots=[];position=0
+ for scene,spoken in zip(script['scenes'],speech['scenes']):
+  for b in timing_beats(spoken['words'],spoken['duration'],scene['scene_id']):
+   shots.append({**b,'scene_id':scene['scene_id'],'narration_context':scene['narration'],'date_context':scene.get('date_label',''),'year_label':scene.get('date_label',''),'global_start':position+b['start'],'global_end':position+b['end'],'headline':'','nodes':[],'sting':False,'music_mood':'neutral','rationale':'Physical action matched to narration'})
   position+=spoken['duration']
- result=[]
- for chapter in CHAPTERS:
-  beats=[b for b in allshots if script['scenes'][b['scene_id']-1]['chapter']==chapter]
-  ids=[b['beat_id'] for b in beats]
-  identity=key('board-v2',beats);cache=directory/'boards'/(identity+'.json')
-  if cache.exists():part=read_json(cache)
-  else:
-   prompt='''You are the motion director for an original, slick, colourful, flat animated history explainer.
-Design EACH supplied beat around the actual words being spoken, considering surrounding narration. No generic scenery or repeated maps.
-Use simple, instantly readable compositions: 1–4 illustrated objects/people, relationship, brief meaningful labels.
-Show the historical subject: ruler for ruler, treaty for treaty, ship and coins for trade, competing documents for translation.
-The headline should be 0–4 essential words. Node labels are optional, 0–2 words. NEVER put channel names, source/reference labels, technical notes, watermarks or decorative filler in visible text.
-A running year display is required: year_label reflects the current narrated period, with c. for approximate dates and ranges when needed. year is an approximate numeric anchor for timeline ordering; never imply an invented exact date.
-Differentiate adjoining compositions using node count, palette, layout and action. Set music_mood to fit the actual spoken passage: somber for suffering, tense for conflict, playful only for harmless irony. Keep primary actors recognizable by consistent role and label.
-The palette and available icon vocabulary are in the schema. Do not ask for photographs. All symbols are original simplified illustrations, not literal historical portraits.
-Stings must be rare (maximum one per chapter), at a genuine nontragic deadpan beat. Never use a sting for suffering or war deaths.
-Return one shot per supplied beat_id, preserving order and all IDs. rationale explains relevance for internal QA ONLY.'''
-   part=api.text(prompt,{'title':script['title'],'chapter':chapter,'beats':beats},board_schema(ids),max_output=18000)
-   save_json(cache,part)
-  shots=part.get('shots',[])
-  if [s['beat_id'] for s in shots]!=ids:raise PipelineError('Storyboard omitted or reordered beats')
-  stings=0
-  for b,s in zip(beats,shots):
-   if not 1<=len(s['nodes'])<=4:raise PipelineError('Storyboard needs 1–4 subjects per beat')
-   if any(n['icon'] not in ICONS for n in s['nodes']):raise PipelineError('Unknown illustration')
-   visible=' '.join([s['headline'],s['year_label'],*[n['label'] for n in s['nodes']]])
-   if re.search(r'\b(history of x|source|reference|subscribe|chapter)\b',visible,re.I):raise PipelineError('Unnecessary on-screen chrome rejected')
-   if s['sting']:stings+=1
-   s['sting']=s['sting'] and stings<=1 and not re.search(r'\b(famine|massacre|killed|deaths|atrocit|terror|repression|starv)',b['narration_context'],re.I)
-   result.append({**b,**s})
- save_json(directory/'storyboard.json',result);return result
+ result=choreograph(api,script,shots,directory);save_json(directory/'storyboard.json',result);return result
