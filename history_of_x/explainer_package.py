@@ -2,7 +2,7 @@
 from __future__ import annotations
 from PIL import Image,ImageDraw
 from .core import PipelineError,save_json,read_json
-from .maps import font
+from .typography import font
 from .vector_art import ICONS,PALETTE,icon,outlined_art
 from .animated_render import fit_text
 

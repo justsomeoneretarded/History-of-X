@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from pathlib import Path
 from PIL import Image,ImageDraw,ImageFilter
-from .maps import font
+from .typography import font
 
 PALETTE={'cream':'#FFF5E4','navy':'#182B44','coral':'#F56554','teal':'#18A999','gold':'#F4BD4A','violet':'#8A70D6','blue':'#5EABDB','pink':'#ED9CB4'}
 ICONS=('ruler','queen','person','crowd','soldier','crown','obelisk','church','castle','city','mountain','ship','coins','coffee','wheat','document','broken_document','handshake','scales','shield','rifle','cannon','tank','plane','flag','chain','broken_chain','ballot','factory','railway','cross','books','globe','border','arrow','question','lightbulb','radio')

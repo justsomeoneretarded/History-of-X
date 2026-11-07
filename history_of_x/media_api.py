@@ -26,7 +26,7 @@ class MediaAPI:
   for attempt in range(3):
    state=read_json(self.ledger) if self.ledger.exists() else {'calls':[],'last_start':0}
    calls=[c for c in state['calls'] if self.clock()-c['time']<86400]
-   budget=int(os.getenv('GEMINI_TEXT_REQUEST_BUDGET' if kind=='text' else 'GEMINI_TTS_REQUEST_BUDGET','24'))
+   budget=int(os.getenv('GEMINI_TEXT_REQUEST_BUDGET' if kind=='text' else 'GEMINI_TTS_REQUEST_BUDGET','24' if kind=='text' else '16'))
    if sum(c['kind']==kind for c in calls)>=budget:raise QuotaDeferred(f'Local {kind} daily budget exhausted; resume checkpoint later')
    delay=max(0,state['last_start']+self.interval-self.clock())
    if delay:

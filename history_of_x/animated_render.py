@@ -4,7 +4,7 @@ import json,math,re
 from pathlib import Path
 from PIL import Image,ImageDraw
 from .core import ROOT,PipelineError,ffmpeg,key,read_json,save_json,duration
-from .maps import font
+from .typography import font
 from .render import PROFILES,concat_video,write_ass,srt_time
 from .vector_art import icon,background,PALETTE,outlined_art
 
@@ -84,6 +84,7 @@ def captions(output,script,speech,width,height):
  for scene,spoken in zip(script['scenes'],speech['scenes']):
   cues.extend({**c,'start':offset+c['start'],'end':offset+c['end'],'highlights':scene['subtitle_highlights']} for c in spoken['captions']);offset+=spoken['duration']
  clean={**script,'scenes':[],'_speech':[]};write_ass(output/'captions.ass',cues,clean,width,height,offset)
+ track=output/'captions.ass';track.write_text(track.read_text().replace('DejaVu Sans','Space Grotesk'))
  (output/'captions.srt').write_text('\n\n'.join(f'{i+1}\n{srt_time(c["start"])} --> {srt_time(c["end"])}\n{c["text"]}' for i,c in enumerate(cues)))
  return cues
 
