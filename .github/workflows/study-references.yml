@@ -2,8 +2,8 @@ name: Study privately supplied video references
 on:
   workflow_dispatch:
     inputs:
-      release_tag:
-        description: Temporary release containing encrypted reference bundle
+      transfer_ref:
+        description: Temporary branch containing only encrypted reference bundle
         required: true
         type: string
 permissions:
@@ -26,20 +26,35 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m pip install -e .
-      - name: Download encrypted references
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ inputs.release_tag }}
+      - name: Generate an ephemeral private transfer key on this runner
         run: |
-          mkdir -p work/private-references
-          gh release download "$RELEASE_TAG" --pattern references.tar.enc --dir work/private-references
-      - name: Decrypt privately on the runner
+          mkdir -p work/private-references work/public-transfer
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:3072 -out work/private-references/private.pem 2>/dev/null
+          chmod 600 work/private-references/private.pem
+          openssl pkey -in work/private-references/private.pem -pubout -out work/public-transfer/public.pem
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reference-transfer-public-key
+          path: work/public-transfer/public.pem
+          retention-days: 1
+      - name: Wait for encrypted reference transfer
         env:
-          REFERENCE_BUNDLE_KEY: ${{ secrets.REFERENCE_BUNDLE_KEY }}
+          TRANSFER_REF: ${{ inputs.transfer_ref }}
         run: |
-          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in work/private-references/references.tar.enc -out work/private-references/references.tar -pass env:REFERENCE_BUNDLE_KEY
+          [[ "$TRANSFER_REF" =~ ^[a-zA-Z0-9][a-zA-Z0-9._/-]+$ ]] || exit 1
+          for attempt in $(seq 1 60); do
+            if git fetch origin "refs/heads/$TRANSFER_REF"; then
+              git show FETCH_HEAD:transfer/references.tar.enc > work/private-references/references.tar.enc
+              git show FETCH_HEAD:transfer/bundle-key.enc > work/private-references/bundle-key.enc
+              break
+            fi
+            sleep 15
+          done
+          test -s work/private-references/bundle-key.enc
+          openssl pkeyutl -decrypt -inkey work/private-references/private.pem -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 -in work/private-references/bundle-key.enc -out work/private-references/bundle.key
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in work/private-references/references.tar.enc -out work/private-references/references.tar -pass file:work/private-references/bundle.key
           tar -xf work/private-references/references.tar -C work/private-references
-          rm work/private-references/references.tar work/private-references/references.tar.enc
+          rm work/private-references/references.tar work/private-references/references.tar.enc work/private-references/bundle.key work/private-references/bundle-key.enc work/private-references/private.pem
       - name: Gemini watches and hears supplied videos
         env:
           GEMINI_API: ${{ secrets.GEMINI_API }}
