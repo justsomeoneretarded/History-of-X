@@ -2,7 +2,7 @@
 from __future__ import annotations
 import math
 from pathlib import Path
-from PIL import Image,ImageDraw
+from PIL import Image,ImageDraw,ImageFilter
 from .maps import font
 
 PALETTE={'cream':'#FFF5E4','navy':'#182B44','coral':'#F56554','teal':'#18A999','gold':'#F4BD4A','violet':'#8A70D6','blue':'#5EABDB','pink':'#ED9CB4'}
@@ -17,7 +17,15 @@ def icon(kind,color='coral',size=720):
  def circle(box,c=fill):d.ellipse(box,fill=c)
  def person(x=300,y=260,s=1,role='person',c=fill):
   def box(a,b,c_,e):return (x+(a-300)*s,y+(b-260)*s,x+(c_-300)*s,y+(e-260)*s)
-  d.rounded_rectangle(box(202,330,398,540),radius=40*s,fill=c)
+  # A single coherent silhouette: neck, shoulders, robe, arms and hands.
+  d.rounded_rectangle(box(278,270,322,330),radius=12*s,fill='#B7734F')
+  if role in ('ruler','queen'):
+   d.polygon([(x+(a-300)*s,y+(b-260)*s) for a,b in [(220,316),(380,316),(455,540),(145,540)]],fill=c)
+   d.polygon([(x+(a-300)*s,y+(b-260)*s) for a,b in [(220,316),(260,325),(345,540),(300,540)]],fill=gold)
+  else:d.rounded_rectangle(box(202,315,398,540),radius=40*s,fill=c)
+  d.line([box(218,340,175,465)[:2],box(218,340,175,465)[2:]],fill=c,width=max(4,int(45*s)))
+  d.line([box(382,340,425,465)[:2],box(382,340,425,465)[2:]],fill=c,width=max(4,int(45*s)))
+  d.ellipse(box(151,445,199,493),fill='#B7734F');d.ellipse(box(401,445,449,493),fill='#B7734F')
   d.ellipse(box(222,100,378,300),fill='#B7734F')
   d.pieslice(box(218,84,382,247),180,360,fill=ink)
   d.ellipse(box(250,192,262,205),fill=ink);d.ellipse(box(338,192,350,205),fill=ink)
@@ -121,3 +129,11 @@ def background(path,color='cream',width=3840,height=2160):
  d.ellipse((int(width*.58),-int(height*.4),int(width*1.3),int(height*.85)),fill=accent)
  d.rounded_rectangle((-width//6,height*3//4,width//3,height*5//4),radius=100,fill=accent)
  im.save(path)
+
+
+def outlined_art(art,background):
+ """Preserve dark silhouette readability on dark backgrounds without a card frame."""
+ if background!='navy':return art
+ alpha=art.getchannel('A');edge=alpha.filter(ImageFilter.MaxFilter(9))
+ backing=Image.new('RGBA',art.size,PALETTE['cream']);backing.putalpha(edge)
+ return Image.alpha_composite(backing,art)

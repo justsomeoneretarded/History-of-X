@@ -3,7 +3,7 @@ from __future__ import annotations
 from PIL import Image,ImageDraw
 from .core import PipelineError,save_json,read_json
 from .maps import font
-from .vector_art import ICONS,PALETTE,icon
+from .vector_art import ICONS,PALETTE,icon,outlined_art
 from .animated_render import fit_text
 
 def thumbnail_plan(api,script,directory):
@@ -18,7 +18,7 @@ def draw_thumbnail(concept,path,index=0):
  d.polygon([(1430,0),(2560,0),(2560,1440),(1080,1440)],fill=PALETTE['coral'] if index==0 else PALETTE['teal'])
  # Large subject silhouettes face a central tension, not an unreadable historical collage.
  for node,cx,cy,sz in [(concept['nodes'][0],690,740,1000),(concept['nodes'][1],1930,740,1000)]:
-  art=icon(node['icon'],node['color'],sz);im.paste(art,(cx-sz//2,cy-sz//2),art)
+  art=outlined_art(icon(node['icon'],node['color'],sz),concept['background'] if cx<1280 else 'cream');im.paste(art,(cx-sz//2,cy-sz//2),art)
  # Separate text into no more than two short lines with a solid, high-contrast base.
  words=concept['text'].upper().split();split=max(1,(len(words)+1)//2);lines=[' '.join(words[:split]),' '.join(words[split:])];lines=[l for l in lines if l]
  d.rounded_rectangle((170,1010,2390,1370),radius=40,fill=PALETTE['navy'])
