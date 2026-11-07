@@ -1,0 +1,27 @@
+name: Check Gemini speech
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: history-gemini
+  cancel-in-progress: false
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e .
+      - run: python scripts/check_gemini_media.py
+        env:
+          GEMINI_API: ${{ secrets.GEMINI_API }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gemini-speech-check
+          path: output/media-check
+          retention-days: 14
