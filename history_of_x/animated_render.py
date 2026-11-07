@@ -98,8 +98,15 @@ def soundtrack(speech,shots,directory):
   t=np.arange(n)/rate;env=(1-np.exp(-t*100))*np.exp(-t*5)
   wave=(np.sin(2*np.pi*hz*t)+.18*np.sin(2*np.pi*hz*2*t))*env*volume
   start=round(at*rate);buffer[start:start+n]+=wave.astype(np.float32)
- scale=[130.8128,164.8138,195.9977,261.6256,195.9977,164.8138,146.8324,195.9977]
- for i,at in enumerate(np.arange(0,total,.4)):note(music,float(at),scale[i%len(scale)],.6,.018 if i%4 else .025)
+ for shot in shots:
+  mood=shot.get('music_mood','neutral')
+  serious=bool(re.search(r'\b(famine|massacre|killed|deaths|terror|repression|starv)',shot.get('narration_context',''),re.I))
+  if serious:mood='somber'
+  scale={'neutral':[130.8128,195.9977,164.8138,195.9977], 'playful':[261.6256,329.6276,391.9954,329.6276], 'tense':[130.8128,155.5635,195.9977,146.8324], 'somber':[130.8128,155.5635,174.6141,155.5635]}[mood]
+  step={'neutral':.8,'playful':.4,'tense':.6,'somber':1.6}[mood]
+  volume=.009 if mood=='somber' else .016
+  for i,at in enumerate(np.arange(shot['global_start'],shot['global_end'],step)):
+   note(music,float(at),scale[i%len(scale)],1.2 if mood=='somber' else .65,volume)
  for shot in shots:
   if shot['sting']:
    # Original three-note dry pluck; never a borrowed tune or a tragedy gag.

@@ -41,10 +41,10 @@ def timing_beats(words,total,chapter):
 
 def board_schema(ids):
  node={'type':'object','required':['icon','label','color'],'properties':{'icon':{'type':'string','enum':list(ICONS)},'label':{'type':'string','maxLength':20},'color':{'type':'string','enum':['coral','teal','gold','violet','blue','pink']}}}
- shot={'type':'object','required':['beat_id','headline','year_label','year','background','action','nodes','sting','rationale'],'properties':{
+ shot={'type':'object','required':['beat_id','headline','year_label','year','background','action','nodes','sting','music_mood','rationale'],'properties':{
   'beat_id':{'type':'string','enum':ids},'headline':{'type':'string','maxLength':35},'year_label':{'type':'string','maxLength':22},'year':{'type':'integer','minimum':-5000,'maximum':2030},
   'background':{'type':'string','enum':['cream','navy']},'action':{'type':'string','enum':['reveal','clash','exchange','rise','fracture','march','balance']},
-  'nodes':{'type':'array','minItems':1,'maxItems':4,'items':node},'sting':{'type':'boolean'},'rationale':{'type':'string'}}}
+  'nodes':{'type':'array','minItems':1,'maxItems':4,'items':node},'music_mood':{'type':'string','enum':['neutral','tense','somber','playful']},'sting':{'type':'boolean'},'rationale':{'type':'string'}}}
  return {'type':'object','required':['shots'],'properties':{'shots':{'type':'array','minItems':len(ids),'maxItems':len(ids),'items':shot}}}
 
 def direct(api,script,speech,directory):
@@ -68,7 +68,7 @@ Use simple, instantly readable compositions: 1–4 illustrated objects/people, r
 Show the historical subject: ruler for ruler, treaty for treaty, ship and coins for trade, competing documents for translation.
 The headline should be 0–4 essential words. Node labels are optional, 0–2 words. NEVER put channel names, source/reference labels, technical notes, watermarks or decorative filler in visible text.
 A running year display is required: year_label reflects the current narrated period, with c. for approximate dates and ranges when needed. year is an approximate numeric anchor for timeline ordering; never imply an invented exact date.
-Differentiate adjoining compositions using node count, palette, layout and action. Keep primary actors recognizable by consistent role and label.
+Differentiate adjoining compositions using node count, palette, layout and action. Set music_mood to fit the actual spoken passage: somber for suffering, tense for conflict, playful only for harmless irony. Keep primary actors recognizable by consistent role and label.
 The palette and available icon vocabulary are in the schema. Do not ask for photographs. All symbols are original simplified illustrations, not literal historical portraits.
 Stings must be rare (maximum one per chapter), at a genuine nontragic deadpan beat. Never use a sting for suffering or war deaths.
 Return one shot per supplied beat_id, preserving order and all IDs. rationale explains relevance for internal QA ONLY.'''
@@ -78,10 +78,11 @@ Return one shot per supplied beat_id, preserving order and all IDs. rationale ex
   if [s['beat_id'] for s in shots]!=ids:raise PipelineError('Storyboard omitted or reordered beats')
   stings=0
   for b,s in zip(beats,shots):
+   if not 1<=len(s['nodes'])<=4:raise PipelineError('Storyboard needs 1–4 subjects per beat')
    if any(n['icon'] not in ICONS for n in s['nodes']):raise PipelineError('Unknown illustration')
    visible=' '.join([s['headline'],s['year_label'],*[n['label'] for n in s['nodes']]])
    if re.search(r'\b(history of x|source|reference|subscribe|chapter)\b',visible,re.I):raise PipelineError('Unnecessary on-screen chrome rejected')
    if s['sting']:stings+=1
-   s['sting']=s['sting'] and stings<=1
+   s['sting']=s['sting'] and stings<=1 and not re.search(r'\b(famine|massacre|killed|deaths|atrocit|terror|repression|starv)',b['narration_context'],re.I)
    result.append({**b,**s})
  save_json(directory/'storyboard.json',result);return result
