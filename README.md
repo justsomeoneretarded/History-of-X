@@ -2,6 +2,8 @@
 
 Give the runner a title and a short brief. It uses Gemini for research-informed writing, narration, speech-timed visual direction, YouTube packaging and visual critique. The picture track uses frame-by-frame articulated characters and physical environments: people walk and carry goods, leaders negotiate, ships move on water, workers build, and troops march or retreat. Historical photographs and public-domain moving footage are mixed into the animated film. A running year display and 3–6 second camera beats keep the chronology clear.
 
+[Download the completed Ethiopia moving film and upload package](https://github.com/justsomeoneretarded/History-of-X/actions/runs/42352656439/artifacts/13566745408) — 1080p, 6:53, Gemini narration, articulated character animation and authentic archival media.
+
 [Watch the 45-second motion proof](https://github.com/justsomeoneretarded/History-of-X/actions/runs/42350418522/artifacts/13565064705). Gemini reviewed the actual video and identified sustained character action rather than a slideshow.
 
 ## Run

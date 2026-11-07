@@ -68,3 +68,6 @@ The default renderer now uses `motion_canvas.py`: continuous, frame-by-frame wor
 Primary media include Internet Archive public-domain Universal Newsreel footage and Cleveland Museum of Art CC0 imagery, with exact source/creation dates and SHA-256 records. Historical footage is not silently substituted for a different event. The Ethiopia film inserts a dated, wordless 1935 bridge, adding nine seconds while preserving every narration word. The source credits are included in the upload description and metadata rather than overlaid on the video.
 
 The current Google video-generation documentation routes native video generation to Gemini Omni 1.2 Flash (paid tier) and states the Veo 3.1 preview has shut down. The free-key implementation uses Gemini choreography and local animation plus authentic footage, and does not claim to call a free native video-generation endpoint.
+
+
+Audio bridge assembly normalizes every voice clip and silent interlude to identical 48 kHz mono PCM before concatenation and checks the assembled duration before final muxing. This prevents mixed 24/48 kHz segments from extending a pause and displacing later narration. An audio-only finishing utility can remux an already-rendered picture without regenerating animation or calling Gemini again.

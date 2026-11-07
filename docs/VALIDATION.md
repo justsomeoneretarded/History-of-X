@@ -1,5 +1,29 @@
 # Validation record
 
+## Current moving-film remake
+
+[Final verified upload package](https://github.com/justsomeoneretarded/History-of-X/actions/runs/42352656439/artifacts/13566745408). The picture was rendered in [the moving-film workflow](https://github.com/justsomeoneretarded/History-of-X/actions/runs/42350418522), then finished with verified audio assembly while preserving the encoded video bitstream.
+
+- 1920×1080, 30 fps, H.264/AAC, 412.9 seconds (6:53).
+- 91 visual beats: frame-by-frame articulated characters and two genuine archival moving clips. No still-card fallback.
+- Eight historical-media records: Cleveland Museum of Art CC0 gospel imagery, public-domain portraits, and two Universal Newsreel excerpts from the Internet Archive. The separately dated 1935 footage adds nine seconds; it is not presented as footage of Adwa in 1896.
+- Gemini 3.8 Flash TTS, Puck. The script text is byte-identical to the accepted narration script; no additional manual factual rewrite was made.
+- Assembled narration plus archival pause: expected **412.84 s**, actual **412.84 s**. All audio pieces are normalized to 48 kHz mono PCM before concatenation. A mixed-rate splice regression test prevents delayed or truncated later speech.
+- Final encoded audio: **−16.03 LUFS**, **−1.25 dBTP**. Full media decode/duration checks passed.
+- Motion sampling across 1,645 frames: median changed subject-region fraction **0.07295**, active windows **100%**. The sampling excludes the year and caption regions and runs beyond entrance animations.
+- **49 tests passed** locally and in hosted CI, including articulated-limb movement, rejection of a static video, real motion encoding, archive timeline preservation and resumed speech after a silent bridge.
+
+The [45-second preview](https://github.com/justsomeoneretarded/History-of-X/actions/runs/42350418522/artifacts/13565064705) was reviewed as an actual MP4 by Gemini. Its verdict: `genuine_character_action=true`, `slideshow_like=false`, `continuous_motion=true`. It identified walking with cargo, moving boats/water, document interactions, marching troops and archival moving footage. It also noted repetitive walk cycles and the lower source resolution of historical footage. No audience-retention or click-through improvement multiplier is claimed.
+
+Stream decoding and still contact sheets alone do not establish that a film is genuinely animated. The moving pipeline therefore measures sustained movement and reviews moving excerpts.
+
+Artifacts are retained for 14 days. The film has not been uploaded to YouTube.
+
+## Earlier archival and icon-card validation history
+
+The following records describe earlier implementations, not the current moving renderer.
+
+
 ## Real local production comparison
 
 A source-linked five-chapter Ethiopia pilot was synthesized with the actual Warguy reference, transcribed, aligned and rendered in three profiles using the same script, audio and licensed visuals. These are actual video files, not mocked model outputs.
