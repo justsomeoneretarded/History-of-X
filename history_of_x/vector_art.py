@@ -8,7 +8,7 @@ from .typography import font
 PALETTE={'cream':'#FFF5E4','navy':'#182B44','coral':'#F56554','teal':'#18A999','gold':'#F4BD4A','violet':'#8A70D6','blue':'#5EABDB','pink':'#ED9CB4'}
 ICONS=('ruler','queen','person','crowd','soldier','crown','obelisk','church','castle','city','mountain','ship','coins','coffee','wheat','document','broken_document','handshake','scales','shield','rifle','cannon','tank','plane','flag','chain','broken_chain','ballot','factory','railway','cross','books','globe','border','arrow','question','lightbulb','radio')
 
-def icon(kind,color='coral',size=720):
+def icon(kind,color='coral',size=720,label=''):
  # Draw at a 600-square design coordinate system, then rasterize above output resolution.
  im=Image.new('RGBA',(600,600));d=ImageDraw.Draw(im);ink=PALETTE['navy'];fill=PALETTE.get(color,color);cream=PALETTE['cream'];gold=PALETTE['gold']
  def poly(points,c=fill):d.polygon(points,fill=c)
@@ -101,7 +101,12 @@ def icon(kind,color='coral',size=720):
   if kind=='broken_chain':poly([(265,180),(300,140),(335,255),(300,280)],cream);line([(180,120),(225,165)],gold,12);line([(360,340),(405,385)],gold,12)
  elif kind=='flag':
   line([(160,70),(160,540)],ink,18)
-  for i,c in enumerate([PALETTE['teal'],gold,PALETTE['coral']]):rect((170,90+i*75,500,165+i*75),c)
+  country=label.casefold()
+  if 'italy' in country or 'italian' in country:
+   for i,c in enumerate(['#219653',cream,PALETTE['coral']]):rect((170+i*110,90,280+i*110,315),c)
+  elif 'ethiopia' in country or 'ethiopian' in country:
+   for i,c in enumerate([PALETTE['teal'],gold,PALETTE['coral']]):rect((170,90+i*75,500,165+i*75),c)
+  else:rect((170,90,500,315),fill)
  elif kind=='scales':
   line([(300,100),(300,500)],ink,17);line([(115,200),(485,160)],ink,15);line([(180,200),(140,350),(220,350),(180,200)],fill,10);line([(420,175),(380,325),(460,325),(420,175)],fill,10);rect((180,500,420,530),ink,12);circle((270,70,330,130),gold)
  elif kind=='handshake':

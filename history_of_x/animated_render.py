@@ -45,13 +45,13 @@ def node_layout(count,action):
 
 def shot_video(shot,directory,profile,elapsed,total):
  width,height,fps=PROFILES[profile];s=width/1920;factor=2 # all movement occurs on a 2x canvas before downsampling
- identity=key('vector-render-v5',shot,profile,elapsed,total);target=directory/(identity+'.mp4')
+ identity=key('vector-render-v6',shot,profile,elapsed,total);target=directory/(identity+'.mp4')
  seconds=shot['global_end']-shot['global_start'];frames=max(1,round(seconds*fps));seconds=frames/fps
  if target.exists() and abs(duration(target)-seconds)<.1:return target
  bg=directory/(identity+'-bg.png');plate(shot,bg,width*factor,height*factor,elapsed,total)
  inputs=['-loop','1','-framerate',str(fps),'-i',bg];layers=[]
  for i,(node,(cx,cy,size)) in enumerate(zip(shot['nodes'],node_layout(len(shot['nodes']),shot['action']))):
-  pix=max(10,round(size*s*factor));art=outlined_art(icon(node['icon'],node['color'],pix),shot['background'])
+  pix=max(10,round(size*s*factor));art=outlined_art(icon(node['icon'],node['color'],pix,label=node['label']),shot['background'])
   # Labels attach to their subject, and are included only when meaningful.
   labeled=Image.new('RGBA',(pix,round(pix*1.18)));labeled.paste(art,(0,0));d=ImageDraw.Draw(labeled)
   label=node['label'];ink=PALETTE['navy'] if shot['background']=='cream' else PALETTE['cream']
