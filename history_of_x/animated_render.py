@@ -138,26 +138,8 @@ def render(script,speech,shots,directory,output,profile='cinematic',interludes=N
   videos.append(render_clip(framed,directory,profile) if shot.get('archive') else render_shot(framed,directory,profile,shot['global_start'],total));frame_cursor=endframe
  silent=directory/'picture.mp4';concat_video(videos,silent)
  captions(output,script,speech,width,height,interludes)
- parts=[]
- for spoken in speech['scenes']:
-  for i,gap in enumerate(interludes):
-   if gap.get('before_scene_id')==spoken['scene_id']:
-    silence=directory/f'interlude-{i}.wav';ffmpeg('-f','lavfi','-i','anullsrc=r=48000:cl=mono','-t',str(gap['seconds']),silence);parts.append(silence)
-  parts.append(directory.parent/'speech'/spoken['audio'])
- for i,gap in enumerate(interludes):
-  if gap.get('before_scene_id') is None:
-   silence=directory/f'interlude-tail-{i}.wav';ffmpeg('-f','lavfi','-i','anullsrc=r=48000:cl=mono','-t',str(gap['seconds']),silence);parts.append(silence)
- listing=directory/'voice.concat.txt';listing.write_text('\n'.join("file '"+str(p.resolve()).replace("'","'\\''")+"'" for p in parts))
- narration=directory/'narration.wav';ffmpeg('-f','concat','-safe','0','-i',listing,'-ar','48000','-ac','1',narration)
- soundtrack(speech,shots,directory)
- mixed=directory/'mixed.wav';chain='[0:a]asplit=2[v][side];[1:a][side]sidechaincompress=threshold=0.015:ratio=6:attack=15:release=250[m];[v][m][2:a]amix=inputs=3:duration=first:normalize=0,alimiter=limit=0.9[out]'
- ffmpeg('-i',narration,'-i',directory/'music.wav','-i',directory/'sfx.wav','-filter_complex',chain,'-map','[out]','-ar','48000','-ac','2',mixed)
- import subprocess
- measure=subprocess.run(['ffmpeg','-hide_banner','-nostdin','-i',str(mixed),'-af','loudnorm=I=-16:TP=-1.5:LRA=9:print_format=json','-f','null','-'],capture_output=True,text=True,timeout=300)
- matches=re.findall(r'\{\s*"input_i".*?\}',measure.stderr,re.S)
- if not matches:raise PipelineError('Loudness measurement failed')
- loud=json.loads(matches[-1]);save_json(output/'loudness.json',loud)
- af=f'loudnorm=I=-16:TP=-1.5:LRA=9:measured_I={loud["input_i"]}:measured_TP={loud["input_tp"]}:measured_LRA={loud["input_lra"]}:measured_thresh={loud["input_thresh"]}:offset={loud["target_offset"]}:linear=true'
+ from .audio_edit import mix
+ mixed,af,audio_timing=mix(speech,shots,directory.parent/'speech',directory,interludes,output)
  escaped=str((output/'captions.ass').resolve()).replace('\\','\\\\').replace(':','\\:').replace("'","\\'")
  final=output/'final.mp4'
  ffmpeg('-i',silent,'-i',mixed,'-vf',f"ass=filename='{escaped}':fontsdir='{ROOT/'assets'/'fonts'}'",'-af',af,'-map','0:v','-map','1:a','-t',str(total),'-c:v','libx264','-preset','fast','-crf','19' if profile!='draft' else '24','-threads','2','-c:a','aac','-b:a','192k','-ar','48000','-pix_fmt','yuv420p','-movflags','+faststart',final,timeout=max(900,total*6))

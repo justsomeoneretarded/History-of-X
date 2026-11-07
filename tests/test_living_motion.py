@@ -41,3 +41,15 @@ def test_archive_bridge_preserves_voice_scene_and_dates():
  assert len(result)==4 and result[1]['year_label']=='1935'
  assert result[-1]['global_start']==13.5 and shots[-1]['global_start']==4.5
  assert gaps[0]['before_scene_id']==2 and gaps[0]['seconds']==9
+
+def test_archival_gap_does_not_double_or_delay_later_speech(tmp_path):
+ import soundfile as sf
+ from history_of_x.audio_edit import assemble
+ source=tmp_path/'speech';source.mkdir()
+ for name,hz in [('first',440),('last',880)]:
+  t=np.arange(48000)/24000;sf.write(source/(name+'.wav'),.1*np.sin(2*np.pi*hz*t),24000)
+ speech={'scenes':[{'scene_id':1,'audio':'first.wav','duration':2},{'scene_id':2,'audio':'last.wav','duration':2}]}
+ audio,timing=assemble(speech,source,tmp_path/'mix',[{'before_scene_id':2,'seconds':1}]);data,sr=sf.read(audio)
+ assert timing['passed'] and abs(len(data)/sr-5)<.01
+ assert np.max(np.abs(data[2*sr:3*sr]))<.001
+ assert np.sqrt(np.mean(data[int(3.2*sr):int(4.8*sr)]**2))>.05
