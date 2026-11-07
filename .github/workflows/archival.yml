@@ -1,0 +1,240 @@
+name: Legacy archival documentary
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: Video title
+        required: true
+        type: string
+      brief:
+        description: Small brief, historical scope and angle
+        required: true
+        type: string
+      voice:
+        description: Narrator
+        type: choice
+        options: [warguy, kit-laser]
+        default: warguy
+      minutes:
+        description: Target minutes (1–60); CPU generation can take hours
+        type: string
+        default: '8'
+      profile:
+        description: Render quality
+        type: choice
+        options: [cinematic, standard, draft]
+        default: cinematic
+      preset:
+        description: auto uses Gemini; ethiopia is the curated film; pilot is a short validation film
+        type: choice
+        options: [auto, ethiopia, pilot]
+        default: auto
+      resume_run:
+        description: Optional previous run ID to recover checkpoints
+        type: string
+        default: ''
+  push:
+    paths: ['episodes/requests/*.json']
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: episode-${{ inputs.title || github.ref }}
+  cancel-in-progress: false
+env:
+  PYTHONUNBUFFERED: '1'
+  HF_HUB_DISABLE_XET: '1'
+  HF_HOME: ${{ github.workspace }}/work/models/huggingface
+  TORCH_HOME: ${{ github.workspace }}/work/models/torch
+  XDG_CACHE_HOME: ${{ github.workspace }}/work/cache
+  TTS_MODEL: original
+  TTS_THREADS: '2'
+  VOICE_TAKES: '1'
+  WHISPER_MODEL: base.en
+jobs:
+  plan:
+    concurrency:
+      group: history-gemini
+      cancel-in-progress: false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    outputs:
+      request_id: ${{ steps.request.outputs.id }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: python -m pip install -e .
+      - name: Prepare request safely
+        id: request
+        env:
+          VIDEO_TITLE: ${{ inputs.title }}
+          VIDEO_BRIEF: ${{ inputs.brief }}
+          NARRATOR: ${{ inputs.voice }}
+          VIDEO_MINUTES: ${{ inputs.minutes }}
+          VIDEO_PROFILE: ${{ inputs.profile }}
+          PRESET: ${{ inputs.preset }}
+        run: python scripts/actions_request.py
+      - name: Restore completed work for identical inputs
+        uses: actions/cache/restore@v4
+        with:
+          path: work/job
+          key: episode-v1-${{ steps.request.outputs.id }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: episode-v1-${{ steps.request.outputs.id }}-
+      - name: Recover requested plan checkpoint
+        if: ${{ inputs.resume_run != '' }}
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: checkpoint-plan
+          path: work/job
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ github.token }}
+      - name: Recover requested chapter speech checkpoints
+        if: ${{ inputs.resume_run != '' }}
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: checkpoint-voice-*
+          path: work/recovered-voices
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ github.token }}
+      - name: Restore chapter locations
+        run: python -c "from history_of_x.speech_merge import recover; recover('work/recovered-voices','work/job/speech')"
+      - name: Restore shared Gemini project budget ledger
+        uses: actions/cache/restore@v4
+        with:
+          path: work/gemini-ledger
+          key: gemini-ledger-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: gemini-ledger-v1-
+      - name: Research, script, editorial revision and licensed visuals
+        env:
+          GEMINI_API: ${{ secrets.GEMINI_API }}
+          GEMINI_LEDGER_PATH: work/gemini-ledger/usage.json
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.5-flash-lite' }}
+          CONFIRMED_FREE_MODEL: ${{ vars.CONFIRMED_FREE_MODEL }}
+          GEMINI_REQUEST_BUDGET: ${{ vars.GEMINI_REQUEST_BUDGET || '12' }}
+          GEMINI_INPUT_TOKEN_BUDGET: ${{ vars.GEMINI_INPUT_TOKEN_BUDGET || '12000' }}
+        run: python -m history_of_x.cli --request work/request.json --stage plan
+      - name: Save shared quota state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: work/gemini-ledger
+          key: gemini-ledger-v1-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Save plan and request for downstream jobs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: checkpoint-plan
+          path: work/job/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Save request
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-request
+          path: work/request.json
+          retention-days: 14
+      - name: Save resumable state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: work/job
+          key: episode-v1-${{ steps.request.outputs.id }}-${{ github.run_id }}-${{ github.run_attempt }}-plan
+  voice:
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        chapter: [1, 2, 3, 4, 5]
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: python scripts/bootstrap_media.py
+      - uses: actions/download-artifact@v4
+        with:
+          name: production-request
+          path: work
+      - uses: actions/download-artifact@v4
+        with:
+          name: checkpoint-plan
+          path: work/job
+      - uses: actions/cache@v4
+        with:
+          path: |
+            work/models
+            work/cache
+          key: chatterbox-original-cpu-v1-${{ runner.os }}
+      - run: bash scripts/install_voice.sh
+      - name: Restore this chapter's accepted narration
+        uses: actions/cache/restore@v4
+        with:
+          path: work/job/speech/chapter-${{ matrix.chapter }}
+          key: chapter-v1-${{ needs.plan.outputs.request_id }}-${{ matrix.chapter }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: chapter-v1-${{ needs.plan.outputs.request_id }}-${{ matrix.chapter }}-
+      - name: Generate and verify selected chapter narration
+        env:
+          CHAPTER: ${{ matrix.chapter }}
+        run: python -m history_of_x.cli --request work/request.json --stage voice --chapter "$CHAPTER"
+      - name: Save accepted speech even when a later chunk fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: checkpoint-voice-${{ matrix.chapter }}
+          path: work/job/speech/chapter-${{ matrix.chapter }}/
+          retention-days: 14
+      - name: Save resumable episode state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: work/job/speech/chapter-${{ matrix.chapter }}
+          key: chapter-v1-${{ needs.plan.outputs.request_id }}-${{ matrix.chapter }}-${{ github.run_id }}-${{ github.run_attempt }}
+  render:
+    needs: voice
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: python scripts/bootstrap_media.py
+      - run: python -m pip install -e .
+      - uses: actions/download-artifact@v4
+        with:
+          name: production-request
+          path: work
+      - uses: actions/download-artifact@v4
+        with:
+          name: checkpoint-plan
+          path: work/job
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: checkpoint-voice-*
+          path: work/recovered-voices
+      - name: Assemble verified chapter checkpoints
+        run: python -c "from history_of_x.speech_merge import recover; recover('work/recovered-voices','work/job/speech')"
+      - name: Edit, mix, caption, package and verify final film
+        run: python -m history_of_x.cli --request work/request.json --stage render
+      - name: Final video and upload package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentary-final
+          path: output/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Publish quality summary
+        if: always()
+        run: python scripts/actions_summary.py
