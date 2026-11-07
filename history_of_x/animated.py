@@ -58,9 +58,13 @@ def main(argv=None):
    save_json(args.output/'quality.json',report)
    from .explainer_package import package
    package(api,script,evidence,speech,shots,args.work,args.output)
-   review_schema={'type':'object','required':['issues','strengths','ready_for_human_review'],'properties':{'issues':{'type':'array','items':{'type':'string'}},'strengths':{'type':'array','items':{'type':'string'}},'ready_for_human_review':{'type':'boolean'}}}
-   review=api.vision('Critique this contact sheet from an original animated history explainer. Check clutter, text readability, visual diversity and relevance to its storyboard. Do not claim to have watched motion or heard audio. Identify specific issues honestly. Only year counter, essential narrative labels and captions should be visible.',{'title':script['title'],'sample_storyboard':[{'spoken':s['text'],'visual':s['headline'],'nodes':s['nodes']} for s in shots[::max(1,len(shots)//12)]]},[args.output/'contact-sheet.jpg'],review_schema)
-   save_json(args.output/'gemini-visual-review.json',review)
+   from .motion_quality import measure,review_sample
+   movement=measure(video,1.2,max(2,report['duration_seconds']-.5));save_json(args.output/'motion-check.json',movement)
+   if not movement['passed']:raise PipelineError('Output lacks sustained movement; static-card delivery is disabled')
+   sample=review_sample(video,args.output)
+   review=api.review_video(sample,{'purpose':'Motion review of excerpts from the completed film; do not review script facts'})
+   save_json(args.output/'gemini-motion-review.json',review)
+   if review.get('slideshow_like') or not review.get('genuine_character_action'):raise PipelineError('Video review rejected slideshow-like output')
    save_json(args.output/'production.json',{'request':request,'quality_passed':report['passed'],'request_id':identity,'gemini_review':review})
    print('FINAL_VIDEO '+str(video),flush=True)
   return 0

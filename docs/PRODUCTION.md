@@ -57,3 +57,14 @@ The default `produce.yml` now runs `history_of_x.animated`. The archival archite
 - [Image generation](https://ai.google.dev/gemini-api/docs/image-generation)
 
 At implementation time, 3.8 Flash TTS and Flash-Lite TTS list free access; image generation models list no free tier. The renderer therefore uses Gemini text direction and locally drawn art rather than invoking a paid image endpoint. This is a deliberate free-key constraint, not a claim that vector output came from Gemini's image model. Gemini's new TTS docs require SDK 2.25+; the project uses the documented REST endpoint to avoid changing the legacy SDK dependency.
+
+
+## Moving-film replacement
+
+The default renderer now uses `motion_canvas.py`: continuous, frame-by-frame world scenes with articulated arms and legs, carried props, sails/water, interacting documents, smoke/projectiles and crowds. `motion_director.py` asks Gemini for physical environment, activity, camera, cast and relevant historical-image selection. One request per chapter replaces icon-card planning. There is no static-card fallback.
+
+`Recreate as moving documentary` preserves accepted narration and creates a short preview first. The preview is tested for sustained changes in the subject region after the first second; a static test video fails. Gemini then watches the actual moving MP4 and judges genuine character action versus slideshow-like presentation. Full rendering starts only after that preview passes. The standard title/brief runner also measures sustained movement and reviews moving excerpts.
+
+Primary media include Internet Archive public-domain Universal Newsreel footage and Cleveland Museum of Art CC0 imagery, with exact source/creation dates and SHA-256 records. Historical footage is not silently substituted for a different event. The Ethiopia film inserts a dated, wordless 1935 bridge, adding nine seconds while preserving every narration word. The source credits are included in the upload description and metadata rather than overlaid on the video.
+
+The current Google video-generation documentation routes native video generation to Gemini Omni 1.2 Flash (paid tier) and states the Veo 3.1 preview has shut down. The free-key implementation uses Gemini choreography and local animation plus authentic footage, and does not claim to call a free native video-generation endpoint.

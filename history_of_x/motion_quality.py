@@ -15,3 +15,18 @@ def measure(video,start=1.2,end=None):
  diff=np.abs(np.diff(frames,axis=0)).max(axis=3)
  ratios=(diff>12).mean(axis=(1,2))
  return {'median_changed_fraction':float(np.median(ratios)),'minimum_changed_fraction':float(np.min(ratios)),'active_window_fraction':float((ratios>.003).mean()),'sample_frames':count,'passed':bool(np.median(ratios)>.005 and (ratios>.003).mean()>.8)}
+
+def review_sample(video,directory):
+ """Give the reviewer actual moving excerpts rather than a still contact sheet."""
+ from pathlib import Path
+ from .core import duration,ffmpeg
+ from .render import concat_video
+ directory=Path(directory);directory.mkdir(parents=True,exist_ok=True)
+ seconds=duration(video);paths=[]
+ for i,start in enumerate([0,max(0,seconds*.45),max(0,seconds-8)]):
+  path=directory/f'motion-review-{i}.mp4'
+  ffmpeg('-ss',str(start),'-i',video,'-t',str(min(8,seconds-start)),'-vf','scale=640:360','-c:v','libx264','-preset','veryfast','-crf','28','-c:a','aac','-b:a','64k','-ar','48000','-ac','2',path)
+  paths.append(path)
+ out=directory/'motion-review-sample.mp4';concat_video(paths,out)
+ for path in paths:path.unlink(missing_ok=True)
+ return out
