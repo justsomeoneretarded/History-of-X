@@ -1,6 +1,6 @@
 """Gemini-directed YouTube packaging with no in-video attribution clutter."""
 from __future__ import annotations
-from PIL import Image,ImageDraw
+from PIL import Image,ImageDraw,ImageOps
 from .core import PipelineError,save_json,read_json
 from .typography import font
 from .vector_art import ICONS,PALETTE,icon,outlined_art
@@ -9,7 +9,7 @@ from .animated_render import fit_text
 def thumbnail_plan(api,script,directory):
  node={'type':'object','required':['icon','color'],'properties':{'icon':{'type':'string','enum':list(ICONS)},'color':{'type':'string','enum':['coral','teal','gold','violet','blue']}}}
  schema={'type':'object','required':['youtube_title','description','concepts'],'properties':{'youtube_title':{'type':'string','maxLength':95},'description':{'type':'string','maxLength':1000},'concepts':{'type':'array','minItems':2,'maxItems':2,'items':{'type':'object','required':['text','nodes','background','rationale'],'properties':{'text':{'type':'string','maxLength':24},'nodes':{'type':'array','minItems':2,'maxItems':2,'items':node},'background':{'type':'string','enum':['cream','navy']},'rationale':{'type':'string'}}}}}}
- return api.text('''You package original animated history explainers for YouTube. Create two distinct thumbnail concepts with a bold 2–4 word hook, TWO large symbolic subjects, strong contrast and readable silhouette at phone size. No full-title paragraphs, no channel name, no tiny text, no sources, no fake quotes or unsupported claims. The text complements rather than repeats the video title. The YouTube title must name the subject and make a truthful curiosity promise. Description states historical endpoint, summarizes angle, no marketing filler. Choose icons from schema; these are flat original illustrations.''',{'title':script['title'],'summary':script['summary'],'script':[s['narration'] for s in script['scenes']]},schema,max_output=3500)
+ return api.text('''You package original animated history explainers for YouTube. Create two distinct thumbnail concepts with a bold 2–4 word hook, TWO large symbolic subjects, strong contrast and readable silhouette at phone size. No full-title paragraphs, no channel name, no tiny text, no sources, no fake quotes or unsupported claims. Avoid academic abstractions such as Defending Sovereignty, Legacy, or Cultural Exchange. Use a concrete curiosity hook about a decision, blunder or confrontation, in natural conversational words. At least one concept must feature a person (ruler, queen, person or soldier) as the main subject; put that person first in nodes. Make the second concept a distinctly different visual argument. The text complements rather than repeats the video title. The YouTube title must name the subject and make a truthful curiosity promise. Description states historical endpoint, summarizes angle, no marketing filler. Choose icons from schema; these are flat original illustrations.''',{'title':script['title'],'summary':script['summary'],'script':[s['narration'] for s in script['scenes']]},schema,max_output=3500)
 
 def draw_thumbnail(concept,path,index=0):
  # Compose above target resolution, preserving clean typography on upload.
@@ -18,7 +18,11 @@ def draw_thumbnail(concept,path,index=0):
  d.polygon([(1430,0),(2560,0),(2560,1440),(1080,1440)],fill=PALETTE['coral'] if index==0 else PALETTE['teal'])
  # Large subject silhouettes face a central tension, not an unreadable historical collage.
  for node,cx,cy,sz in [(concept['nodes'][0],690,740,1000),(concept['nodes'][1],1930,740,1000)]:
-  art=outlined_art(icon(node['icon'],node['color'],sz),concept['background'] if cx<1280 else 'cream');im.paste(art,(cx-sz//2,cy-sz//2),art)
+  if node['icon'] in ('ruler','queen','person','soldier'):
+   art=icon(node['icon'],node['color'],1200).crop((340,20,860,700))
+   art=ImageOps.contain(art,(1000,1150),Image.Resampling.LANCZOS);cy=550
+  else:art=icon(node['icon'],node['color'],sz)
+  art=outlined_art(art,concept['background'] if cx<1280 else 'cream');im.paste(art,(cx-art.width//2,cy-art.height//2),art)
  # Separate text into no more than two short lines with a solid, high-contrast base.
  words=concept['text'].upper().split();split=max(1,(len(words)+1)//2);lines=[' '.join(words[:split]),' '.join(words[split:])];lines=[l for l in lines if l]
  d.rounded_rectangle((170,1010,2390,1370),radius=40,fill=PALETTE['navy'])
@@ -29,7 +33,9 @@ def draw_thumbnail(concept,path,index=0):
 
 def package(api,script,evidence,speech,shots,directory,output):
  cache=directory/'packaging.json'
- plan=read_json(cache) if cache.exists() else thumbnail_plan(api,script,directory)
+ plan=read_json(cache) if cache.exists() else {}
+ if plan.get('design_version')!=2:
+  plan=thumbnail_plan(api,script,directory);plan['design_version']=2
  save_json(cache,plan)
  candidates=[]
  for i,concept in enumerate(plan['concepts']):

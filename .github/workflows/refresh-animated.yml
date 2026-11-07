@@ -20,7 +20,7 @@ jobs:
       PYTHONUNBUFFERED: '1'
       GEMINI_MEDIA_LEDGER: work/media-ledger/usage.json
       GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.5-flash-lite' }}
-      GEMINI_TEXT_REQUEST_BUDGET: ${{ vars.GEMINI_TEXT_REQUEST_BUDGET || '24' }}
+      GEMINI_TEXT_REQUEST_BUDGET: ${{ vars.GEMINI_TEXT_REQUEST_BUDGET || '28' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

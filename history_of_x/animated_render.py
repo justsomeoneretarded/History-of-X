@@ -84,7 +84,13 @@ def captions(output,script,speech,width,height):
  for scene,spoken in zip(script['scenes'],speech['scenes']):
   cues.extend({**c,'start':offset+c['start'],'end':offset+c['end'],'highlights':scene['subtitle_highlights']} for c in spoken['captions']);offset+=spoken['duration']
  clean={**script,'scenes':[],'_speech':[]};write_ass(output/'captions.ass',cues,clean,width,height,offset)
- track=output/'captions.ass';track.write_text(track.read_text().replace('DejaVu Sans','Space Grotesk'))
+ track=output/'captions.ass';lines=track.read_text().replace('DejaVu Sans','Space Grotesk').splitlines()
+ for i,line in enumerate(lines):
+  if line.startswith('Style: Caption,'):
+   fields=line.split(': ',1)[1].split(',');fields[2]=str(round(76*width/1920))
+   fields[5]=fields[6]='&H00442B18';fields[15]='3';fields[16]=str(max(3,round(10*width/1920)))
+   fields[17]='0';fields[21]=str(round(90*width/1920));lines[i]='Style: '+','.join(fields)
+ track.write_text('\n'.join(lines)+'\n')
  (output/'captions.srt').write_text('\n\n'.join(f'{i+1}\n{srt_time(c["start"])} --> {srt_time(c["end"])}\n{c["text"]}' for i,c in enumerate(cues)))
  return cues
 

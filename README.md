@@ -26,13 +26,13 @@ Gemini image-generation API models currently have **no free tier**. The free-key
 
 All Gemini request starts are spaced at least 65 seconds apart. Text and speech have separate configurable rolling 24-hour budgets (24 text attempts and 16 speech attempts by default), while sharing a pacing ledger. Repository concurrency prevents this workflow and the legacy Gemini pipeline from overlapping. Other applications using your Google project still share provider quotas.
 
-Successful API responses, scripts, chapter audio and storyboards are checkpointed. If a run fails, use **identical inputs** and put its run ID in `resume_run`. Accepted work is recovered. A provider quota error stops with a checkpoint rather than sleeping all day or switching to a paid service. Transient retries and speech regeneration are bounded.
+Successful API responses, scripts, chapter audio and storyboards are checkpointed. If a run fails, use **identical inputs** and put its run ID in `resume_run`. Accepted work is recovered. **Refine saved animated video** re-renders a completed checkpoint with current graphics and captions, preserving its script and voice. Its default text-attempt budget is 28 to leave room for packaging polish. A provider quota error stops with a checkpoint rather than sleeping all day or switching to a paid service. Transient retries and speech regeneration are bounded.
 
 Variables: `GEMINI_MODEL`, `GEMINI_TTS_MODEL`, `GEMINI_TEXT_REQUEST_BUDGET`, `GEMINI_TTS_REQUEST_BUDGET`. Supported TTS models are `gemini-3.8-flash-tts` and `gemini-3.8-flash-lite-tts`; access and quota are project-dependent. Request budget exhaustion is distinct from the model's token limits.
 
 ## Local use
 
-Python 3.11, FFmpeg/ffprobe with libass, and the bundled DejaVu fonts:
+Python 3.11, FFmpeg/ffprobe with libass, and the bundled Space Grotesk/DejaVu fonts:
 
 ```sh
 python -m venv .venv
