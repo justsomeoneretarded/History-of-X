@@ -21,8 +21,8 @@ def write(api,title,brief,minutes,evidence,directory):
  compact=[{**s,'extract':s['extract'][:3500]} for s in sources]
  schema=scene_schema(ids,target,count)
  prompt=DIRECTION+f'\nTarget {target} spoken words (within 15%), {count} scenes total. All schema fields are required. visual_type is an internal compatibility field, use artwork. date_label must reflect the narrated era. Return only the schema object.'
- draft=api.text(prompt,{'title':title,'brief':brief,'evidence':compact},schema,max_output=min(26000,max(6000,target*10)))
- revised=api.text(DIRECTION+f'\nEdit this draft against the evidence. Remove unsupported claims, repetition, false certainty and weak jokes. Keep {count} scenes, all five chapters and {target} words within 15%. Retain chronology, end date and source IDs. Make it enjoyable to hear, without turning tragedy into a punchline.',{'draft':draft,'brief':brief,'evidence':compact},schema,max_output=min(26000,max(6000,target*10)))
+ draft=api.text(prompt,{'title':title,'brief':brief,'evidence':compact},schema,max_output=14000)
+ revised=api.text(DIRECTION+f'\nEdit this draft against the evidence. Remove unsupported claims, repetition, false certainty and weak jokes. Keep {count} scenes, all five chapters and {target} words within 15%. Retain chronology, end date and source IDs. Make it enjoyable to hear, without turning tragedy into a punchline.',{'draft':draft,'brief':brief,'evidence':compact},schema,max_output=14000)
  revised=normalize_script(revised);n=validate(revised,ids,target)
  revised.update(fingerprint=identity,word_count=n,provenance='Gemini animated-explainer draft and evidence-constrained revision')
  save_json(output,revised);return revised

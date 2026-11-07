@@ -35,3 +35,25 @@ See VALIDATION.md for measured test results and comparisons. A real API or full 
 ## Portable runner media setup
 
 Media setup uses installed FFmpeg/ffprobe when suitable, otherwise a SHA-256-verified portable FFmpeg 8.1.3 build with libass. It avoids unbounded package-mirror installation. DejaVu fonts and their license are bundled so the map, thumbnail and subtitle typography are consistent across runners.
+
+## Revised Gemini-first animated pipeline
+
+The default `produce.yml` now runs `history_of_x.animated`. The archival architecture above is retained only in `archival.yml`.
+
+1. Evidence gathering, then a Gemini original explainer draft and evidence-constrained revision. Humor targets decisions and bureaucracy, not victims; copied jokes/signatures are prohibited by the prompt.
+2. Gemini 3.8 Flash TTS through the REST Interactions API, with structured style metadata separate from the verbatim transcript. Five bounded chapter requests, at most 450 words each, avoid sending an entire long film to TTS. The current model specification lists 8,192 input tokens and 16,384 output tokens; these are serving limits, not the project's free quota. The live free-key sample succeeded in 3.4 seconds.
+3. Local faster-whisper checks chapter completeness, aligns written words and splits accepted chapters into scene audio. Captions preserve the written script; interpolation is reported.
+4. Actual speech durations define approximately 4.5-second beats. Gemini receives each beat's spoken text, context and era, then selects original symbols, relationships, meaningful labels, time display and rare nontragic sting locations. Structured output cannot execute arbitrary model-written code.
+5. A locally rendered flat illustration vocabulary and supersampled eased overlays provide object animation. There is no camera zoompan filter. Only essential labels, years and captions appear. Sources and licenses are packaged outside the picture.
+6. Original instrumental accompaniment and stings are synthesized locally, ducked beneath narration and normalized in two passes. No third-party soundtrack attribution needs an in-video credit screen.
+7. Gemini directs two 1280×720 YouTube thumbnail compositions and selects between the rendered options using vision. It also writes the upload title/description and critiques a film contact sheet. These reviews do not claim to watch motion or hear audio.
+8. FFmpeg encodes H.264/AAC and scans the completed video. A visual timing gate enforces 3–6 seconds. A pixel stability regression catches unintended flicker after an entrance settles.
+
+### Current provider documentation
+
+- [Gemini speech generation](https://ai.google.dev/gemini-api/docs/speech-generation)
+- [Gemini 3.8 Flash TTS specifications](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash-tts)
+- [Pricing and free eligibility](https://ai.google.dev/gemini-api/docs/pricing)
+- [Image generation](https://ai.google.dev/gemini-api/docs/image-generation)
+
+At implementation time, 3.8 Flash TTS and Flash-Lite TTS list free access; image generation models list no free tier. The renderer therefore uses Gemini text direction and locally drawn art rather than invoking a paid image endpoint. This is a deliberate free-key constraint, not a claim that vector output came from Gemini's image model. Gemini's new TTS docs require SDK 2.25+; the project uses the documented REST endpoint to avoid changing the legacy SDK dependency.

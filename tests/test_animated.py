@@ -40,7 +40,9 @@ class Response:
  def json(self):return {'candidates':[{'finishReason':'STOP','content':{'parts':[{'text':'{"ok":true}'}]}}]}
 class Session:
  def __init__(self):self.calls=0
- def post(self,*a,**kw):self.calls+=1;return Response()
+ def post(self,*a,**kw):
+  assert kw['json']['generationConfig']['thinkingConfig']['thinkingLevel']=='LOW'
+  self.calls+=1;return Response()
 
 def test_media_api_pacing_caching_and_budget(tmp_path,monkeypatch):
  monkeypatch.delenv('GEMINI_MEDIA_LEDGER',raising=False);monkeypatch.setenv('GEMINI_TEXT_REQUEST_BUDGET','2')
@@ -60,3 +62,15 @@ def test_real_vector_motion_is_decodable_and_resumable(tmp_path):
  assert abs(duration(out)-3)<.1
  stream=probe(out)['streams'][0];assert stream['width']==960 and stream['pix_fmt']=='yuv420p'
  modified=out.stat().st_mtime_ns;assert shot_video(shot,tmp_path,'draft',0,3).stat().st_mtime_ns==modified
+
+
+def test_settled_vector_frames_do_not_flicker(tmp_path):
+ import subprocess,numpy as np
+ from history_of_x.core import ffmpeg
+ shot=sample();out=shot_video(shot,tmp_path,'draft',0,3)
+ frames=[]
+ for at in [1.0,1.4,1.8]:
+  raw=subprocess.run(['ffmpeg','-v','error','-ss',str(at),'-i',str(out),'-frames:v','1','-f','rawvideo','-pix_fmt','rgb24','-'],capture_output=True,check=True).stdout
+  frames.append(np.frombuffer(raw,np.uint8).reshape(540,960,3))
+ # With entrances settled, the illustration must stay stable rather than shake/flicker.
+ assert max(np.abs(frames[0].astype(float)-f.astype(float)).mean() for f in frames[1:])<.25
