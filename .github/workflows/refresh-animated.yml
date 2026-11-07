@@ -48,6 +48,21 @@ jobs:
         with:
           path: work/media-ledger
           key: media-ledger-v1-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Save refined checkpoint for further edits
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: animated-checkpoint
+          path: |
+            work/animated/request.json
+            work/animated/research.json
+            work/animated/script.json
+            work/animated/storyboard.json
+            work/animated/packaging.json
+            work/animated/boards
+            work/animated/speech
+            work/animated/gemini
+          retention-days: 14
       - uses: actions/upload-artifact@v4
         if: always()
         with:
