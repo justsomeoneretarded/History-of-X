@@ -56,7 +56,7 @@ jobs:
       GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.5-flash-lite' }}
       GEMINI_TTS_MODEL: ${{ vars.GEMINI_TTS_MODEL || 'gemini-3.8-flash-tts' }}
       GEMINI_MEDIA_LEDGER: work/media-ledger/usage.json
-      GEMINI_TEXT_REQUEST_BUDGET: ${{ vars.GEMINI_TEXT_REQUEST_BUDGET || '16' }}
+      GEMINI_TEXT_REQUEST_BUDGET: ${{ vars.GEMINI_TEXT_REQUEST_BUDGET || '24' }}
       GEMINI_TTS_REQUEST_BUDGET: ${{ vars.GEMINI_TTS_REQUEST_BUDGET || '16' }}
     steps:
       - uses: actions/checkout@v4

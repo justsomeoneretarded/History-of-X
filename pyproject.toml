@@ -3,8 +3,8 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 [project]
 name = "history-of-x"
-version = "0.1.0"
-description = "Resumable, free-first documentary production on GitHub Actions"
+version = "0.2.0"
+description = "Gemini-first original animated history explainers on GitHub Actions"
 requires-python = ">=3.11,<3.13"
 dependencies = ["requests>=2.32,<3", "Pillow>=11,<12", "numpy>=1.26,<2", "scipy>=1.11,<2", "soundfile>=0.12,<1", "google-genai>=1.50,<2", "beautifulsoup4>=4.12,<5"]
 [project.optional-dependencies]
@@ -12,7 +12,8 @@ alignment = ["faster-whisper>=1.2,<2", "av>=16,<17"]
 voice = ["chatterbox-tts @ git+https://github.com/resemble-ai/chatterbox.git@5de7a54aa4e5e2baadb0182dde554908b48b85c2", "faster-whisper>=1.2,<2", "av>=16,<17"]
 test = ["pytest>=8,<9", "PyYAML>=6,<7"]
 [project.scripts]
-history-of-x = "history_of_x.cli:main"
+history-of-x = "history_of_x.animated:main"
+history-of-x-archival = "history_of_x.cli:main"
 [tool.setuptools.packages.find]
 include = ["history_of_x*"]
 [tool.pytest.ini_options]

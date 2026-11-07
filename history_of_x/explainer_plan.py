@@ -15,17 +15,17 @@ Each scene cites supplied source IDs, with dates matching those sources. State t
 Avoid these words/phrases: '''+', '.join(BANNED)
 
 def write(api,title,brief,minutes,evidence,directory):
- target=round(minutes*150);count=max(5,min(35,round(target/65)));sources=evidence['sources'];ids=[s['id'] for s in sources]
- identity=key('animated-script-v1',title,brief,minutes,evidence);output=directory/'script.json'
+ from .script import generate_chapters
+ identity=key('animated-script-v2-chapters',title,brief,minutes,evidence);output=directory/'script.json'
  if output.exists() and read_json(output).get('fingerprint')==identity:return read_json(output)
- compact=[{**s,'extract':s['extract'][:3500]} for s in sources]
- schema=scene_schema(ids,target,count)
- prompt=DIRECTION+f'\nTarget {target} spoken words (within 15%), {count} scenes total. All schema fields are required. visual_type is an internal compatibility field, use artwork. date_label must reflect the narrated era. Return only the schema object.'
- draft=api.text(prompt,{'title':title,'brief':brief,'evidence':compact},schema,max_output=14000)
- revised=api.text(DIRECTION+f'\nEdit this draft against the evidence. Remove unsupported claims, repetition, false certainty and weak jokes. Keep {count} scenes, all five chapters and {target} words within 15%. Retain chronology, end date and source IDs. Make it enjoyable to hear, without turning tragedy into a punchline.',{'draft':draft,'brief':brief,'evidence':compact},schema,max_output=14000)
- revised=normalize_script(revised);n=validate(revised,ids,target)
- revised.update(fingerprint=identity,word_count=n,provenance='Gemini animated-explainer draft and evidence-constrained revision')
- save_json(output,revised);return revised
+ class ChapterWriter:
+  def generate(self,instruction,payload,max_output=6000,schema=None):
+   # Small chapter grammars keep useful length constraints without a huge full-film grammar.
+   style=DIRECTION.replace('Five ordered chapters: Hook, Roots, Catalyst, Turning Point, Aftermath. Start with a concrete surprising decision.', 'This is one chapter of a five-chapter film. Follow the specific chapter restriction below. The opening chapter starts with a concrete surprising decision.')
+   return __import__('json').dumps(api.text(style+'\n'+instruction,payload,schema,max_output=max_output,preserve_bounds=True))
+ result=generate_chapters(ChapterWriter(),title,brief,minutes,evidence,directory,identity)
+ result['provenance']='Gemini chapter drafts and evidence-constrained chapter revisions for an original animated explainer'
+ save_json(output,result);return result
 
 def timing_beats(words,total,chapter):
  """Each visual is 3–6 seconds where chapter length permits; exact ASR-aligned words."""
