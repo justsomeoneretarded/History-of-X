@@ -1,0 +1,195 @@
+{
+  "version": 1,
+  "provenance": {
+    "analysis_run": "https://github.com/justsomeoneretarded/History-of-X/actions/runs/42453592145",
+    "artifact_id": 13607210426,
+    "model": "gemini-3.5-flash-lite",
+    "input": "Actual uploaded MP4 bytes including audio, not filenames or YouTube URL guesses",
+    "coverage": [
+      {
+        "id": "jerusalem",
+        "filename": "The Entire History of Jerusalem Explained in 8 Minutes_0_526.mp4",
+        "supplied_clip_seconds": 525.584,
+        "scope": "Entire supplied clip; not necessarily entire original YouTube video",
+        "original_start_seconds": 0,
+        "video_fps_sent": 1,
+        "prompt_tokens": 48410
+      },
+      {
+        "id": "pig-war",
+        "filename": "The Entire Pig War Explained In 37 minutes_0_485.mp4",
+        "supplied_clip_seconds": 485.622,
+        "scope": "Entire supplied clip; not necessarily entire original YouTube video",
+        "original_start_seconds": 0,
+        "video_fps_sent": 2,
+        "prompt_tokens": 76780
+      },
+      {
+        "id": "britain",
+        "filename": "The ENTIRE History of British Empire Explained_0_244.mp4",
+        "supplied_clip_seconds": 244.111,
+        "scope": "Entire supplied clip; not necessarily entire original YouTube video",
+        "original_start_seconds": 0,
+        "video_fps_sent": 1,
+        "prompt_tokens": 22756
+      },
+      {
+        "id": "rome",
+        "filename": "The ENTIRE History of ROME in 12 Minutes_336_733.mp4",
+        "supplied_clip_seconds": 396.133,
+        "scope": "Entire supplied clip; not necessarily entire original YouTube video",
+        "original_start_seconds": 336,
+        "video_fps_sent": 1,
+        "prompt_tokens": 36593
+      },
+      {
+        "id": "egypt",
+        "filename": "The ENTIRE History of Egypt in 17 Minutes_0_564.mp4",
+        "supplied_clip_seconds": 564.105,
+        "scope": "Entire supplied clip; not necessarily entire original YouTube video",
+        "original_start_seconds": 0,
+        "video_fps_sent": 1,
+        "prompt_tokens": 51880
+      }
+    ],
+    "grounding": "Gemini observations supplemented by local Whisper ASR and manually inspected reference frames. Model timestamps are approximate and several are incorrect; use only explicitly verified examples below. No factual review of the new script is requested."
+  },
+  "priorities": {
+    "writing_voice_runtime": "Jerusalem",
+    "moving_visual_storytelling": "Pig War",
+    "supporting_craft": [
+      "Britain",
+      "Rome",
+      "Egypt"
+    ],
+    "originality": "Capture clarity, natural delivery, causal storytelling and timed acting. Create original writing, artwork, characters, compositions and music."
+  },
+  "runtime": {
+    "reference_seconds": 525.584,
+    "target_minutes": [
+      8.5,
+      9.0
+    ],
+    "reference_asr_words": 1527,
+    "reference_asr_wpm": 174.3,
+    "delivery_target_wpm": [
+      165,
+      180
+    ],
+    "target_words": [
+      1450,
+      1550
+    ],
+    "note": "Word count and cadence are local ASR estimates, not an exact reference transcript. Verify final synthesized duration; do not force runtime by silence or padded credits."
+  },
+  "writing": [
+    "Open on a concrete surprise or contradiction, establish stakes, then promise the explanatory journey. Do not begin with a textbook list of dynasties.",
+    "Explain each change as somebody wanting something, facing an obstacle, making a choice, and causing a consequence.",
+    "Give the viewer a recurring central question and return to it as centuries pass.",
+    "Compress time with short causal bridges and clear era signposts; explain why the next era matters before adding another ruler name.",
+    "Prefer concrete spoken language and short emphasis sentences. Alternate compact observations with longer explanations rather than writing uniformly short fragments.",
+    "Use occasional original dry irony from incongruous stakes or overconfidence. Retire the repeated bureaucracy/paperwork joke. Treat suffering soberly.",
+    "Balance the full Ethiopian historical arc. Adwa can be a major sequence but should not consume the film at the expense of the rest of the promised history.",
+    "End by answering the opening question with changed meaning, rather than reciting an unrelated modern-event list."
+  ],
+  "voice": {
+    "instruction": "Sound like a knowledgeable person explaining an absorbing story to one listener. Warm, alert, conversational and clear. Brisk thought flow with natural local pauses. Let sentence endings resolve and vary emphasis according to meaning. Understate irony. No announcer boom, theatrical trailer pitch, sing-song repetition, forced accent or imitation of a particular reference speaker. Read names and dates cleanly. Do not add words.",
+    "cadence_evidence": {
+      "asr_sentence_words_median": 10,
+      "asr_sentence_words_mean": 12.2,
+      "asr_sentences_eight_words_or_fewer_fraction": 0.432,
+      "asr_phrase_pause_median_seconds": 0.37,
+      "asr_sentence_end_pause_median_seconds": 0.43
+    },
+    "selection": "Compare actual Gemini voice auditions using the same original paragraph; select delivery by listening/analysis, not by voice-name assumptions. Reference voice identity is neither inferred nor cloned."
+  },
+  "visual_direction": [
+    "Design the visual around the spoken verb and its consequence. A treaty changes obligations; it is not merely a scrolling document beside generic officials.",
+    "Use a coherent mixture of original acted animation, explanatory geographic diagrams, authentic historical artwork/portraits and licensed archival footage. Choose the medium for the specific narrative job.",
+    "For an acted shot, specify setup, anticipation, action/contact, reaction and visible result. Time the decisive change to the relevant spoken words.",
+    "Stage scale and contrasts sequentially: reveal one side, reveal the imbalance, then reveal the small cause. Avoid displaying every element at once.",
+    "Give characters distinguishable silhouettes, costume cues, expressions and intentions. Animate eyebrows, head orientation, hands and posture deliberately; walking cycles alone are not acting.",
+    "Use historical objects and archives as editorial subjects, not framed decorations floating beside characters. Never put a portrait display stand on a battlefield.",
+    "Use maps when geography or spatial causation requires them, not as compulsory scenery. Routes and boundaries must explain a decision or consequence.",
+    "Show only useful text and the requested discreet year counter. Do not inherit reference presenter mascots, chapter-card clutter, brand names, sources, channel names, decorative labels or copied visual gags.",
+    "Every visible motion must be explicitly directed and executed. Changing pixels, camera drift and idle bouncing are not evidence that a shot explains anything.",
+    "Build new Ethiopian environments and historical silhouettes. Avoid the same palace template across centuries."
+  ],
+  "editing_and_audio": [
+    "Cut or transform on meaning, not on a rigid duration grid. Aim for a meaningful change every 3–6 seconds while allowing a setup/action/reaction to span multiple shots.",
+    "Vary shot scale and visual density. Let difficult explanations register before changing the subject.",
+    "Place an original musical sting or concise effect only where it supports a reveal, action or harmless comic reversal. Keep narration intelligible and foregrounded.",
+    "Use actual licensed instrumental music with restrained scoring changes; avoid a synthetic repeating four-note bed throughout the film.",
+    "Use smooth subpixel transforms, intentional easing and held reaction poses. A constant-moving camera is not required.",
+    "Output audio should meet the pipeline loudness and peak limits rather than copying the reference near-zero true peak."
+  ],
+  "verified_reference_examples": [
+    {
+      "source": "pig-war",
+      "clip_time": "00:00",
+      "verified_by": "manual extracted frame",
+      "observed": "A tiny American position faces an expansive fleet across water.",
+      "transferable_function": "Make unequal stakes readable before introducing an unexpected small cause; invent a different Ethiopian-specific composition."
+    },
+    {
+      "source": "pig-war",
+      "clip_time": "03:30",
+      "verified_by": "manual extracted frame",
+      "observed": "A gauge beside an expressive presenter turns an abstract diplomatic situation into a readable visual metaphor.",
+      "transferable_function": "Give abstract tension an immediate visible state change, without copying this gauge, label or presenter."
+    },
+    {
+      "source": "pig-war",
+      "clip_time": "04:00",
+      "verified_by": "manual extracted frame",
+      "observed": "A geographic overview shows colored territorial areas and a boundary while distinct character figures establish the parties.",
+      "transferable_function": "Combine spatial explanation with character motivations when borders are the actual issue."
+    },
+    {
+      "source": "pig-war",
+      "clip_time": "05:00",
+      "verified_by": "manual extracted frame",
+      "observed": "An anthropomorphized territorial shape expresses the contradiction of a company exercising state-like power.",
+      "transferable_function": "Turn an abstract contradiction into an original, immediately understandable visual idea rather than generic people talking."
+    },
+    {
+      "source": "pig-war",
+      "clip_time": "06:00",
+      "verified_by": "manual extracted frame",
+      "observed": "A compact diagram connects pelts, overseas shipping, a trading post and money in a readable exchange loop.",
+      "transferable_function": "Show economic mechanisms step by step. Do not use a random crate-carrying loop as a substitute for explaining trade."
+    },
+    {
+      "source": "pig-war",
+      "clip_time": "06:15",
+      "verified_by": "manual extracted frame",
+      "observed": "An actual historical portrait becomes the dominant subject for a named person.",
+      "transferable_function": "Use authentic portraits in purposeful editorial shots rather than as tiny props inside animated scenery."
+    },
+    {
+      "source": "pig-war",
+      "clip_time": "07:30",
+      "verified_by": "manual extracted frame",
+      "observed": "An expressive national shape and a thermometer make migration pressure into a concrete visual metaphor.",
+      "transferable_function": "Translate an abstract development into readable pressure, action and reaction; create different original imagery."
+    },
+    {
+      "source": "jerusalem",
+      "clip_time": "00:00–00:55",
+      "verified_by": "local Whisper ASR",
+      "observed": "An accumulating numerical surprise gives way to the subject reveal and an explicit promise to explain a long historical arc.",
+      "transferable_function": "Build an original opening with escalating information, a reveal and a clear question. Do not reuse its opening lines or joke."
+    }
+  ],
+  "unverified_or_rejected_claims": [
+    "Gemini reported a ruler handing a gift at Pig War 04:31. Frames at 04:31 and 04:38 instead show a timeline card and a symbol comparison; do not cite that reported action/time as verified.",
+    "Gemini reported a thermometer at Pig War 07:25. The extracted frame there is a timeline card; the thermometer is visible at 07:30. Model timecodes must not be treated as precise edit instructions.",
+    "The exact user-described 2000-years-of-mystery moment has not been confidently located. Do not claim its wording or recreate an imagined beat."
+  ],
+  "quality_review": [
+    "A reference-aware review must identify exact spoken claims, visible actions and their timing, then test whether the new shot explains the same narrative function with original material.",
+    "Require concrete defects and verify a sample of claimed timestamps against extracted frames or short moving excerpts. Gemini self-scoring alone is insufficient.",
+    "Separate technical validity from creative acceptance. Motion percentages and a yes/no animation check do not establish relevance, acting quality, staging, rhythm or retention.",
+    "Evaluate an actual short mixed sequence and voice audition before investing in the full render. Preserve the report and the actual comparison clips."
+  ]
+}
