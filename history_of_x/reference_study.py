@@ -32,7 +32,7 @@ Do not present guessed statistics as measurements; estimate pacing only if clear
 REFERENCE METADATA: """ + json.dumps(metadata)
     model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
     body = {
-        "contents": [{"role": "user", "parts": [{"text": prompt}, {"inlineData": {"mimeType": "video/mp4", "data": base64.b64encode(video.read_bytes()).decode()}}]}],
+        "contents": [{"role": "user", "parts": [{"text": prompt}, {"inlineData": {"mimeType": "video/mp4", "data": base64.b64encode(video.read_bytes()).decode()}, "videoMetadata": {"fps": 2 if metadata.get("visual_reference_priority") else 1}}]}],
         "generationConfig": {"temperature": .2, "maxOutputTokens": 6500, "responseMimeType": "application/json", "responseJsonSchema": schema, "thinkingConfig": {"thinkingLevel": "LOW"}},
     }
     result = api.request(model, "models/" + model + ":generateContent", body, "text")
