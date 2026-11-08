@@ -13,6 +13,7 @@ import math
 import re
 import subprocess
 import xml.etree.ElementTree as ET
+from collections import OrderedDict
 from pathlib import Path
 
 import numpy as np
@@ -254,8 +255,38 @@ def _raster_layers(program, design_scale=1.):
     return result
 
 
-def _composite(canvas, image, offset, matrix, opacity, reveal, design_scale):
+class _PatchCache:
+    """Reuse held artwork poses without retaining an unbounded frame history."""
+    def __init__(self, pixel_limit=8_000_000):
+        self.entries = OrderedDict()
+        self.pixels = 0
+        self.limit = pixel_limit
+
+    def get(self, identity):
+        value = self.entries.get(identity)
+        if value is not None:
+            self.entries.move_to_end(identity)
+        return value
+
+    def put(self, identity, patch, left, top):
+        pixels = patch.width*patch.height
+        if pixels > self.limit:
+            return
+        while self.entries and self.pixels+pixels > self.limit:
+            _, (old, _, _) = self.entries.popitem(last=False)
+            self.pixels -= old.width*old.height
+        self.entries[identity] = (patch, left, top)
+        self.pixels += pixels
+
+
+def _composite(canvas, image, offset, matrix, opacity, reveal, design_scale, cache=None):
     if opacity <= 0 or reveal <= 0:
+        return
+    identity = (id(image), offset, tuple(matrix.flatten()), opacity, reveal, design_scale, canvas.size)
+    cached = cache.get(identity) if cache is not None else None
+    if cached is not None:
+        patch, left, top = cached
+        canvas.alpha_composite(patch, (left, top))
         return
     if reveal < 1:
         # The SVG author chooses each route/document as a separate reveal layer.
@@ -279,10 +310,12 @@ def _composite(canvas, image, offset, matrix, opacity, reveal, design_scale):
     patch = image.transform((right-left, bottom-top), Image.Transform.AFFINE,
                             tuple(inverse[:2].flatten()),
                             resample=Image.Resampling.BICUBIC)
+    if cache is not None:
+        cache.put(identity, patch, left, top)
     canvas.alpha_composite(patch, (left, top))
 
 
-def scene_frame(program, time, size=(960, 540), raster=None, raster_scale=None):
+def scene_frame(program, time, size=(960, 540), raster=None, raster_scale=None, cache=None):
     """Render one frame; useful for proof sheets and directed temporal tests."""
     scale = max(size[0]/WIDTH, size[1]/HEIGHT)
     raster_scale = max(1., scale) if raster_scale is None else raster_scale
@@ -311,7 +344,7 @@ def scene_frame(program, time, size=(960, 540), raster=None, raster_scale=None):
         local, opacity, reveal = state(layer)
         image, offset = raster[layer['id']]
         matrix = viewport @ camera_matrix @ local
-        _composite(canvas, image, offset, matrix, opacity*camera['opacity'], reveal, raster_scale)
+        _composite(canvas, image, offset, matrix, opacity*camera['opacity'], reveal, raster_scale, cache)
     return canvas.convert('RGB')
 
 
@@ -334,9 +367,10 @@ def render_scene(program, directory, profile='cinematic'):
                '-preset', 'veryfast', '-crf', '19' if profile != 'draft' else '23',
                '-pix_fmt', 'yuv420p', '-threads', '2', '-movflags', '+faststart', str(target)]
     process = subprocess.Popen(command, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+    cache = _PatchCache()
     try:
         for frame in range(frames):
-            process.stdin.write(scene_frame(program, frame/fps, (width, height), raster, raster_scale).tobytes())
+            process.stdin.write(scene_frame(program, frame/fps, (width, height), raster, raster_scale, cache).tobytes())
         process.stdin.close()
         stderr = process.stderr.read().decode('utf8', errors='replace')
         if process.wait(timeout=120):
