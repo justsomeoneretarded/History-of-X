@@ -19,6 +19,11 @@ on:
         type: choice
         options: [all, audition]
         default: all
+      model:
+        description: Free Gemini writer/reviewer; choose Flash Lite if Flash daily quota is exhausted
+        type: choice
+        options: [gemini-3.8-flash, gemini-3.5-flash-lite]
+        default: gemini-3.8-flash
       voice:
         description: auto compares original Puck and Charon performances
         type: choice
@@ -46,7 +51,7 @@ jobs:
       VIDEO_BRIEF: ${{ inputs.brief }}
       VIDEO_MINUTES: ${{ inputs.minutes }}
       NARRATOR: ${{ inputs.voice }}
-      GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.8-flash' }}
+      GEMINI_MODEL: ${{ inputs.model || vars.GEMINI_MODEL || 'gemini-3.8-flash' }}
       GEMINI_TTS_MODEL: ${{ vars.GEMINI_TTS_MODEL || 'gemini-3.8-flash-tts' }}
       GEMINI_MEDIA_LEDGER: work/media-ledger/usage.json
       GEMINI_TEXT_REQUEST_BUDGET: '48'
