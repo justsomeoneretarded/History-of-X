@@ -118,3 +118,19 @@ def test_acted_proof_arms_keep_shoulder_contact():
         for time in [0, 2, 5, 8.1, 8.9, 10]:
             matrix = transform_matrix(interpolate(arm['keyframes'], time), arm['pivot'])
             assert matrix @ [*shoulder, 1] == pytest.approx([*shoulder, 1])
+
+
+def test_local_reusable_svg_artwork_is_rendered_and_recursive_use_rejected():
+    pytest.importorskip('cairosvg')
+    scene = treaty_proof()
+    scene['svg'] = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">
+      <defs><g id="motif"><rect width="80" height="80" fill="#ee2211"/></g></defs>
+      <g id="room"><use href="#motif" x="200" y="200"/></g></svg>'''
+    scene['layers'] = [scene['layers'][0]]
+    scene['events'] = []
+    validate_scene(scene)
+    rendered = scene_frame(scene, 1, (480, 270))
+    assert rendered.getpixel((55, 55)) == (238, 34, 17)
+    scene['svg'] = scene['svg'].replace('<rect width="80" height="80" fill="#ee2211"/>', '<use href="#motif"/>')
+    with pytest.raises(PipelineError, match='recursive'):
+        validate_scene(scene)

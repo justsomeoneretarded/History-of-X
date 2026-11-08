@@ -28,7 +28,8 @@ DEFAULT = dict(x=0., y=0., scale=1., rotation=0., opacity=1., reveal=1.)
 EASES = ('linear', 'smooth', 'hold', 'ease_in', 'ease_out')
 ALLOWED = {'svg', 'g', 'defs', 'path', 'rect', 'circle', 'ellipse', 'line',
            'polyline', 'polygon', 'text', 'tspan', 'linearGradient',
-           'radialGradient', 'stop', 'clipPath', 'mask', 'image', 'title', 'desc'}
+           'radialGradient', 'stop', 'clipPath', 'mask', 'image', 'title', 'desc',
+           'pattern', 'symbol', 'use'}
 
 
 def schema():
@@ -75,16 +76,21 @@ def _svg_tree(source):
     if root.get('viewBox', '').replace(',', ' ').split() != ['0', '0', '1920', '1080']:
         raise PipelineError('Scene SVG viewBox must be 0 0 1920 1080')
     ids = set()
+    by_id = {}
+    references = []
     count = 0
     for element in root.iter():
         count += 1
-        if count > 15000 or _name(element.tag) not in ALLOWED:
-            raise PipelineError('Scene SVG contains unsupported elements or excessive complexity')
+        if count > 15000:
+            raise PipelineError('Scene SVG exceeds 15000 artwork elements')
+        if _name(element.tag) not in ALLOWED:
+            raise PipelineError(f'Scene SVG element <{_name(element.tag)}> is unsupported; use paths/shapes rather than filters, CSS or scripted animation')
         identifier = element.get('id')
         if identifier:
             if identifier in ids:
                 raise PipelineError('Scene SVG IDs must be unique')
             ids.add(identifier)
+            by_id[identifier] = element
         for attr, value in element.attrib.items():
             name = _name(attr).lower()
             if name.startswith('on') or name in {'filter'}:
@@ -94,11 +100,39 @@ def _svg_tree(source):
                 if not (value.startswith('#') or re.fullmatch(
                         r'data:image/(?:png|jpeg);base64,[A-Za-z0-9+/=\s]+', value)):
                     raise PipelineError('SVG may only reference local IDs or embedded PNG/JPEG')
+                if value.startswith('#'):
+                    references.append(value[1:])
             for target in re.findall(r'url\(\s*[\"\']?([^\)\"\']+)', value, re.I):
                 if not target.startswith('#'):
                     raise PipelineError('External SVG resources are disabled')
+                references.append(target[1:])
             if re.search(r'javascript:|@import|expression\(', value, re.I):
                 raise PipelineError('Unsafe SVG attribute')
+    if any(target not in ids for target in references):
+        raise PipelineError('Scene SVG references a missing local definition')
+    # Reusable symbols/patterns allow detailed scenery without duplicating markup.
+    # Reject recursive or explosively nested <use> trees before rasterization.
+    sizes = {}
+    def expanded_size(element, ancestors):
+        identity = id(element)
+        if identity in ancestors:
+            raise PipelineError('Scene SVG contains a recursive use reference')
+        if identity in sizes:
+            return sizes[identity]
+        if len(ancestors) > 64:
+            raise PipelineError('Scene SVG reusable artwork is nested too deeply')
+        next_ancestors = ancestors | {identity}
+        size = 1 + sum(expanded_size(child, next_ancestors) for child in element)
+        if _name(element.tag) == 'use':
+            target = element.get('href') or element.get('{http://www.w3.org/1999/xlink}href') or ''
+            if not target.startswith('#'):
+                raise PipelineError('SVG use must reference a local artwork ID')
+            size += expanded_size(by_id[target[1:]], next_ancestors)
+        if size > 60000:
+            raise PipelineError('Expanded scene SVG exceeds its artwork complexity limit')
+        sizes[identity] = size
+        return size
+    expanded_size(root, set())
     groups = [child.get('id') for child in root if _name(child.tag) == 'g']
     if not groups or any(not g for g in groups):
         raise PipelineError('Every top-level artwork group requires an ID')
