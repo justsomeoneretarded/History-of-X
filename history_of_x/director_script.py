@@ -70,6 +70,19 @@ def outline_schema():
         "chapters": {"type": "array", "items": chapter}}}
 
 
+def bounded_script_schema(source_ids, target):
+    """A requested word count alone is not enforced by generative models.
+
+    Bound scene count and narration characters in the decoder, then measure words
+    locally. Fixed chunks also give the director enough distinct story moments.
+    """
+    count = max(5, round(target / 64))
+    result = scene_schema(source_ids, target, count)
+    narration = result["properties"]["scenes"]["items"]["properties"]["narration"]
+    narration.update(minLength=round(target / count * 5.2), maxLength=round(target / count * 7.0))
+    return result
+
+
 def write(api, title, brief, minutes, evidence, directory):
     directory = Path(directory)
     target = round(minutes * 174)
@@ -121,15 +134,19 @@ def write(api, title, brief, minutes, evidence, directory):
         "Write dates in comfortable spoken form. date_label remains a concise readable calendar label for visual use. "
         "Return all fields in the schema, with 1-based consecutive scene IDs. Avoid: " + ", ".join(BANNED)
     )
-    result = normalize_script(api.text(instruction, {"title": title, "brief": brief, "outline": outline, "style": STYLE_PROFILE, "evidence": compact}, scene_schema(source_ids), max_output=14000))
+    count = max(5, round(target / 64))
+    instruction += f"\nWrite EXACTLY{count} scenes, averaging{target / count:.0f} spoken words each. Do not compress the whole film into five or ten short scenes."
+    result = normalize_script(api.text(instruction, {"title": title, "brief": brief, "outline": outline, "style": STYLE_PROFILE, "evidence": compact}, bounded_script_schema(source_ids, target), max_output=14000, preserve_bounds=True))
+    save_json(directory / "draft-script.json", result)
     metrics = script_metrics(result)
     # A single bounded craft/length revision only if the generated draft missed production constraints.
     if not target * .93 <= metrics["words"] <= target * 1.07 or max(metrics["chapter_words"].values()) > 450 or metrics["median_sentence_words"] > 17:
         result = normalize_script(api.text(
             instruction + "\nRevise ONLY for spoken cadence, length and chapter intake. The previous draft's measured metrics are supplied. "
             "Keep the chronology, source citations, meaning and organizing question. Do not invent additional facts.",
-            {"draft": result, "metrics": metrics, "target_words": target, "outline": outline}, scene_schema(source_ids), max_output=14000,
+            {"draft": result, "metrics": metrics, "target_words": target, "outline": outline}, bounded_script_schema(source_ids, target), max_output=14000, preserve_bounds=True,
         ))
+        save_json(directory / "draft-script.json", result)
         metrics = script_metrics(result)
     validate(result, source_ids, target)
     if not target * .9 <= metrics["words"] <= target * 1.1:
