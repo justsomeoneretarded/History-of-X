@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import base64
 import json
+import math
 import os
 import re
 import statistics
@@ -83,6 +84,16 @@ def bounded_script_schema(source_ids, target):
     return result
 
 
+def chapter_script_schema(source_ids, budget, count, chars_per_word=5.6):
+    """Keep decoding grammar small: one chapter, five fields, no branching enums."""
+    scene = {"type": "object", "required": ["narration", "source_ids", "date_label", "location", "asset_search_term"], "properties": {
+        "narration": {"type": "string", "minLength": max(30, round(budget / count * chars_per_word * .93)), "maxLength": max(80, round(budget / count * chars_per_word * 1.25))},
+        "source_ids": {"type": "array", "items": {"type": "string", "enum": source_ids}},
+        "date_label": {"type": "string"}, "location": {"type": "string"}, "asset_search_term": {"type": "string"},
+    }}
+    return {"type": "object", "required": ["scenes"], "properties": {"scenes": {"type": "array", "minItems": count, "maxItems": count, "items": scene}}}
+
+
 def write(api, title, brief, minutes, evidence, directory):
     directory = Path(directory)
     target = round(minutes * 174)
@@ -139,20 +150,38 @@ def write(api, title, brief, minutes, evidence, directory):
         "Write dates in comfortable spoken form. date_label remains a concise readable calendar label for visual use. "
         "Return all fields in the schema, with 1-based consecutive scene IDs. Avoid: " + ", ".join(BANNED)
     )
-    count = max(5, round(target / 64))
-    instruction += f"\nWrite EXACTLY{count} scenes, averaging{target / count:.0f} spoken words each. Do not compress the whole film into five or ten short scenes."
-    result = normalize_script(api.text(instruction, {"title": title, "brief": brief, "outline": outline, "style": STYLE_PROFILE, "evidence": compact}, bounded_script_schema(source_ids, target), max_output=14000, preserve_bounds=True))
-    save_json(directory / "draft-script.json", result)
+    hook = min(140, max(25, round(target * .085)))
+    remaining = target - hook
+    budgets = [hook, round(remaining * .27), round(remaining * .24), round(remaining * .27)]
+    budgets.append(target - sum(budgets))
+    merged = []
+    for index, (chapter, budget) in enumerate(zip(CHAPTERS, budgets)):
+        count = max(1, math.ceil(budget / 68))
+        chapter_path = directory / "director-chapters" / f"{index + 1}-{fingerprint}.json"
+        if chapter_path.exists():
+            part = read_json(chapter_path)
+        else:
+            chapter_instruction = instruction + (
+                f"\nNOW WRITE ONLY chapter{index + 1}/5:{chapter}. Exactly{count} scenes, exactly about{budget} spoken words TOTAL, averaging{budget / count:.0f} words per scene. "
+                "The whole-film outline is continuity context, not a request to write other chapters. "
+                "Opening instructions apply ONLY to Hook. In later chapters continue the story naturally, never repeat the opening or recap earlier chapters. "
+                "Do not resolve later chapters early. End on this chapter's transition. Keep source citations and date labels. "
+                "No extra review, commentary, stage directions or chapter announcements in narration."
+            )
+            payload = {"title": title, "brief": brief, "whole_film_outline": outline, "this_chapter": outline["chapters"][index], "target_chapter_words": budget,
+                       "previous_chapter_ending": " ".join(s["narration"] for s in merged[-2:]), "evidence": compact}
+            part = api.text(chapter_instruction, payload, chapter_script_schema(source_ids, budget, count), max_output=6500, preserve_bounds=True)
+            words = sum(len(s["narration"].split()) for s in part["scenes"])
+            if not budget * .9 <= words <= min(450, budget * 1.1):
+                char_rate = sum(len(s["narration"]) for s in part["scenes"]) / max(1, words)
+                part = api.text(chapter_instruction + f"\nThe draft has{words} words; target{budget}. Revise ONLY its spoken length/cadence without inventing facts. Use the whole word budget, not short summaries.",
+                                {**payload, "draft": part}, chapter_script_schema(source_ids, budget, count, char_rate * 1.04), max_output=6500, preserve_bounds=True)
+            save_json(chapter_path, part)
+        for scene in part["scenes"]:
+            merged.append({**scene, "chapter": chapter, "scene_id": len(merged) + 1, "visual_type": "artwork", "subtitle_highlights": [], "delivery": "calm" if chapter == "Aftermath" else "normal", "bg_music_mood": "reflective" if chapter == "Aftermath" else "tense"})
+        save_json(directory / "draft-script.json", {"title": title, "summary": outline["organizing_question"], "scenes": merged})
+    result = normalize_script({"title": title, "summary": outline["organizing_question"], "scenes": merged})
     metrics = script_metrics(result)
-    # A single bounded craft/length revision only if the generated draft missed production constraints.
-    if not target * .93 <= metrics["words"] <= target * 1.07 or max(metrics["chapter_words"].values()) > 450 or metrics["median_sentence_words"] > 17:
-        result = normalize_script(api.text(
-            instruction + "\nRevise ONLY for spoken cadence, length and chapter intake. The previous draft's measured metrics are supplied. "
-            "Keep the chronology, source citations, meaning and organizing question. Do not invent additional facts.",
-            {"draft": result, "metrics": metrics, "target_words": target, "outline": outline}, bounded_script_schema(source_ids, target), max_output=14000, preserve_bounds=True,
-        ))
-        save_json(directory / "draft-script.json", result)
-        metrics = script_metrics(result)
     validate(result, source_ids, target)
     if not target * .9 <= metrics["words"] <= target * 1.1:
         raise PipelineError("Director script missed its bounded runtime word budget; draft remains cached")
