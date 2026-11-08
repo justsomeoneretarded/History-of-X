@@ -1,57 +1,70 @@
-# History of X — moving history documentaries
+# History of X — directed history films
 
-Give the runner a title and a short brief. It uses Gemini for research-informed writing, narration, speech-timed visual direction, YouTube packaging and visual critique. The picture track uses frame-by-frame articulated characters and physical environments: people walk and carry goods, leaders negotiate, ships move on water, workers build, and troops march or retreat. Historical photographs and public-domain moving footage are mixed into the animated film. A running year display and 3–6 second camera beats keep the chronology clear.
+A GitHub Actions pipeline for original history videos from a title and short brief. The current rebuild studies the user's supplied reference clips, uses Gemini for writing, narrator auditions and executable scene direction, and renders original layered illustration with historical media. The earlier generic stickman film was rejected creatively; its movement checks did not establish production quality.
 
-[Download the completed Ethiopia moving film and upload package](https://github.com/justsomeoneretarded/History-of-X/actions/runs/42352656439/artifacts/13566745408) — 1080p, 6:53, Gemini narration, articulated character animation and authentic archival media.
+## Run the directed pipeline
 
-[Watch the 45-second motion proof](https://github.com/justsomeoneretarded/History-of-X/actions/runs/42350418522/artifacts/13565064705). Gemini reviewed the actual video and identified sustained character action rather than a slideshow.
+1. Keep your free Gemini key in the repository Actions secret **GEMINI_API**.
+2. Open [Actions → Directed history film](https://github.com/justsomeoneretarded/History-of-X/actions/workflows/director-film.yml) and select **Run workflow**.
+3. Enter a title and brief. The default is an original Ethiopia history, approximately **8 minutes 45 seconds**. `auto` auditions Puck and Charon; individual Gemini voices are also selectable.
+4. Start with **proof**, which renders complete opening and treaty scenes. **film** renders the whole narration. `draft` is 540p; `cinematic` is 1080p/30fps.
+5. Download **directed-proof** or **directed-film**. Read `production.json` and `editorial-review.json`: technical success alone does not mean the candidate is upload-ready.
 
-## Run
+The workflow writes a video, external subtitles, thumbnail, title, description, full credits, contact sheet, executable scene programs and review evidence. It does not upload to YouTube. A failed creative review preserves the candidate for revision and stops the workflow.
 
-1. Keep your Gemini API key in the repository Actions secret **GEMINI_API**.
-2. Open [Actions → Produce animated history video → Run workflow](https://github.com/justsomeoneretarded/History-of-X/actions/workflows/produce.yml).
-3. Enter a title and brief, choose a Gemini voice and target narration length (0.5–10 minutes). **Puck** is the default; Charon, Kore, Fenrir, Orus and Aoede are alternatives.
-4. Download **animated-video** after all stages pass. It contains `final.mp4`, `thumbnail.jpg`, two thumbnail alternatives, title, description, SRT/ASS captions, sources, storyboard, contact sheet and quality reports.
+`audio_run` reuses a **director-audio** checkpoint. `resume_run` reuses a **directed-checkpoint**. Select `revise` to apply the previous candidate's concrete editorial feedback. Reusing accepted audio does not rewrite the script or regenerate its voice. Artifacts expire after 14 days.
 
-The `ethiopia` preset reuses reviewed historical evidence, but Gemini writes a **new animated script**. It does not reuse the earlier archival film's narration or script. The `auto` preset researches your topic. Artifacts are retained for 14 days. The runner does not upload to YouTube.
+## Reference roles
 
-## What changed in the animated version
+All five supplied clips were actually sent to Gemini as MP4 with audio, rather than supplied only as URLs. See the [successful study run](https://github.com/justsomeoneretarded/History-of-X/actions/runs/42453592145) and [grounded directing guide](assets/style/reference-study.json).
 
-- **Gemini 3.8 Flash TTS** replaces Chatterbox. The Gemini voices are honestly labeled; they are not the Warguy/Kit Laser reference voices.
-- **Gemini 3.5 Flash-Lite** writes and revises the script, plans each visual around the spoken phrase, designs two thumbnail concepts and critiques rendered images. A verified free text model can be selected with `GEMINI_MODEL`.
-- A frame-by-frame renderer redraws jointed limbs, gestures, cargo, ships, water, smoke and moving crowds on every frame. It does not display a row of icon cards or freeze after an entrance animation. Missing choreography stops production; there is no slideshow fallback.
-- Characters use two-link limb articulation and continuous world time across camera cuts. The old image-entrance and integer-crop zoom systems are not used.
-- Only the year, essential narrative labels and captions appear. No channel/chapter chrome, source/reference labels or long credit screens are added. Sources and attribution remain in the delivery package and description.
-- Original locally synthesized instrumental accompaniment and rare short musical stings replace licensed soundtrack excerpts. No creator's songs or jokes are copied.
+- **Jerusalem:** conversational writing, short varied sentences, natural delivery, continuity across centuries and approximately 8:46 runtime. Local ASR measured approximately 1,527 words / 174 words per minute.
+- **Pig War:** staged information, character reactions, purposeful holds, physical metaphors and a mixture of animation, maps and historical imagery.
+- **Britain, Rome and Egypt:** additional examples of chronological compression, contrasting scale, locations and explanation.
 
-Google’s current native video generator, **Gemini Omni 1.2 Flash**, has no free API tier; the earlier Veo preview endpoint is retired. Gemini image-generation API models also have **no free tier**. The free-key pipeline therefore uses Gemini to direct bounded vector compositions and thumbnail concepts, then renders them locally. It does not silently call paid image, video or music services. Rendering, audio mixing and encoding use FFmpeg; local faster-whisper checks speech and assists caption timing.
+These are craft references. Their scripts, characters, jokes, voices and songs are not copied. Some AI timestamps were inaccurate; the guide distinguishes manually checked examples from uncertain observations. Uploaded reference footage is not committed to the repository. Temporary transfer used encrypted files and a private key held only on the runner.
 
-## Quota and recovery
+## Production parts
 
-All Gemini request starts are spaced at least 65 seconds apart. Text and speech have separate configurable rolling 24-hour budgets (48 text attempts and 16 speech attempts by default), while sharing a pacing ledger. Repository concurrency prevents this workflow and the legacy Gemini pipeline from overlapping. Other applications using your Google project still share provider quotas.
+| Part | Implementation |
+| --- | --- |
+| Outline and script | Gemini, bounded original scene budgets, source IDs and measured spoken cadence |
+| Narration | Gemini 3.8 Flash TTS; actual voice auditions judged for completeness, naturalness, clarity and rhythm |
+| Direction | Gemini generates original SVG artwork and explicit timed layer transforms; it also sees approved historical subject images |
+| Animation | CairoSVG rasterization, Pillow floating-point composition, parent rigs, expressions, gestures, props, reveals and camera keyframes |
+| Historical media | Subject-specific licensed collection, Internet Archive newsreel, Cleveland Museum and Met open-access objects; actual use recorded separately from availability |
+| Sound | Licensed Scott Buckley recordings with restrained levels, crossfades, narration ducking, deliberate silence and explicitly requested original foley |
+| Editing | FFmpeg; cumulative frame timing, uniform audio format, 48kHz stereo AAC, loudness and decode checks |
+| Packaging | Gemini title/description/hook, large authentic subject composition, complete source and media attribution outside the picture |
+| Review | Actual video/audio critique for visual relevance, acting, composition, narration and pacing; technical checks remain separate |
 
-Successful API responses, scripts, chapter audio and storyboards are checkpointed. If a run fails, use **identical inputs** and put its run ID in `resume_run`. Accepted work is recovered. **Refine saved animated video** re-renders a completed checkpoint with current graphics and captions, preserving its script and voice. Its default text-attempt budget is 48. **Recreate as moving documentary** preserves saved narration, creates Gemini choreography, publishes a short moving preview, and renders the full film only after that preview passes sustained-motion checks and Gemini video review. A provider quota error stops with a checkpoint rather than sleeping all day or switching to a paid service. Transient retries and speech regeneration are bounded.
+The renderer has no required palace/army templates or implicit walking loops. The scene program actually executes the authored timing. Purposeful stillness is allowed; decorative movement does not earn creative approval.
 
-Variables: `GEMINI_MODEL`, `GEMINI_TTS_MODEL`, `GEMINI_TEXT_REQUEST_BUDGET`, `GEMINI_TTS_REQUEST_BUDGET`. Supported TTS models are `gemini-3.8-flash-tts` and `gemini-3.8-flash-lite-tts`; access and quota are project-dependent. Request budget exhaustion is distinct from the model's token limits.
+## Free-tier limits and recovery
 
-## Local use
+The directed workflow defaults to **Gemini 3.8 Flash** for complex writing/direction/review, and **Gemini 3.8 Flash TTS** for speech. `GEMINI_DIRECTOR_MODEL` can select a supported alternative; the older workflows retain their separate settings. Google's current standard pricing lists free text input/output for 3.8 Flash, but project access and quotas still vary. Consult [pricing](https://ai.google.dev/gemini-api/docs/pricing) and [project rate limits](https://ai.google.dev/gemini-api/docs/rate-limits).
 
-Python 3.11, FFmpeg/ffprobe with libass, and the bundled Space Grotesk/DejaVu fonts:
+- Request starts are separated by at least 65 seconds. This is a conservative application policy, not Google's universal required sleep.
+- RPM, input TPM and daily quotas are separate and shared by a Google project. Sleeping cannot cure an exhausted daily quota.
+- Local rolling budgets default to 48 text attempts and 16 speech attempts. They are guardrails, not a claim about the provider allowance.
+- 3.8 Flash documents a 1,048,576-token input limit and 65,536-token output limit. This application uses substantially smaller requests and bounded outputs.
+- Speech is split by chapter, with at most 450 words per request as an application reliability bound. ASR checks completeness before audio is accepted.
+- Accepted responses, scripts, audio and scene programs are checkpointed. Provider quota failures preserve progress; the pipeline does not silently use a paid provider.
+
+Native generated video/images are not assumed to be available on the free key. This implementation uses Gemini direction, original vector illustration and licensed authentic media. It does not claim that procedural animation equals native AI video generation or that automated scores guarantee audience retention.
+
+## Local development
+
+Python 3.11–3.12, FFmpeg/ffprobe with libass, Cairo and the bundled fonts:
 
 ```sh
 python -m venv .venv
 . .venv/bin/activate
 pip install -e '.[alignment,test]'
 export GEMINI_API='your-key'
-python -m history_of_x.animated --title 'The history of Ethiopia' --brief 'Explain power, Adwa and independence; end at the November 2022 Pretoria agreement.' --preset ethiopia --voice Puck --minutes 8
+python -m history_of_x.director_script --title 'The Entire History of Ethiopia' --minutes 8.75
+python -m history_of_x.director_film --proof --profile draft
+pytest -q
 ```
 
-Stages: `--stage plan`, `voice`, `direct`, `render`. Preserve the same inputs and work directory. `draft` is 540p/24fps; `standard` and `cinematic` are 1080p/30fps. The historical images and Top10-Movies reference voices remain available through the explicitly labeled **Legacy archival documentary** workflow; they are not used in the new default animated pipeline.
-
-Checks cover evidence IDs, script structure, speech completeness, caption text, shot timing, full media decoding and sustained movement after the first second. A static video is rejected by the motion gate. Gemini watches moving MP4 samples and reports observed physical actions. These checks do not measure audience retention or thumbnail click-through rate.
-
-See [production details](docs/PRODUCTION.md) and [validation history](docs/VALIDATION.md).
-
-## Historical media beyond Wikipedia
-
-The Ethiopia remake includes two genuine 1935 moving-newsreel excerpts from the Internet Archive Universal Newsreels collection, a CC0 Ethiopian gospel leaf from Cleveland Museum of Art Open Access, and relevant public-domain historical portraits. The 1935 footage is a separately dated, wordless nine-second bridge; it is never used as footage of Adwa in 1896. Sources, dates and checksums are bundled in `assets/footage/` and the images actually used are recorded in the delivery’s `media-credits.json`. Credits remain outside the picture.
+The older `produce.yml`, archival workflows, Chatterbox references and previous validation records remain for recovery and comparison. They are not evidence that the new directed film has passed creative review. See [validation history](docs/VALIDATION.md).

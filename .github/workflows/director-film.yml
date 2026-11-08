@@ -64,10 +64,11 @@ jobs:
       FILM_MODE: ${{ inputs.mode }}
       FILM_PROFILE: ${{ inputs.profile }}
       REVISE_FILM: ${{ inputs.revise }}
-      GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.5-flash-lite' }}
+      GEMINI_MODEL: ${{ vars.GEMINI_DIRECTOR_MODEL || 'gemini-3.8-flash' }}
       GEMINI_TTS_MODEL: ${{ vars.GEMINI_TTS_MODEL || 'gemini-3.8-flash-tts' }}
       GEMINI_MEDIA_LEDGER: work/media-ledger/usage.json
       GEMINI_TEXT_REQUEST_BUDGET: '48'
+      GEMINI_INPUT_TOKEN_BUDGET: '40000'
       GEMINI_TTS_REQUEST_BUDGET: '16'
     steps:
       - uses: actions/checkout@v4

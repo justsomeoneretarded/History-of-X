@@ -28,6 +28,8 @@ def plan_scene(api,scene,spoken,assets,directory,style=None):
  seconds=round(spoken['duration'],6)
  catalog={a['id']:a for a in assets['assets']}
  candidates=[catalog[x] for x in assets['scenes'].get(str(scene['scene_id']),[]) if x in catalog and catalog[x].get('medium') not in ('video','archival_video')]
+ archives=[catalog[x] for x in assets['scenes'].get(str(scene['scene_id']),[]) if x in catalog and catalog[x].get('medium')=='archival_video'][:2]
+ archive_seconds=4.5*len(archives) if seconds>12 else 0
  fingerprint=key('director-scene-v3',scene,seconds,candidates,style)
  target=directory/(fingerprint+'.json')
  if target.exists():return read_json(target)
@@ -62,13 +64,18 @@ Changing a caption, drifting the camera or waving an arm does not by itself expl
 For a treaty dispute: display two short differing obligations, reveal the mismatch, show a rejection and response.
 For a divided army: establish opposing positions, show separate columns diverging, then opposition exploiting gaps.
 These are examples, not a template to repeat. Match THIS passage. Keep top-left180x90clear for the year.
+If reserved_archival_opening_seconds is nonzero, the editor places the supplied genuine footage over that
+opening interval under the narration. Do not put indispensable SVG actions in that interval. Start the
+illustrated setup immediately afterward, and budget its actions to fit the remaining time. Archive intervals
+can be noted as events with empty layer_ids; never pretend the SVG itself recreates the archival footage.
 Use a rich professional illustrated palette, clean linework and depth. SVG text uses DejaVu Sans.
 No embedded scripts, external links, foreignObject, SVGanimate, style imports or XMLentities. Only executable
 keyframe data animates the scene. Keep SVG under100000characters. Duration must equal supplied seconds.
 Return valid JSON exactly matching schema. scene_id must equal the supplied string id.'''
  payload={'scene':scene,'duration':seconds,'scene_id':str(scene['scene_id']),
   'word_timing':spoken['words'],'approved_assets':[{k:a.get(k) for k in ['id','subject','date','context']} for a in candidates],
-  'reference_craft':style or {},'illustration_bible':ILLUSTRATION_BIBLE}
+  'reference_craft':style or {},'illustration_bible':ILLUSTRATION_BIBLE,
+  'reserved_archival_opening_seconds':archive_seconds,'opening_archive_subjects':[a['subject'] for a in archives]}
  # Resolve only explicitly approved local assets. No URL fetching inside generated SVG.
  def embed(match):
   ident=match.group(1)
@@ -133,11 +140,17 @@ ready requires every category>=7 and no major craft failure; otherwise revise or
  report=json.loads(''.join(p.get('text','') for p in result['candidates'][0]['content']['parts'] if not p.get('thought')))
  save_json(output/'editorial-review.json',report);return report
 
-def package(script,speech,assets,output):
+def package(api,script,speech,assets,output,work):
  from .typography import font
  save_json(output/'script.json',script);save_json(output/'media-credits.json',assets)
  (output/'script.txt').write_text('\n\n'.join(s['chapter'].upper()+'\n'+s['narration'] for s in script['scenes']))
- (output/'title.txt').write_text(script['title']+'\n')
+ metadata_path=work/'directed-packaging.json'
+ metadata_schema={'type':'object','required':['title','thumbnail_hook','description'], 'properties':{'title':{'type':'string'},'thumbnail_hook':{'type':'string'},'description':{'type':'string'}}}
+ metadata=read_json(metadata_path) if metadata_path.exists() else api.text(
+  'Package this original history video for YouTube. Return a clear searchable title naming the subject, a concrete truthful thumbnail curiosity hook of2–4short words (not the full title), and a concise description of the actual scope and endpoint. No fake quotes, sensational invented claims, marketing filler, channel branding or technical implementation details. The hook should be readily legible on a mobile thumbnail. Do not copy any reference title.',
+  {'working_title':script['title'],'summary':script['summary'],'opening':script['scenes'][0]['narration'],'ending':script['scenes'][-1]['narration']},metadata_schema,max_output=1200)
+ save_json(metadata_path,metadata)
+ (output/'title.txt').write_text(metadata['title']+'\n')
  # Authentic large portrait/architecture: purposeful composition, no tiny icon collage.
  photos=[a for a in assets['assets'] if a.get('medium') not in ('video','archival_video')]
  subjects=sorted(photos,key=lambda a:('menelik' not in a.get('subject','').lower(), 'adwa' not in a.get('subject','').lower()))
@@ -151,14 +164,18 @@ def package(script,speech,assets,output):
  im=Image.alpha_composite(im.convert('RGBA'),shade);d=ImageDraw.Draw(im)
  title='ETHIOPIA' if 'ethiop' in script['title'].lower() else script['title'].split(':')[0].upper()[:18]
  d.text((58,115),title,font=font(76,True),fill='#F4D588')
- for i,line in enumerate(['HOW IT','SURVIVED']):d.text((58,255+i*105),line,font=font(88,True),fill='white')
+ words=metadata['thumbnail_hook'].upper().split()[:5];middle=max(1,math.ceil(len(words)/2))
+ for i,line in enumerate([' '.join(words[:middle]),' '.join(words[middle:])]):
+  size=88
+  while size>36 and d.textlength(line,font=font(size,True))>620:size-=2
+  d.text((58,255+i*105),line,font=font(size,True),fill='white')
  im.convert('RGB').save(output/'thumbnail.jpg',quality=95)
  chapters=[];position=0;seen=set()
  for scene,spoken in zip(script['scenes'],speech['scenes']):
   if scene['chapter'] not in seen:
    seen.add(scene['chapter']);n=int(position);chapters.append(f'{n//60:02}:{n%60:02} {scene["chapter"]}')
   position+=spoken['duration']
- text=script.get('summary','')+'\n\n'+'\n'.join(chapters)+'\n\nOriginal illustrated reconstructions and licensed historical media. Narration synthesized with Gemini '+speech['voice']+'. This historical account ends in November2022.\n'
+ text=metadata['description']+'\n\n'+'\n'.join(chapters)+'\n\nOriginal illustrated reconstructions and licensed historical media.\n'
  credits='\n\n'.join(f'{a["subject"]} — {a.get("creator","Historical archive")} — {a["license"]}\n{a["source_url"]}\n{a.get("license_url","")}' for a in assets['assets'])
  sources=read_json(output/'sources.json') if (output/'sources.json').exists() else {'sources':[]}
  evidence='\n'.join(s['title']+'\n'+s['url'] for s in sources['sources'])
@@ -166,8 +183,14 @@ def package(script,speech,assets,output):
  full=text+'\nSOURCES\n'+evidence+'\n\nHISTORICAL MEDIA\n'+credits+'\n\nMUSIC\n'+music
  (output/'sources-and-credits.txt').write_text(full)
  # Attribution must remain accessible in upload metadata; no in-frame credit clutter.
- if len(full)>4900:raise PipelineError('Attribution exceeds YouTube description budget; reduce used assets')
- (output/'description.txt').write_text(full)
+ description=full
+ if len(description)>4900:
+  # PD/CC0 attribution is retained in full delivery credits; preserve required CC BY attribution in upload metadata.
+  required=[a for a in assets['assets'] if not any(x in a['license'].casefold() for x in ['public domain','cc0'])]
+  compact='\n\n'.join(f'{a["subject"]} — {a.get("creator","Historical archive")} — {a["license"]}\n{a["source_url"]}\n{a.get("license_url","")}' for a in required)
+  description=text+'\nSOURCES\n'+'\n'.join(s['url'] for s in sources['sources'])+'\n\nVISUAL ATTRIBUTION\n'+compact+'\n\nMUSIC\n'+music
+ if len(description)>4900:raise PipelineError('Required attribution exceeds YouTube description budget; reduce used CC BY assets')
+ (output/'description.txt').write_text(description)
 
 def produce(api,work,output,profile='cinematic',proof=False,resume=None,revise=False):
  from .documentary_assets import catalog
@@ -184,7 +207,7 @@ def produce(api,work,output,profile='cinematic',proof=False,resume=None,revise=F
  assets=catalog(script,work/'media')
  if proof:
   # Opening and later acted narrative samples, preserving each complete spoken scene.
-  acted=next((i for i,s in enumerate(script['scenes']) if 'treaty' in s['narration'].lower()),max(0,len(script['scenes'])//2))
+  acted=next((i for i,s in enumerate(script['scenes']) if s['chapter']=='Catalyst' and 'treaty' in s['narration'].lower()),next((i for i,s in enumerate(script['scenes']) if s['chapter']=='Catalyst'),max(0,len(script['scenes'])//2)))
   selected=list(dict.fromkeys([0,min(1,len(script['scenes'])-1),acted]))
   script={**script,'scenes':[script['scenes'][i] for i in selected]}
   speech={**speech,'scenes':[speech['scenes'][i] for i in selected]}
@@ -219,7 +242,7 @@ def produce(api,work,output,profile='cinematic',proof=False,resume=None,revise=F
    combined=directory/(key('archive-under-narration',str(picture))+'.mp4');concat_video([*archive_parts,tail],combined);picture=combined
   videos.append(picture)
   shots.append({'scene_id':scene['scene_id'],'global_start':position,'global_end':position+spoken['duration'],
-   'narration_context':scene['narration'],'music_mood':'somber' if scene['bg_music_mood']=='reflective' else 'tense' if scene['bg_music_mood']=='tense' else 'neutral','sting':False,'events':program.get('events',[]),'year_label':scene['date_label']})
+   'chapter':scene['chapter'],'narration_context':scene['narration'],'music_mood':'somber' if scene['bg_music_mood']=='reflective' else 'tense' if scene['bg_music_mood']=='tense' else 'neutral','sting':False,'events':program.get('events',[]),'year_label':scene['date_label']})
   position+=spoken['duration'];frame_cursor=end_frame
  silent=directory/'picture.mp4';concat_video(videos,silent)
  from .animated_render import captions
@@ -248,16 +271,17 @@ def produce(api,work,output,profile='cinematic',proof=False,resume=None,revise=F
   hero=next((a for a in assets['assets'] if 'menelik' in a.get('subject','').lower() and a.get('medium')=='historical_photo'),None)
   if hero:used_assets.add(hero['id'])
  used={**assets,'assets':[a for a in assets['assets'] if a['id'] in used_assets]}
- package(script,speech,used,output)
+ package(api,script,speech,used,output,work)
  sample=output/'review.mp4'
  if position>100:
-  from .motion_quality import review_sample
-  sample=review_sample(final,output)
+  # Send the entire film, including audio, with a bounded payload. No three-excerpt acceptance shortcut.
+  ffmpeg('-i',final,'-vf','scale=640:360','-c:v','libx264','-b:v','180k','-maxrate','220k','-bufsize','440k','-c:a','aac','-b:a','64k',sample,timeout=max(900,position*4))
  else:ffmpeg('-i',final,'-vf','scale=960:540','-c:v','libx264','-crf','27','-c:a','aac','-b:a','80k',sample)
  review=editorial_review(api,sample,style,output)
  save_json(work/'editorial-feedback.json',review)
  acceptable=review['verdict']=='ready' and min(review['scores'].values())>=7
- save_json(output/'production.json',{'technical_passed':technical['passed'],'editorial_accepted':acceptable,'proof':proof,'reference_craft_used':style,'runtime_target_seconds':525.58,'runtime_seconds':position})
+ request=read_json(work/'request.json') if (work/'request.json').exists() else {}
+ save_json(output/'production.json',{'technical_passed':technical['passed'],'editorial_accepted':acceptable,'proof':proof,'reference_craft_used':style,'runtime_target_seconds':request.get('minutes',8.75)*60,'runtime_seconds':position,'editorial_review_scope':'entire candidate at reduced resolution, with audio'})
  if not acceptable:raise PipelineError('Creative review requires revision; output is a review candidate, not upload-ready')
  print('DIRECTED_FILM '+str(final),flush=True)
 
