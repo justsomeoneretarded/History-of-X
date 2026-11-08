@@ -265,6 +265,7 @@ def main(argv=None):
             measured = {"voice": voice, "narration_seconds": seconds, "words_per_minute": script["word_count"] * 60 / seconds, "target_seconds": args.minutes * 60, "reference_seconds": 525.58, "runtime_within_10_percent_of_target": .9 * args.minutes * 60 <= seconds <= 1.1 * args.minutes * 60, "time_stretch_applied": False}
             save_json(args.work / "narration-metrics.json", measured)
             print("NARRATION_METRICS " + json.dumps(measured), flush=True)
+        (args.work / "failure.json").unlink(missing_ok=True)
         return 0
     except (PipelineError, ValueError, KeyError, FileNotFoundError) as exc:
         save_json(args.work / "failure.json", {"stage": args.stage, "error": str(exc)})
