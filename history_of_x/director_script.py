@@ -157,6 +157,7 @@ def write(api, title, brief, minutes, evidence, directory):
     merged = []
     for index, (chapter, budget) in enumerate(zip(CHAPTERS, budgets)):
         count = max(1, math.ceil(budget / 68))
+        print(f"Director writing {chapter}: {budget} words across {count} scenes", flush=True)
         chapter_path = directory / "director-chapters" / f"{index + 1}-{fingerprint}.json"
         if chapter_path.exists():
             part = read_json(chapter_path)
@@ -177,6 +178,7 @@ def write(api, title, brief, minutes, evidence, directory):
                 part = api.text(chapter_instruction + f"\nThe draft has{words} words; target{budget}. Revise ONLY its spoken length/cadence without inventing facts. Use the whole word budget, not short summaries.",
                                 {**payload, "draft": part}, chapter_script_schema(source_ids, budget, count, char_rate * 1.04), max_output=6500, preserve_bounds=True)
             save_json(chapter_path, part)
+        print(f"Director drafted {chapter}: {sum(len(s['narration'].split()) for s in part['scenes'])} words", flush=True)
         for scene in part["scenes"]:
             merged.append({**scene, "chapter": chapter, "scene_id": len(merged) + 1, "visual_type": "artwork", "subtitle_highlights": [], "delivery": "calm" if chapter == "Aftermath" else "normal", "bg_music_mood": "reflective" if chapter == "Aftermath" else "tense"})
         save_json(directory / "draft-script.json", {"title": title, "summary": outline["organizing_question"], "scenes": merged})
