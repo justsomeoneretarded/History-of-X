@@ -1,0 +1,139 @@
+name: Directed history film
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: Video topic or working title
+        type: string
+        default: The Entire History of Ethiopia
+        required: true
+      brief:
+        description: Short brief, angle and historical endpoint
+        type: string
+        default: How Ethiopia built powerful kingdoms, defeated an invading empire, and struggled over power at home. Connect ancient Aksum, medieval kingdoms, Adwa, Italian occupation, restoration, revolution and the 2022 Pretoria agreement. A coherent story across centuries.
+        required: true
+      voice:
+        description: auto auditions actual Puck and Charon narration
+        type: choice
+        options: [auto, Puck, Charon, Kore, Fenrir, Orus, Aoede]
+        default: auto
+      minutes:
+        description: Target runtime; Jerusalem reference is about 8.75 minutes
+        type: string
+        default: '8.75'
+      mode:
+        description: Proof renders selected complete scenes; film renders the whole story
+        type: choice
+        options: [proof, film]
+        default: proof
+      profile:
+        description: Output resolution
+        type: choice
+        options: [draft, cinematic]
+        default: cinematic
+      audio_run:
+        description: Reuse a director-audio artifact from this run ID
+        type: string
+        default: ''
+      resume_run:
+        description: Reuse directed-checkpoint from a prior film run ID
+        type: string
+        default: ''
+      revise:
+        description: Apply the previous candidate's concrete editorial feedback
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: history-gemini
+  cancel-in-progress: false
+jobs:
+  direct:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
+    env:
+      PYTHONUNBUFFERED: '1'
+      HF_HUB_DISABLE_XET: '1'
+      HF_HOME: ${{ github.workspace }}/work/models/huggingface
+      VIDEO_TITLE: ${{ inputs.title }}
+      VIDEO_BRIEF: ${{ inputs.brief }}
+      VIDEO_MINUTES: ${{ inputs.minutes }}
+      NARRATOR: ${{ inputs.voice }}
+      FILM_MODE: ${{ inputs.mode }}
+      FILM_PROFILE: ${{ inputs.profile }}
+      REVISE_FILM: ${{ inputs.revise }}
+      GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.5-flash-lite' }}
+      GEMINI_TTS_MODEL: ${{ vars.GEMINI_TTS_MODEL || 'gemini-3.8-flash-tts' }}
+      GEMINI_MEDIA_LEDGER: work/media-ledger/usage.json
+      GEMINI_TEXT_REQUEST_BUDGET: '48'
+      GEMINI_TTS_REQUEST_BUDGET: '16'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: python scripts/bootstrap_media.py
+      - run: python -m pip install -e '.[alignment]'
+      - uses: actions/cache@v4
+        with:
+          path: work/models
+          key: whisper-base-en-v1-${{ runner.os }}
+      - uses: actions/cache/restore@v4
+        with:
+          path: work/media-ledger
+          key: media-ledger-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: media-ledger-v1-
+      - uses: actions/download-artifact@v4
+        if: ${{ inputs.audio_run != '' }}
+        with:
+          name: director-audio
+          path: work/director
+          run-id: ${{ inputs.audio_run }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        if: ${{ inputs.resume_run != '' }}
+        with:
+          name: directed-checkpoint
+          path: work/director
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ github.token }}
+      - name: Original script and auditioned Gemini narration
+        if: ${{ inputs.audio_run == '' && inputs.resume_run == '' }}
+        env:
+          GEMINI_API: ${{ secrets.GEMINI_API }}
+        run: python -m history_of_x.director_script --stage all
+      - name: Direct, animate, mix and critically review the actual film
+        env:
+          GEMINI_API: ${{ secrets.GEMINI_API }}
+        run: |
+          args=(--profile "$FILM_PROFILE")
+          if [[ "$FILM_MODE" == "proof" ]]; then args+=(--proof); fi
+          if [[ "$REVISE_FILM" == "true" ]]; then args+=(--revise); fi
+          python -m history_of_x.director_film "${args[@]}"
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: work/media-ledger
+          key: media-ledger-v1-${{ github.run_id }}-${{ github.run_attempt }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: directed-checkpoint
+          path: |
+            work/director/*.json
+            work/director/*.txt
+            work/director/gemini
+            work/director/speech
+            work/director/voice-auditions
+            work/director/media
+            work/director/scene-programs
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: directed-${{ inputs.mode }}
+          path: output/director
+          retention-days: 14

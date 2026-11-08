@@ -9,7 +9,7 @@ from .voice_engine import speech_check
 
 def produce(api,script,voice,directory):
  directory.mkdir(parents=True,exist_ok=True)
- identity=key('gemini-speech-v1',script,voice,os.getenv('GEMINI_TTS_MODEL','gemini-3.8-flash-tts'))
+ identity=key('gemini-speech-v2',script,voice,os.getenv('GEMINI_TTS_MODEL','gemini-3.8-flash-tts'),os.getenv('GEMINI_SPEECH_STYLE','default'))
  index=directory/'speech.json'
  if index.exists():
   old=read_json(index)

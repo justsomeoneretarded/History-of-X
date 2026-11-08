@@ -23,10 +23,10 @@ def assemble(speech,source,directory,interludes):
  if not timing['passed']:raise PipelineError('Assembled narration duration is wrong; refusing a truncated final export')
  return narration,timing
 
-def mix(speech,shots,source,directory,interludes,output):
+def mix(speech,shots,source,directory,interludes,output,soundtrack_builder=None):
  from .animated_render import soundtrack
  directory=Path(directory);output=Path(output);directory.mkdir(parents=True,exist_ok=True);output.mkdir(parents=True,exist_ok=True)
- narration,timing=assemble(speech,source,directory,interludes);soundtrack(speech,shots,directory)
+ narration,timing=assemble(speech,source,directory,interludes);(soundtrack_builder or soundtrack)(speech,shots,directory)
  mixed=directory/'mixed.wav';chain='[0:a]asplit=2[v][side];[1:a][side]sidechaincompress=threshold=0.015:ratio=6:attack=15:release=250[m];[v][m][2:a]amix=inputs=3:duration=first:normalize=0,alimiter=limit=0.9[out]'
  ffmpeg('-i',narration,'-i',directory/'music.wav','-i',directory/'sfx.wav','-filter_complex',chain,'-map','[out]','-ar','48000','-ac','2',mixed)
  result=subprocess.run(['ffmpeg','-hide_banner','-nostdin','-i',str(mixed),'-af','loudnorm=I=-16:TP=-1.5:LRA=9:print_format=json','-f','null','-'],capture_output=True,text=True,timeout=300)
