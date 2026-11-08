@@ -79,6 +79,17 @@ jobs:
         env:
           GEMINI_API: ${{ secrets.GEMINI_API }}
         run: python -m history_of_x.director_script --stage plan
+      - name: Inspectable script before narration generation
+        uses: actions/upload-artifact@v4
+        with:
+          name: director-script
+          path: |
+            work/director/script.json
+            work/director/script.txt
+            work/director/outline.json
+            work/director/style-profile.json
+            work/director/writing-metrics.json
+          retention-days: 14
       - name: Hear and compare actual Gemini narrator auditions
         env:
           GEMINI_API: ${{ secrets.GEMINI_API }}

@@ -88,7 +88,7 @@ def chapter_script_schema(source_ids, budget, count, chars_per_word=5.6):
     """Keep decoding grammar small: one chapter, five fields, no branching enums."""
     scene = {"type": "object", "required": ["narration", "source_ids", "date_label", "location", "asset_search_term"], "properties": {
         "narration": {"type": "string", "minLength": max(30, round(budget / count * chars_per_word * .93)), "maxLength": max(80, round(budget / count * chars_per_word * 1.25))},
-        "source_ids": {"type": "array", "items": {"type": "string", "enum": source_ids}},
+        "source_ids": {"type": "array", "minItems": 1, "items": {"type": "string", "enum": source_ids}},
         "date_label": {"type": "string"}, "location": {"type": "string"}, "asset_search_term": {"type": "string"},
     }}
     return {"type": "object", "required": ["scenes"], "properties": {"scenes": {"type": "array", "minItems": count, "maxItems": count, "items": scene}}}
