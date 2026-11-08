@@ -205,6 +205,9 @@ def produce(api,work,output,profile='cinematic',proof=False,resume=None,revise=F
  from .audio_edit import mix
  from .quality import inspect
  script=read_json(work/'script.json');speech=read_json(work/'speech'/'speech.json')
+ metrics_path=work/'narration-metrics.json'
+ if not proof and metrics_path.exists() and not read_json(metrics_path).get('runtime_within_10_percent_of_target',True):
+  raise PipelineError('Narration misses the requested runtime; revise performance before a full-film render')
  style_path=ROOT/'assets'/'style'/'director.json'
  style=read_json(work/'style-profile.json') if (work/'style-profile.json').exists() else read_json(style_path) if style_path.exists() else {'narration_wpm':174,'median_sentence_words':10,'runtime_seconds':525.58}
  report_path=ROOT/'assets'/'style'/'reference-study.json'
@@ -214,7 +217,8 @@ def produce(api,work,output,profile='cinematic',proof=False,resume=None,revise=F
  if proof:
   # Opening and later acted narrative samples, preserving each complete spoken scene.
   acted=next((i for i,s in enumerate(script['scenes']) if s['chapter']=='Catalyst' and 'treaty' in s['narration'].lower()),next((i for i,s in enumerate(script['scenes']) if s['chapter']=='Catalyst'),max(0,len(script['scenes'])//2)))
-  selected=list(dict.fromkeys([0,min(1,len(script['scenes'])-1),acted]))
+  roots=next((i for i,s in enumerate(script['scenes']) if s['chapter']=='Roots'),min(1,len(script['scenes'])-1))
+  selected=list(dict.fromkeys([0,roots,acted]))
   script={**script,'scenes':[script['scenes'][i] for i in selected]}
   speech={**speech,'scenes':[speech['scenes'][i] for i in selected]}
  output.mkdir(parents=True,exist_ok=True);directory=work/'directed-render';directory.mkdir(parents=True,exist_ok=True)
@@ -248,7 +252,7 @@ def produce(api,work,output,profile='cinematic',proof=False,resume=None,revise=F
    combined=directory/(key('archive-under-narration',str(picture))+'.mp4');concat_video([*archive_parts,tail],combined);picture=combined
   videos.append(picture)
   shots.append({'scene_id':scene['scene_id'],'global_start':position,'global_end':position+spoken['duration'],
-   'chapter':scene['chapter'],'narration_context':scene['narration'],'music_mood':'somber' if scene['bg_music_mood']=='reflective' else 'tense' if scene['bg_music_mood']=='tense' else 'neutral','sting':False,'events':program.get('events',[]),'year_label':scene['date_label']})
+   'chapter':scene['chapter'],'narration_context':scene['narration'],'music_mood':'neutral' if scene['chapter']=='Roots' else 'somber' if scene['bg_music_mood']=='reflective' else 'tense' if scene['bg_music_mood']=='tense' else 'neutral','sting':False,'events':program.get('events',[]),'year_label':scene['date_label']})
   position+=spoken['duration'];frame_cursor=end_frame
  silent=directory/'picture.mp4';concat_video(videos,silent)
  from .animated_render import captions
@@ -295,7 +299,7 @@ def main():
  p=argparse.ArgumentParser();p.add_argument('--work',type=Path,default=ROOT/'work'/'director');p.add_argument('--output',type=Path,default=ROOT/'output'/'director');p.add_argument('--profile',choices=['draft','standard','cinematic'],default='cinematic');p.add_argument('--proof',action='store_true');p.add_argument('--revise',action='store_true');args=p.parse_args()
  from .media_api import MediaAPI
  try:produce(MediaAPI(args.work/'gemini'),args.work,args.output,args.profile,args.proof,revise=args.revise)
- except PipelineError as exc:
+ except (PipelineError,ValueError,KeyError,FileNotFoundError) as exc:
   save_json(args.output/'failure.json',{'error':str(exc)});print(str(exc),flush=True);return 1
  return 0
 
