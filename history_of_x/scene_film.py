@@ -44,7 +44,8 @@ def schema():
              'end': number, 'keyframes': frames,
              'parent': {'type': 'string'}}
     event = {'time': number, 'description': {'type': 'string'},
-             'layer_ids': {'type': 'array', 'items': {'type': 'string'}}}
+             'layer_ids': {'type': 'array', 'items': {'type': 'string'}},
+             'sfx': {'type': 'string', 'enum': ['none', 'paper', 'stamp', 'soft_impact', 'sting']}}
     properties = {
         'scene_id': {'type': 'string'}, 'duration': number,
         'background': {'type': 'string'}, 'svg': {'type': 'string'},
@@ -53,7 +54,7 @@ def schema():
         'camera': {'type': 'object', 'required': ['keyframes'],
                    'properties': {'keyframes': frames}},
         'events': {'type': 'array', 'items': {
-            'type': 'object', 'required': list(event), 'properties': event}},
+            'type': 'object', 'required': [k for k in event if k != 'sfx'], 'properties': event}},
     }
     return {'type': 'object', 'required': list(properties), 'properties': properties}
 
@@ -222,6 +223,8 @@ def validate_scene(program):
             raise PipelineError('Events require a description of a visible consequence')
         if not set(event.get('layer_ids', [])) <= set(ids):
             raise PipelineError('Event references an unknown layer')
+        if event.get('sfx','none') not in {'none','paper','stamp','soft_impact','sting'}:
+            raise PipelineError('Unsupported directed sound effect')
     return program
 
 

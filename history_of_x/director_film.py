@@ -49,6 +49,7 @@ Do not put tiny detail everywhere; large readable actors, carefully composed sce
 Choose the appropriate mode: acted reconstruction, explanatory diagram, geographic sequence, authentic media,
 or a blend. A meaningful map is useful only for geography; don't show maps by default.
 Authentic images may be used with <image href="asset:EXACT_ID" x="..." y="..." width="..." height="..."/>.
+Use at most two embedded authentic images in a scene. The attached reference images also guide original drawing.
 The editor resolves only approved asset IDs. Use a photo as editorial imagery, never an absurd picture frame
 on a battlefield. Do not force an available asset into a mismatched era or subject.
 Each layer's x/y are offsets from its original SVG position. pivot is in SVG world coordinates.
@@ -60,6 +61,8 @@ No automatic idle loops. Every movement has a reason: reach/contact/transfer/rea
 advance/separate/encircle, obstacle/decision/consequence. Show several stages with timing tied to spoken words.
 Include at least three meaningful events for scenes over12seconds and at least one visual development
 per3–6seconds. Events name the layers that actually move/change. The keyframes must EXECUTE those events.
+An optional event.sfx may request paper, stamp, soft_impact or sting for a specific contact or harmless comic
+payoff. Use these sparingly. No automatic effect on every cut, and no comedy stings during suffering.
 Changing a caption, drifting the camera or waving an arm does not by itself explain a political event.
 For a treaty dispute: display two short differing obligations, reveal the mismatch, show a rejection and response.
 For a divided army: establish opposing positions, show separate columns diverging, then opposition exploiting gaps.
@@ -83,7 +86,7 @@ Return valid JSON exactly matching schema. scene_id must equal the supplied stri
   record=catalog[ident];p=Path(record['path']);p=p if p.is_absolute() else ROOT/p
   with Image.open(p) as im:
    import io
-   im=im.convert('RGB');im.thumbnail((1600,1000));out=io.BytesIO();im.save(out,format='JPEG',quality=85)
+   im=im.convert('RGB');im.thumbnail((1280,800));out=io.BytesIO();im.save(out,format='JPEG',quality=82)
   return 'data:image/jpeg;base64,'+base64.b64encode(out.getvalue()).decode()
  for attempt in range(2):
   # Show the director actual approved historical imagery, not just asset filenames.
@@ -100,6 +103,7 @@ Return valid JSON exactly matching schema. scene_id must equal the supplied stri
   try:
    result['duration']=seconds;result['scene_id']=str(scene['scene_id'])
    result['asset_ids']=list(dict.fromkeys(re.findall(r'asset:([A-Za-z0-9_.-]+)',result['svg'])))
+   if len(result['asset_ids'])>2:raise PipelineError('Use at most two embedded historical images per scene')
    result['svg']=re.sub(r'asset:([A-Za-z0-9_.-]+)',embed,result['svg'])
    validate_scene(result)
    events=sorted(result['events'],key=lambda e:e['time'])
@@ -145,11 +149,13 @@ def package(api,script,speech,assets,output,work):
  save_json(output/'script.json',script);save_json(output/'media-credits.json',assets)
  (output/'script.txt').write_text('\n\n'.join(s['chapter'].upper()+'\n'+s['narration'] for s in script['scenes']))
  metadata_path=work/'directed-packaging.json'
+ metadata_id=key('directed-packaging-v1',script['title'],[s['narration'] for s in script['scenes']])
  metadata_schema={'type':'object','required':['title','thumbnail_hook','description'], 'properties':{'title':{'type':'string'},'thumbnail_hook':{'type':'string'},'description':{'type':'string'}}}
- metadata=read_json(metadata_path) if metadata_path.exists() else api.text(
+ previous=read_json(metadata_path) if metadata_path.exists() else {}
+ metadata=previous if previous.get('fingerprint')==metadata_id else api.text(
   'Package this original history video for YouTube. Return a clear searchable title naming the subject, a concrete truthful thumbnail curiosity hook of2–4short words (not the full title), and a concise description of the actual scope and endpoint. No fake quotes, sensational invented claims, marketing filler, channel branding or technical implementation details. The hook should be readily legible on a mobile thumbnail. Do not copy any reference title.',
   {'working_title':script['title'],'summary':script['summary'],'opening':script['scenes'][0]['narration'],'ending':script['scenes'][-1]['narration']},metadata_schema,max_output=1200)
- save_json(metadata_path,metadata)
+ metadata['fingerprint']=metadata_id;save_json(metadata_path,metadata)
  (output/'title.txt').write_text(metadata['title']+'\n')
  # Authentic large portrait/architecture: purposeful composition, no tiny icon collage.
  photos=[a for a in assets['assets'] if a.get('medium') not in ('video','archival_video')]
