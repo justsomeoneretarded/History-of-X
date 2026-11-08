@@ -1,0 +1,102 @@
+name: Director script and natural Gemini narration
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: Original video topic/title
+        type: string
+        default: The Entire History of Ethiopia
+      brief:
+        description: Scope, central question and endpoint
+        type: string
+        default: How Ethiopia built powerful kingdoms, defeated an invading empire, and struggled over who should hold power at home. Connect ancient Aksum to the 2022 Pretoria agreement. A coherent story through centuries, including Italian occupation, restoration and revolution.
+      minutes:
+        description: Target runtime; Jerusalem reference is 8.75minutes
+        type: string
+        default: '8.75'
+      mode:
+        description: Audition only or produce the selected narrator's complete film narration
+        type: choice
+        options: [all, audition]
+        default: all
+      voice:
+        description: auto compares original Puck and Charon performances
+        type: choice
+        options: [auto, Puck, Charon, Kore, Fenrir, Orus, Aoede]
+        default: auto
+      resume_run:
+        description: Previous director-audio run with identical inputs
+        type: string
+        default: ''
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: history-gemini
+  cancel-in-progress: false
+jobs:
+  direct:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    env:
+      PYTHONUNBUFFERED: '1'
+      HF_HUB_DISABLE_XET: '1'
+      HF_HOME: ${{ github.workspace }}/work/models/huggingface
+      VIDEO_TITLE: ${{ inputs.title }}
+      VIDEO_BRIEF: ${{ inputs.brief }}
+      VIDEO_MINUTES: ${{ inputs.minutes }}
+      NARRATOR: ${{ inputs.voice }}
+      GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.5-flash-lite' }}
+      GEMINI_TTS_MODEL: ${{ vars.GEMINI_TTS_MODEL || 'gemini-3.8-flash-tts' }}
+      GEMINI_MEDIA_LEDGER: work/media-ledger/usage.json
+      GEMINI_TEXT_REQUEST_BUDGET: '48'
+      GEMINI_TTS_REQUEST_BUDGET: '16'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: python scripts/bootstrap_media.py
+      - run: python -m pip install -e '.[alignment]'
+      - uses: actions/cache@v4
+        with:
+          path: work/models
+          key: whisper-base-en-v1-${{ runner.os }}
+      - uses: actions/cache/restore@v4
+        with:
+          path: work/media-ledger
+          key: media-ledger-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: media-ledger-v1-
+      - uses: actions/download-artifact@v4
+        if: ${{ inputs.resume_run != '' }}
+        with:
+          name: director-audio
+          path: work/director
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ github.token }}
+      - name: Original outline and complete conversational script
+        env:
+          GEMINI_API: ${{ secrets.GEMINI_API }}
+        run: python -m history_of_x.director_script --stage plan
+      - name: Hear and compare actual Gemini narrator auditions
+        env:
+          GEMINI_API: ${{ secrets.GEMINI_API }}
+        run: python -m history_of_x.director_script --stage audition
+      - name: Complete narration with selected performance
+        if: ${{ inputs.mode == 'all' }}
+        env:
+          GEMINI_API: ${{ secrets.GEMINI_API }}
+        run: python -m history_of_x.director_script --stage voice
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: work/media-ledger
+          key: media-ledger-v1-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Resumable script, auditions and narration
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: director-audio
+          path: work/director/
+          retention-days: 14
