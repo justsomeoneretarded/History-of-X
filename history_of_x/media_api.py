@@ -82,7 +82,7 @@ class MediaAPI:
   if voice not in VOICES:raise PipelineError('Choose a supported Gemini voice')
   if not 1<=len(text.split())<=450:raise PipelineError('TTS chapter must contain 1–450 words')
   model=os.getenv('GEMINI_TTS_MODEL','gemini-3.8-flash-tts')
-  body={'model':model,'input':[{'type':'user_input','content':[{'type':'text','text':text,'annotations':[{'type':'speech_metadata','style':STYLE+(' Articulate every word carefully, including names and dates; keep a natural conversational rhythm.' if attempt else '')}]}]}],'response_format':{'type':'audio'},'generation_config':{'speech_config':[{'voice':voice}]},'store':False}
+  body={'model':model,'input':[{'type':'user_input','content':[{'type':'text','text':text,'annotations':[{'type':'speech_metadata','style':os.getenv('GEMINI_SPEECH_STYLE',STYLE)+(' Articulate every word carefully, including names and dates; keep a natural conversational rhythm.' if attempt else '')}]}]}],'response_format':{'type':'audio'},'generation_config':{'speech_config':[{'voice':voice}]},'store':False}
   result=self.request(model,'interactions',body,'speech')
   blocks=[c for s in result.get('steps',[]) if s.get('type')=='model_output' for c in s.get('content',[]) if c.get('type')=='audio']
   if not blocks:raise PipelineError('Gemini TTS returned no audio')
