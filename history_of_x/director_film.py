@@ -156,12 +156,13 @@ def package(api,script,speech,assets,output,work):
  save_json(output/'script.json',script);save_json(output/'media-credits.json',assets)
  (output/'script.txt').write_text('\n\n'.join(s['chapter'].upper()+'\n'+s['narration'] for s in script['scenes']))
  metadata_path=work/'directed-packaging.json'
- metadata_id=key('directed-packaging-v1',script['title'],[s['narration'] for s in script['scenes']])
+ source_script=read_json(work/'script.json') if (work/'script.json').exists() else script
+ metadata_id=key('directed-packaging-v2-full-scope',source_script['title'],[s['narration'] for s in source_script['scenes']])
  metadata_schema={'type':'object','required':['title','thumbnail_hook','description'], 'properties':{'title':{'type':'string'},'thumbnail_hook':{'type':'string'},'description':{'type':'string'}}}
  previous=read_json(metadata_path) if metadata_path.exists() else {}
  metadata=previous if previous.get('fingerprint')==metadata_id else api.text(
   'Package this original history video for YouTube. Return a clear searchable title naming the subject, a concrete truthful thumbnail curiosity hook of2–4short words (not the full title), and a concise description of the actual scope and endpoint. No fake quotes, sensational invented claims, marketing filler, channel branding or technical implementation details. The hook should be readily legible on a mobile thumbnail. Do not copy any reference title.',
-  {'working_title':script['title'],'summary':script['summary'],'opening':script['scenes'][0]['narration'],'ending':script['scenes'][-1]['narration']},metadata_schema,max_output=1200)
+  {'working_title':source_script['title'],'summary':source_script['summary'],'opening':source_script['scenes'][0]['narration'],'ending':source_script['scenes'][-1]['narration']},metadata_schema,max_output=1200)
  metadata['fingerprint']=metadata_id;save_json(metadata_path,metadata)
  (output/'title.txt').write_text(metadata['title']+'\n')
  # Authentic large portrait/architecture: purposeful composition, no tiny icon collage.
@@ -171,6 +172,9 @@ def package(api,script,speech,assets,output,work):
  if subjects:
   p=Path(subjects[0]['path']);p=p if p.is_absolute() else ROOT/p
   with Image.open(p) as picture:im.paste(ImageOps.fit(picture.convert('RGB'),(760,720),centering=(.5,.3)),(520,0))
+ elif (output/'final.mp4').exists():
+  still=output/'thumbnail-art.jpg';ffmpeg('-ss','2','-i',output/'final.mp4','-frames:v','1',still)
+  with Image.open(still) as picture:im.paste(ImageOps.fit(picture.convert('RGB'),(760,720),centering=(.6,.4)),(520,0))
  shade=Image.new('RGBA',im.size)
  d=ImageDraw.Draw(shade)
  for x in range(1280):d.line((x,0,x,720),fill=(9,27,34,255 if x<420 else max(0,255-int((x-420)*.6))))
