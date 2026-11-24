@@ -106,3 +106,38 @@ def test_audio_review_can_use_separate_model_from_writer(tmp_path, monkeypatch):
     api = API()
     assert audio_review(api, audio, {}) == review
     assert api.selected_model == "gemini-3.1-flash-lite"
+
+
+@pytest.mark.parametrize("title,is_ethiopia", [("The Entire History of Rome", False), ("The Entire History of Ethiopia", True)])
+def test_geographic_outline_direction_is_restricted_to_its_topic(tmp_path, title, is_ethiopia):
+    class CaptureAPI:
+        instruction = ""
+
+        def text(self, instruction, payload, schema, **kwargs):
+            self.instruction = instruction
+            raise PipelineError("captured outline")
+
+    api = CaptureAPI()
+    evidence = {"sources": [{"id": "S1", "extract": "Historical evidence"}]}
+    with pytest.raises(PipelineError, match="captured outline"):
+        write(api, title, "Brief", 8.75, evidence, tmp_path)
+    assert "cold-open SCENE" in api.instruction
+    assert ("Aksum" in api.instruction) is is_ethiopia
+    assert ("Adwa" in api.instruction) is is_ethiopia
+
+
+def test_research_network_outage_becomes_structured_stage_failure(tmp_path, monkeypatch):
+    from requests import ConnectionError
+    import history_of_x.director_script as director_module
+    import history_of_x.research as research_module
+
+    def unavailable(*args, **kwargs):
+        raise ConnectionError("source temporarily unreachable")
+
+    monkeypatch.setattr(director_module, "MediaAPI", lambda directory: object())
+    monkeypatch.setattr(research_module, "research", unavailable)
+    code = director_module.main(["--stage", "plan", "--title", "Rome", "--brief", "Brief", "--work", str(tmp_path)])
+    assert code == 1
+    failure = read_json(tmp_path / "failure.json")
+    assert failure["stage"] == "plan"
+    assert "Research source request failed (ConnectionError)" in failure["error"]
