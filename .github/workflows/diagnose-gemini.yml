@@ -1,0 +1,58 @@
+name: Diagnose Gemini request constraints
+on:
+  push:
+    branches: [main]
+    paths: ['production/diagnostics/*.json']
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: history-gemini
+  cancel-in-progress: false
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      PYTHONUNBUFFERED: '1'
+      SCRIPT_TARGET_WPM: '160'
+      GEMINI_MEDIA_LEDGER: work/media-ledger/usage.json
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: python -m pip install -e .
+      - uses: actions/cache/restore@v4
+        with:
+          path: work/media-ledger
+          key: media-ledger-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: media-ledger-v1-
+      - uses: actions/download-artifact@v4
+        with:
+          name: directed-checkpoint
+          path: work/director
+          run-id: '45446519424'
+          github-token: ${{ github.token }}
+      - name: Compare real minimal and chapter requests
+        env:
+          GEMINI_API: ${{ secrets.GEMINI_API }}
+        run: python scripts/diagnose_gemini.py
+      - uses: actions/cache/save@v4
+        if: ${{ always() }}
+        with:
+          path: work/media-ledger
+          key: media-ledger-v1-${{ github.run_id }}-${{ github.run_attempt }}
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: diagnostic-report
+          path: output/diagnostic
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: directed-checkpoint
+          path: work/director
+          retention-days: 90
