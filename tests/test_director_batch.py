@@ -70,6 +70,11 @@ class FakeAPI:
         return self._response("vision", payload, images, max_output)
 
 
+@pytest.fixture(autouse=True)
+def default_batch_configuration(monkeypatch):
+    monkeypatch.delenv("GEMINI_SCENE_BATCH_SIZE", raising=False)
+
+
 @pytest.fixture
 def hooks(monkeypatch):
     value = SceneHooks()
@@ -186,3 +191,34 @@ def test_invalid_batch_shape_is_checkpointed_then_rejected(tmp_path, hooks):
     with pytest.raises(PipelineError, match="no scenes array"):
         plan_all(api, *inputs((1,)), tmp_path)
     assert len(list((tmp_path / "batches").glob("*.json"))) == 1
+
+
+def test_three_scene_configuration_uses_one_complete_request(tmp_path, hooks, monkeypatch):
+    monkeypatch.setenv("GEMINI_SCENE_BATCH_SIZE", "3")
+    api = FakeAPI()
+    result = plan_all(api, *inputs(), tmp_path)
+    assert list(result) == ["1", "2", "3"]
+    assert len(api.calls) == 1
+    assert api.calls[0]["payload"]["required_scene_ids"] == ["1", "2", "3"]
+    assert api.calls[0]["max_output"] == 45000
+    assert hooks.validations == ["1", "2", "3"]
+    assert len(list((tmp_path / "batch-drafts").glob("*.json"))) == 3
+
+
+def test_single_scene_configuration_respects_the_request_limit(tmp_path, hooks, monkeypatch):
+    monkeypatch.setenv("GEMINI_SCENE_BATCH_SIZE", "1")
+    api = FakeAPI()
+    result = plan_all(api, *inputs(), tmp_path)
+    assert list(result) == ["1", "2", "3"]
+    assert [c["payload"]["required_scene_ids"] for c in api.calls] == [["1"], ["2"], ["3"]]
+    assert [c["max_output"] for c in api.calls] == [18000, 18000, 18000]
+
+
+@pytest.mark.parametrize("value", ["0", "4", "-1", "not-an-integer", "1.5", ""])
+def test_invalid_batch_configuration_fails_before_any_request(tmp_path, hooks, monkeypatch, value):
+    monkeypatch.setenv("GEMINI_SCENE_BATCH_SIZE", value)
+    api = FakeAPI()
+    with pytest.raises(PipelineError, match="GEMINI_SCENE_BATCH_SIZE"):
+        plan_all(api, *inputs(), tmp_path)
+    assert api.calls == []
+    assert hooks.validations == []
