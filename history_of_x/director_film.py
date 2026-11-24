@@ -140,12 +140,14 @@ composition, blocking, comic timing, clarity, rhythmic variation, audio and over
 Reject incoherent staging, badly drawn/overlapping actors, tiny illegible labels, random asset insertion,
 or repetitive same-background scenes. Score honestly. This is NOT historical fact verification.
 ready requires every category>=7 and no major craft failure; otherwise revise or reject.'''
- parts=[{'text':prompt+'\nREFERENCE CRAFT DATA:\n'+json.dumps(style or {})},
- {'inlineData':{'mimeType':'video/mp4','data':base64.b64encode(Path(video).read_bytes()).decode()}}]
+ from .review_media import video_part
  model=os.getenv('GEMINI_MODEL','gemini-3.5-flash-lite')
- result=api.request(model,'models/'+model+':generateContent',{'contents':[{'role':'user','parts':parts}],
- 'generationConfig':{'temperature':.15,'maxOutputTokens':5000,'responseMimeType':'application/json',
- 'responseJsonSchema':schema,'thinkingConfig':{'thinkingLevel':'LOW'}}},'text')
+ with video_part(api,video) as part:
+  part={**part,'videoMetadata':{'fps':2}}
+  parts=[{'text':prompt+'\nREFERENCE CRAFT DATA:\n'+json.dumps(style or {})},part]
+  result=api.request(model,'models/'+model+':generateContent',{'contents':[{'role':'user','parts':parts}],
+   'generationConfig':{'temperature':.15,'maxOutputTokens':5000,'responseMimeType':'application/json',
+   'responseJsonSchema':schema,'thinkingConfig':{'thinkingLevel':'LOW'}}},'text')
  report=json.loads(''.join(p.get('text','') for p in result['candidates'][0]['content']['parts'] if not p.get('thought')))
  save_json(output/'editorial-review.json',report);return report
 
@@ -283,7 +285,7 @@ def produce(api,work,output,profile='cinematic',proof=False,resume=None,revise=F
  music=read_json(output/'music-credits.json') if (output/'music-credits.json').exists() else []
  save_json(output/'render.json',{'style':'directed-layered-animation','duration':duration(final),'profile':profile,'credits_seconds':0,'interlude_seconds':0,'music':music,'voice':speech['voice']})
  save_json(output/'timeline.json',shots)
- asset_map={'film':{'assets':[{'source_url':a['source_url']} for a in assets['assets']]}}
+ asset_map={'film':{'assets':[{'source_url':a['source_url']} for a in assets['assets'] if a['id'] in used_assets]}}
  technical=inspect(final,script,speech,asset_map,output)
  save_json(output/'sources.json',read_json(work/'research.json'))
  if 'ethiop' in script['title'].lower():

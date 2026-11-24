@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import copy
 import math
+import os
 from collections import Counter
 from pathlib import Path
 
@@ -57,7 +58,7 @@ def _duration_matches(program, spoken):
 def _draft_path(directory, prepared):
     # Changes in narration, timing, craft feedback, or approval context invalidate
     # drafts. A new process/workspace does not require a fresh paid/quota call.
-    identity = key("batched-scene-draft-v1", prepared["instruction"],
+    identity = key("batched-scene-draft-v2", os.getenv("GEMINI_MODEL","gemini-3.8-flash"), prepared["instruction"],
                    prepared["payload"], prepared["schema"])
     return directory / "batch-drafts" / (identity + ".json")
 
