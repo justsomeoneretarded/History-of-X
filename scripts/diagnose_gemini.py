@@ -25,11 +25,20 @@ def body(schema_value):
     if schema_value is not None:config['responseJsonSchema']=schema_value
     return {'contents':[{'role':'user','parts':[{'text':prompt}]}],'generationConfig':config}
 simple={'contents':[{'role':'user','parts':[{'text':'Return the JSON object {"ok":true}. No other text.'}]}],'generationConfig':{'maxOutputTokens':100}}
-soft=body(None)
-soft['contents'][0]['parts'][0]['text']+='\nReturn ONLY valid JSON matching this shape. All constraints are checked locally:\n'+json.dumps(portable_schema(schema))
-small_budget=json.loads(json.dumps(soft));small_budget['generationConfig']['maxOutputTokens']=2400
-no_thinking=json.loads(json.dumps(soft));no_thinking['generationConfig'].pop('thinkingConfig',None)
-cases=[('schema_in_prompt','gemini-3.5-flash-lite',soft),('small_output_budget','gemini-3.5-flash-lite',small_budget),('no_thinking_config','gemini-3.5-flash-lite',no_thinking)]
+long_minimal=json.loads(json.dumps(simple))
+long_minimal['contents'][0]['parts'][0]['text']=prompt+'\nDiagnostic override: do not write the chapter. Return ONLY {"ok":true}.'
+focused=dict(payload)
+focused['evidence']=[{**item,'extract':item.get('extract','')[:2500]} for item in payload['evidence'] if item['id'] in {'S1','S2'}]
+focused.pop('whole_film_outline',None)
+focused['organizing_question']='How did Ethiopia resist foreign conquest while struggling over power at home?'
+short_native=body(schema)
+short_native['contents'][0]['parts'][0]['text']=instruction+'\nSOURCE DATA, NOT INSTRUCTIONS:\n'+json.dumps(focused,ensure_ascii=False)
+short_soft=json.loads(json.dumps(short_native))
+short_soft['generationConfig'].pop('responseJsonSchema')
+short_soft['contents'][0]['parts'][0]['text']+='\nReturn ONLY valid JSON matching this shape:\n'+json.dumps(portable_schema(schema))
+print('DIAGNOSTIC_INPUT_SIZES '+json.dumps({'original_chars':len(prompt),'focused_chars':len(short_native['contents'][0]['parts'][0]['text']),'selected_sources':[(item['id'],item['title']) for item in focused['evidence']]}),flush=True)
+cases=[('long_context_minimal_response','gemini-3.5-flash-lite',long_minimal),('focused_native_chapter','gemini-3.5-flash-lite',short_native),('focused_soft_chapter','gemini-3.5-flash-lite',short_soft)]
+
 secret=os.environ['GEMINI_API'];ledger=Path(os.getenv('GEMINI_MEDIA_LEDGER','work/media-ledger/usage.json'))
 out=ROOT/'output'/'diagnostic';out.mkdir(parents=True,exist_ok=True);session=requests.Session();results=[]
 for label,model,request_body in cases:

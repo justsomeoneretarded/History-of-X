@@ -1,5 +1,5 @@
 {
-  "reason": "Test schema-in-prompt JSON, smaller output budget, and omitted thinking configuration against the exact saved chapter",
-  "checkpoint_run": 45446519424,
-  "attempt": 2
+  "attempt": 3,
+  "reason": "Separate long context from constrained chapter generation",
+  "checkpoint_run": 45446519424
 }
