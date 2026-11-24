@@ -133,7 +133,7 @@ def recover_draft_chapter(draft, title, chapter, budget, count, source_ids):
         if not isinstance(citations, list) or not citations or any(not isinstance(s, str) or s not in allowed for s in citations):
             return None
         text = scene["narration"]
-        if len(text.split()) > 250 or any(re.search(r"\\b" + re.escape(word) + r"\\b", text, re.I) for word in BANNED):
+        if len(text.split()) > 250 or any(re.search(r"\b" + re.escape(word) + r"\b", text, re.I) for word in BANNED):
             return None
     words = sum(len(s["narration"].split()) for s in selected)
     # Existing accepted chapter drafts can miss their local target slightly; the
