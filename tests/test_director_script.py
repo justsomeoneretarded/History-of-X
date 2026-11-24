@@ -1,7 +1,9 @@
+import json
+
 import pytest
 
-from history_of_x.core import PipelineError
-from history_of_x.director_script import choose_audition, script_metrics, word_target
+from history_of_x.core import PipelineError, key, read_json, save_json
+from history_of_x.director_script import STYLE_PROFILE, audio_review, choose_audition, recover_draft_chapter, script_metrics, word_target, write
 
 
 def test_natural_complete_voice_beats_fast_incomplete_voice():
@@ -33,3 +35,74 @@ def test_invalid_narrator_rates_are_rejected(monkeypatch, rate):
     monkeypatch.setenv("SCRIPT_TARGET_WPM", rate)
     with pytest.raises(PipelineError, match="SCRIPT_TARGET_WPM"):
         word_target(8.75)
+
+
+def saved_hook():
+    scene = {
+        "chapter": "Hook", "narration": " ".join(["history"] * 53),
+        "source_ids": ["S1"], "date_label": "1896", "location": "Ethiopia",
+        "asset_search_term": "Adwa 1896 commanders",
+    }
+    return {"title": "Ethiopia", "summary": "Who holds power?", "scenes": [dict(scene), dict(scene)]}
+
+
+def test_legacy_checkpoint_recovers_complete_106_word_hook_before_retrying_roots(tmp_path, monkeypatch):
+    monkeypatch.setenv("SCRIPT_TARGET_WPM", "160")
+    evidence = {"sources": [{"id": "S1", "extract": "Historical evidence"}]}
+    fingerprint = key("director-script-v3-measured-voice-rate", "Ethiopia", "Brief", 1400, 160.0, evidence, STYLE_PROFILE)
+    save_json(tmp_path / "outline.json", {
+        "fingerprint": fingerprint, "organizing_question": "Who holds power?",
+        "chapters": [{"chapter": c} for c in ["Hook", "Roots", "Catalyst", "Turning Point", "Aftermath"]],
+    })
+    save_json(tmp_path / "draft-script.json", saved_hook())
+
+    class UnavailableAPI:
+        calls = []
+
+        def text(self, instruction, payload, schema, **kwargs):
+            self.calls.append(payload["this_chapter"]["chapter"])
+            raise PipelineError("temporary service outage")
+
+    api = UnavailableAPI()
+    with pytest.raises(PipelineError, match="temporary service outage"):
+        write(api, "Ethiopia", "Brief", 8.75, evidence, tmp_path)
+    assert api.calls == ["Roots"]
+    recovered = read_json(tmp_path / "director-chapters" / ("1-" + fingerprint + ".json"))
+    assert sum(len(s["narration"].split()) for s in recovered["scenes"]) == 106
+    assert read_json(tmp_path / "draft-script.json")["fingerprint"] == fingerprint
+
+
+@pytest.mark.parametrize("defect", ["missing_scene", "wrong_source", "wrong_title", "short_fragment", "banned_phrase"])
+def test_incomplete_or_mismatched_draft_cannot_seed_a_chapter(defect):
+    draft = saved_hook()
+    if defect == "missing_scene":
+        draft["scenes"].pop()
+    elif defect == "wrong_source":
+        draft["scenes"][0]["source_ids"] = ["UNKNOWN"]
+    elif defect == "wrong_title":
+        draft["title"] = "Another topic"
+    elif defect == "short_fragment":
+        for scene in draft["scenes"]:
+            scene["narration"] = "One short fragment."
+    else:
+        draft["scenes"][0]["narration"] += " delve"
+    assert recover_draft_chapter(draft, "Ethiopia", "Hook", 119, 2, ["S1"]) is None
+
+
+def test_audio_review_can_use_separate_model_from_writer(tmp_path, monkeypatch):
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-3.8-flash")
+    monkeypatch.setenv("GEMINI_AUDIO_REVIEW_MODEL", "gemini-3.1-flash-lite")
+    audio = tmp_path / "audition.wav"
+    audio.write_bytes(b"original audition bytes")
+    review = {"naturalness": 8, "clarity": 9, "rhythm": 8, "overacted": False, "observations": [], "issues": []}
+
+    class API:
+        selected_model = None
+
+        def request(self, model, endpoint, body, kind):
+            self.selected_model = model
+            return {"candidates": [{"content": {"parts": [{"text": json.dumps(review)}]}}]}
+
+    api = API()
+    assert audio_review(api, audio, {}) == review
+    assert api.selected_model == "gemini-3.1-flash-lite"
