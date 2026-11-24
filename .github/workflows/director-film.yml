@@ -67,7 +67,9 @@ jobs:
       GEMINI_MODEL: ${{ vars.GEMINI_DIRECTOR_MODEL || 'gemini-3.8-flash' }}
       GEMINI_TTS_MODEL: ${{ vars.GEMINI_TTS_MODEL || 'gemini-3.8-flash-tts' }}
       GEMINI_MEDIA_LEDGER: work/media-ledger/usage.json
-      GEMINI_TEXT_REQUEST_BUDGET: '48'
+      GEMINI_TEXT_REQUEST_BUDGET: '64'
+      GEMINI_SCENE_BATCH_SIZE: '3'
+      SCRIPT_TARGET_WPM: ${{ vars.SCRIPT_TARGET_WPM || '160' }}
       GEMINI_INPUT_TOKEN_BUDGET: '40000'
       GEMINI_TTS_REQUEST_BUDGET: '16'
     steps:
@@ -102,7 +104,6 @@ jobs:
           run-id: ${{ inputs.resume_run }}
           github-token: ${{ github.token }}
       - name: Original script and auditioned Gemini narration
-        if: ${{ inputs.audio_run == '' && inputs.resume_run == '' }}
         env:
           GEMINI_API: ${{ secrets.GEMINI_API }}
         run: python -m history_of_x.director_script --stage all
@@ -127,14 +128,15 @@ jobs:
             work/director/*.json
             work/director/*.txt
             work/director/gemini
+            work/director/director-chapters
             work/director/speech
             work/director/voice-auditions
             work/director/media
             work/director/scene-programs
-          retention-days: 14
+          retention-days: 90
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: directed-${{ inputs.mode }}
           path: output/director
-          retention-days: 14
+          retention-days: 90
