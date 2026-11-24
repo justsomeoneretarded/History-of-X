@@ -14,6 +14,9 @@ def validate(config):
     if config.get('phase','proof') not in {'proof','film'}:raise ValueError('Phase must beprooforfilm')
     if config.get('profile','cinematic') not in {'draft','cinematic'}:raise ValueError('Unsupported render profile')
     if config.get('director_model','gemini-3.8-flash') not in {'gemini-3.8-flash','gemini-3.5-flash-lite'}:raise ValueError('Unsupported free director model')
+    if config.get('writer_model','gemini-3.5-flash-lite') not in {'gemini-3.8-flash','gemini-3.5-flash-lite'}:raise ValueError('Unsupported free writer model')
+    if str(config.get('scene_batch_size',2)) not in {'1','2','3'}:raise ValueError('Scene batch size must be1–3')
+    if config.get('resume_run') and not str(config['resume_run']).isdigit():raise ValueError('Checkpoint run ID must be numeric')
     if config.get('phase','proof')=='film' and not str(config.get('resume_run','')).isdigit():raise ValueError('Full production requires a reviewed proof checkpoint run')
     return config
 
@@ -30,6 +33,7 @@ def configure(request_file=None):
     fields={'VIDEO_TITLE':config['title'],'VIDEO_BRIEF':config['brief'],'VIDEO_MINUTES':str(config.get('minutes',8.75)),
       'NARRATOR':config.get('voice','auto'),'REQUEST_PHASE':config.get('phase','proof'),'FILM_PROFILE':config.get('profile','cinematic'),
       'RESUME_RUN':str(config.get('resume_run','')),'DIRECTOR_MODEL':config.get('director_model','gemini-3.8-flash'),
+      'WRITER_MODEL':config.get('writer_model','gemini-3.5-flash-lite'),'GEMINI_SCENE_BATCH_SIZE':str(config.get('scene_batch_size',2)),
       'SCRIPT_TARGET_WPM':str(config.get('script_target_wpm',160)),'REVISE_FILM':str(config.get('revise',False)).lower()}
     with open(os.environ['GITHUB_ENV'],'a') as stream:
         for name,value in fields.items():
@@ -43,7 +47,7 @@ def evidence():
     for name in ['production.json','editorial-review.json','failure.json','timeline.json','media-credits.json']:
         path=output/name
         if path.exists():data[name]=json.loads(path.read_text())
-    for name in ['writing-metrics.json','narration-metrics.json','script.json']:
+    for name in ['writing-metrics.json','narration-metrics.json','script.json','draft-script.json','failure.json']:
         path=work/name
         if path.exists():data[name]=json.loads(path.read_text())
     print('DIRECTOR_EVIDENCE_START\n'+json.dumps(data,ensure_ascii=False)+'\nDIRECTOR_EVIDENCE_END',flush=True)

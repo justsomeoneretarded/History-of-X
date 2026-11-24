@@ -105,6 +105,44 @@ def chapter_script_schema(source_ids, budget, count, chars_per_word=5.6):
     return {"type": "object", "required": ["scenes"], "properties": {"scenes": {"type": "array", "minItems": count, "maxItems": count, "items": scene}}}
 
 
+def recover_draft_chapter(draft, title, chapter, budget, count, source_ids):
+    """Recover a complete accepted chapter structurally, without rewriting its narration."""
+    if not isinstance(draft, dict) or draft.get("title") != title:
+        return None
+    scenes = draft.get("scenes")
+    if not isinstance(scenes, list) or not all(isinstance(s, dict) for s in scenes):
+        return None
+    order = []
+    for scene in scenes:
+        name = scene.get("chapter")
+        if name not in CHAPTERS:
+            return None
+        if not order or order[-1] != name:
+            order.append(name)
+    if order != CHAPTERS[:len(order)]:
+        return None
+    selected = [s for s in scenes if s.get("chapter") == chapter]
+    if len(selected) != count:
+        return None
+    allowed = set(source_ids)
+    fields = ("narration", "date_label", "location", "asset_search_term")
+    for scene in selected:
+        if any(not isinstance(scene.get(field), str) or not scene[field].strip() for field in fields):
+            return None
+        citations = scene.get("source_ids")
+        if not isinstance(citations, list) or not citations or any(not isinstance(s, str) or s not in allowed for s in citations):
+            return None
+        text = scene["narration"]
+        if len(text.split()) > 250 or any(re.search(r"\b" + re.escape(word) + r"\b", text, re.I) for word in BANNED):
+            return None
+    words = sum(len(s["narration"].split()) for s in selected)
+    # Existing accepted chapter drafts can miss their local target slightly; the
+    # complete film still receives the existing strict global length/intake checks.
+    if not budget * .85 <= words <= min(450, budget * 1.2):
+        return None
+    return {"scenes": [{field: s[field] for field in (*fields, "source_ids")} for s in selected]}
+
+
 def write(api, title, brief, minutes, evidence, directory):
     directory = Path(directory)
     target = word_target(minutes)
@@ -118,6 +156,7 @@ def write(api, title, brief, minutes, evidence, directory):
         return result
     compact = [{**s, "extract": s["extract"][:3400]} for s in evidence["sources"]]
     outline_path = directory / "outline.json"
+    previous_outline_fingerprint = read_json(outline_path).get("fingerprint") if outline_path.exists() else None
     if outline_path.exists() and read_json(outline_path).get("fingerprint") == fingerprint:
         outline = read_json(outline_path)
     else:
@@ -166,11 +205,27 @@ def write(api, title, brief, minutes, evidence, directory):
     remaining = target - hook
     budgets = [hook, round(remaining * .27), round(remaining * .24), round(remaining * .27)]
     budgets.append(target - sum(budgets))
+    saved_draft = None
+    draft_path = directory / "draft-script.json"
+    if draft_path.exists():
+        try:
+            candidate = read_json(draft_path)
+            if isinstance(candidate, dict):
+                saved_fingerprint = candidate.get("fingerprint")
+                if saved_fingerprint == fingerprint or (saved_fingerprint is None and previous_outline_fingerprint == fingerprint):
+                    saved_draft = candidate
+        except (OSError, ValueError):
+            pass
     merged = []
     for index, (chapter, budget) in enumerate(zip(CHAPTERS, budgets)):
         count = max(1, math.ceil(budget / 68))
         print(f"Director writing {chapter}: {budget} words across {count} scenes", flush=True)
         chapter_path = directory / "director-chapters" / f"{index + 1}-{fingerprint}.json"
+        if not chapter_path.exists():
+            recovered = recover_draft_chapter(saved_draft, title, chapter, budget, count, source_ids)
+            if recovered is not None:
+                save_json(chapter_path, recovered)
+                print(f"Recovered complete {chapter} from saved draft without an API request", flush=True)
         if chapter_path.exists():
             part = read_json(chapter_path)
         else:
@@ -193,7 +248,7 @@ def write(api, title, brief, minutes, evidence, directory):
         print(f"Director drafted {chapter}: {sum(len(s['narration'].split()) for s in part['scenes'])} words", flush=True)
         for scene in part["scenes"]:
             merged.append({**scene, "chapter": chapter, "scene_id": len(merged) + 1, "visual_type": "artwork", "subtitle_highlights": [], "delivery": "calm" if chapter == "Aftermath" else "normal", "bg_music_mood": "reflective" if chapter == "Aftermath" else "tense"})
-        save_json(directory / "draft-script.json", {"title": title, "summary": outline["organizing_question"], "scenes": merged})
+        save_json(directory / "draft-script.json", {"title": title, "summary": outline["organizing_question"], "scenes": merged, "fingerprint": fingerprint})
     result = normalize_script({"title": title, "summary": outline["organizing_question"], "scenes": merged})
     metrics = script_metrics(result)
     validate(result, source_ids, target)
@@ -215,7 +270,7 @@ def audio_review(api, audio, measured):
         "naturalness": {"type": "integer", "minimum": 1, "maximum": 10}, "clarity": {"type": "integer", "minimum": 1, "maximum": 10},
         "rhythm": {"type": "integer", "minimum": 1, "maximum": 10}, "overacted": {"type": "boolean"},
         "observations": {"type": "array", "items": {"type": "string"}}, "issues": {"type": "array", "items": {"type": "string"}}}}
-    model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+    model = os.getenv("GEMINI_AUDIO_REVIEW_MODEL") or os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
     body = {"contents": [{"role": "user", "parts": [
         {"text": "Listen to the supplied original narration AUDIO. Evaluate natural conversational delivery, intelligibility, phrasing, expressive variation and intrusive synthetic/announcer characteristics. Do not judge historical facts or infer speaker identity. Do not automatically praise. Scores1–10. Note concrete audible strengths and defects. Measured diagnostics: " + json.dumps(measured)},
         {"inlineData": {"mimeType": "audio/wav", "data": base64.b64encode(Path(audio).read_bytes()).decode()}},
