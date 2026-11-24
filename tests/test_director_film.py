@@ -28,6 +28,7 @@ def inputs(tmp_path, identifier='approved'):
     scene = {'scene_id': 1, 'narration': 'A ruler reads and rejects the disputed agreement.'}
     spoken = {'duration': 15., 'words': []}
     program = treaty_proof()
+    program['scene_id'] = '1'
     program['svg'] = program['svg'].replace('<g id="heading">',
         f'<g id="heading"><image href="asset:{identifier}" x="0" y="0" width="600" height="400"/>')
     return scene, spoken, assets, program
@@ -64,5 +65,14 @@ def test_director_rejects_events_with_large_unexplained_timing_gaps(tmp_path):
     artwork['events'] = [{'time': .1, 'description': 'An event.', 'layer_ids': ['room']}]*3
     api = SceneAPI(artwork)
     with pytest.raises(PipelineError, match='meaningful staged developments'):
+        plan_scene(api, scene, spoken, assets, tmp_path)
+    assert len(api.calls) == 2
+
+
+def test_director_does_not_silently_reassign_wrong_scene_ids(tmp_path):
+    scene, spoken, assets, artwork = inputs(tmp_path)
+    artwork['scene_id'] = 'wrong-scene'
+    api = SceneAPI(artwork)
+    with pytest.raises(PipelineError, match='different scene ID'):
         plan_scene(api, scene, spoken, assets, tmp_path)
     assert len(api.calls) == 2

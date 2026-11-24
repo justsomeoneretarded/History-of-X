@@ -1,0 +1,122 @@
+name: Produce reviewed history request
+on:
+  push:
+    branches: [main]
+    paths: ['production/requests/*.json']
+  workflow_dispatch:
+    inputs:
+      request_file:
+        description: Repository production request JSON
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: history-gemini
+  cancel-in-progress: false
+jobs:
+  produce:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
+    env:
+      PYTHONUNBUFFERED: '1'
+      HF_HUB_DISABLE_XET: '1'
+      HF_HOME: ${{ github.workspace }}/work/models/huggingface
+      GEMINI_TTS_MODEL: gemini-3.8-flash-tts
+      GEMINI_MEDIA_LEDGER: work/media-ledger/usage.json
+      GEMINI_TEXT_REQUEST_BUDGET: '64'
+      GEMINI_INPUT_TOKEN_BUDGET: '40000'
+      GEMINI_TTS_REQUEST_BUDGET: '16'
+      REQUEST_FILE: ${{ inputs.request_file }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: python scripts/bootstrap_media.py
+      - run: python -m pip install -e '.[alignment,test]'
+      - name: Verify code before spending provider quota
+        run: |
+          python -m compileall -q history_of_x scripts
+          pytest -q
+      - name: Read production request
+        run: |
+          if [[ -n "$REQUEST_FILE" ]]; then
+            python scripts/production_request.py configure --request "$REQUEST_FILE"
+          else
+            python scripts/production_request.py configure
+          fi
+      - uses: actions/cache@v4
+        with:
+          path: work/models
+          key: whisper-base-en-v1-${{ runner.os }}
+      - uses: actions/cache/restore@v4
+        with:
+          path: work/media-ledger
+          key: media-ledger-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: media-ledger-v1-
+      - uses: actions/download-artifact@v4
+        if: ${{ env.RESUME_RUN != '' }}
+        with:
+          name: directed-checkpoint
+          path: work/director
+          run-id: ${{ env.RESUME_RUN }}
+          github-token: ${{ github.token }}
+      - name: Original script and measured Gemini narration
+        if: ${{ env.RESUME_RUN == '' }}
+        env:
+          GEMINI_API: ${{ secrets.GEMINI_API }}
+          GEMINI_MODEL: gemini-3.5-flash-lite
+        run: python -m history_of_x.director_script --stage all
+      - name: Preserve accepted narration
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: director-audio
+          path: |
+            work/director/*.json
+            work/director/*.txt
+            work/director/speech
+            work/director/voice-auditions
+            work/director/gemini
+          retention-days: 90
+      - name: Direct and render actual scenes
+        env:
+          GEMINI_API: ${{ secrets.GEMINI_API }}
+          GEMINI_MODEL: ${{ env.DIRECTOR_MODEL }}
+        run: |
+          args=(--profile "$FILM_PROFILE")
+          if [[ "$REQUEST_PHASE" == "proof" ]]; then args+=(--proof); fi
+          if [[ "$REVISE_FILM" == "true" ]]; then args+=(--revise); fi
+          python -m history_of_x.director_film "${args[@]}"
+      - name: Publish inspectable temporal evidence
+        if: ${{ always() }}
+        run: python scripts/production_request.py evidence
+      - uses: actions/cache/save@v4
+        if: ${{ always() }}
+        with:
+          path: work/media-ledger
+          key: media-ledger-v1-${{ github.run_id }}-${{ github.run_attempt }}
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: directed-checkpoint
+          path: |
+            work/director/*.json
+            work/director/*.txt
+            work/director/gemini
+            work/director/speech
+            work/director/voice-auditions
+            work/director/media
+            work/director/scene-programs
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: directed-output
+          path: output/director
+          retention-days: 90

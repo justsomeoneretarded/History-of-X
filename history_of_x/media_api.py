@@ -40,7 +40,8 @@ class MediaAPI:
      # Keep the established SDK's wire conversion for newer text-model enums/schema.
      from google import genai
      from google.genai import types
-     client=genai.Client(api_key=self.secret,http_options={'timeout':180000,'retry_options':{'attempts':1}})
+     deadline=300000 if body.get('generationConfig',{}).get('maxOutputTokens',0)>18000 else 180000
+     client=genai.Client(api_key=self.secret,http_options={'timeout':deadline,'retry_options':{'attempts':1}})
      try:
       generated=client.models.generate_content(model=model,contents=body['contents'],config=types.GenerateContentConfig.model_validate(body['generationConfig']))
       r=requests.Response();r.status_code=200;r._content=json.dumps(generated.model_dump(mode='json',by_alias=True,exclude_none=True)).encode()
@@ -61,7 +62,7 @@ class MediaAPI:
    detail=r.text.replace(self.secret,'[REDACTED]') if self.secret else r.text
    print(f'Gemini {model}: HTTP {r.status_code}: {detail[:650]}',flush=True)
    if r.status_code==429:
-    if any(s in detail.lower() for s in ('perday','per_day','daily')) or attempt==2:raise QuotaDeferred('Gemini quota exhausted; resume saved checkpoint later')
+    if any(s in detail.lower() for s in ('perday','per_day','per day','daily')) or attempt==2:raise QuotaDeferred('Gemini quota exhausted; resume saved checkpoint later')
    elif r.status_code not in (500,502,503,504):raise PipelineError(f'Gemini {model} HTTP {r.status_code}; no substitute provider used')
    if attempt==2:raise PipelineError(f'Gemini {model} unavailable after three attempts')
    retry=min(180,max(65,float(r.headers.get('Retry-After','65'))))

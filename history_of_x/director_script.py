@@ -48,6 +48,17 @@ STYLE_PROFILE = {
 }
 
 
+def word_target(minutes):
+    """Budget original writing against a measured narrator pace, without time stretching."""
+    try:
+        rate = float(os.getenv("SCRIPT_TARGET_WPM", "160"))
+    except ValueError:
+        raise PipelineError("SCRIPT_TARGET_WPM must be a number between 100 and 210") from None
+    if not 100 <= rate <= 210:
+        raise PipelineError("SCRIPT_TARGET_WPM must be between 100 and 210")
+    return round(minutes * rate)
+
+
 def script_metrics(script):
     text = " ".join(s["narration"] for s in script["scenes"])
     lengths = [len(re.findall(r"\b[\w’'-]+\b", s)) for s in re.split(r"[.!?]+(?:\s+|$)", text) if s.strip()]
@@ -96,8 +107,9 @@ def chapter_script_schema(source_ids, budget, count, chars_per_word=5.6):
 
 def write(api, title, brief, minutes, evidence, directory):
     directory = Path(directory)
-    target = round(minutes * 174)
-    fingerprint = key("director-script-v2-concrete-hook", title, brief, target, evidence, STYLE_PROFILE)
+    target = word_target(minutes)
+    target_rate = float(os.getenv("SCRIPT_TARGET_WPM", "160"))
+    fingerprint = key("director-script-v3-measured-voice-rate", title, brief, target, target_rate, evidence, STYLE_PROFILE)
     path = directory / "script.json"
     source_ids = [s["id"] for s in evidence["sources"]]
     if path.exists() and read_json(path).get("fingerprint") == fingerprint:
@@ -189,7 +201,7 @@ def write(api, title, brief, minutes, evidence, directory):
         raise PipelineError("Director script missed its bounded runtime word budget; draft remains cached")
     if max(metrics["chapter_words"].values()) > 450:
         raise PipelineError("Director chapter exceeds450-word Gemini speech intake")
-    result.update(fingerprint=fingerprint, word_count=metrics["words"], provenance="Original Gemini director outline and complete draft; reference craft measurements only", target_seconds=minutes * 60)
+    result.update(fingerprint=fingerprint, word_count=metrics["words"], provenance="Original Gemini director outline and complete draft; reference craft measurements only", target_seconds=minutes * 60, script_target_words_per_minute=target_rate)
     save_json(path, result)
     save_json(directory / "writing-metrics.json", metrics)
     save_json(directory / "style-profile.json", STYLE_PROFILE)

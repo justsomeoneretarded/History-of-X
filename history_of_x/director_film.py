@@ -1,6 +1,6 @@
 """Reference-informed editorial production. Scene-specific executable animation, not activity loops."""
 from __future__ import annotations
-import argparse,base64,json,math,os,re,shutil
+import argparse,base64,copy,json,math,os,re,shutil
 from pathlib import Path
 from PIL import Image,ImageDraw,ImageOps
 from .core import ROOT,PipelineError,read_json,save_json,key,ffmpeg,duration
@@ -23,16 +23,16 @@ ILLUSTRATION_BIBLE={
  'staging':'Subjects remain large and readable. Establish space before a reversal. Anticipation, contact and reaction have different timing. Short holds let the viewer understand a consequence. Real object contact and continuous ownership; no floating body parts.',
  'composition':'Deliberate wide/medium/detail changes, foreground depth, restrained shadows. Avoid the same palace, table or centered symmetrical composition in successive scenes.'}
 
-def plan_scene(api,scene,spoken,assets,directory,style=None):
+def plan_scene(api,scene,spoken,assets,directory,style=None,request_only=False,preplanned=None):
  from .scene_film import schema,validate_scene
  seconds=round(spoken['duration'],6)
  catalog={a['id']:a for a in assets['assets']}
  candidates=[catalog[x] for x in assets['scenes'].get(str(scene['scene_id']),[]) if x in catalog and catalog[x].get('medium') not in ('video','archival_video')]
  archives=[catalog[x] for x in assets['scenes'].get(str(scene['scene_id']),[]) if x in catalog and catalog[x].get('medium')=='archival_video'][:2]
  archive_seconds=4.5*len(archives) if seconds>12 else 0
- fingerprint=key('director-scene-v3',scene,seconds,candidates,style)
+ fingerprint=key('director-scene-v4-batched',os.getenv('GEMINI_MODEL','gemini-3.8-flash'),ILLUSTRATION_BIBLE,scene,seconds,candidates,style)
  target=directory/(fingerprint+'.json')
- if target.exists():return read_json(target)
+ if target.exists():return {'accepted':read_json(target)} if request_only else read_json(target)
  prompt=CRAFT+'''
 You are also a skilled vector illustrator and animation director. Return a complete executable layered SVG
 scene program, NOT a description of an animation, not a slideshow, not a handful of icon cards.
@@ -88,19 +88,24 @@ Return valid JSON exactly matching schema. scene_id must equal the supplied stri
    import io
    im=im.convert('RGB');im.thumbnail((1280,800));out=io.BytesIO();im.save(out,format='JPEG',quality=82)
   return 'data:image/jpeg;base64,'+base64.b64encode(out.getvalue()).decode()
+ # Approved historical references inform illustration, never arbitrary network fetches.
+ images=[]
+ for a in candidates[:3]:
+  p=Path(a['path']);p=p if p.is_absolute() else ROOT/p
+  try:
+   with Image.open(p) as im:
+    im=im.convert('RGB');im.thumbnail((800,600));ref=directory/(key('director-art-reference',a['id'])+'.jpg');im.save(ref,quality=85)
+   images.append(ref)
+  except (OSError,ValueError):continue
+ instruction=prompt+'\nAttached images are approved historical subject references. Match the supplied context and dates.'
+ if request_only:return {'instruction':instruction,'payload':payload,'images':images,'schema':schema()}
  for attempt in range(2):
-  # Show the director actual approved historical imagery, not just asset filenames.
-  images=[]
-  for a in candidates[:3]:
-   p=Path(a['path']);p=p if p.is_absolute() else ROOT/p
-   try:
-    with Image.open(p) as im:
-     im=im.convert('RGB');im.thumbnail((800,600));ref=directory/(key('director-art-reference',a['id'])+'.jpg');im.save(ref,quality=85)
-    images.append(ref)
-   except (OSError,ValueError):continue
-  result=api.vision(prompt+'\nAttached images are approved historical subject references, not art to copy blindly. Match the supplied context and dates.',payload,images,schema(),max_output=18000) if images else api.text(prompt,payload,schema(),max_output=18000)
+  if attempt==0 and preplanned is not None:result=copy.deepcopy(preplanned)
+  else:result=api.vision(instruction,payload,images,schema(),max_output=18000) if images else api.text(instruction,payload,schema(),max_output=18000)
   save_json(directory/(fingerprint+f'-draft-{attempt}.json'),result)
   try:
+   if str(result.get('scene_id'))!=str(scene['scene_id']):raise PipelineError('Director returned a different scene ID')
+   if abs(float(result.get('duration',-1))-seconds)>.05:raise PipelineError('Director returned an incorrect scene duration')
    result['duration']=seconds;result['scene_id']=str(scene['scene_id'])
    result['asset_ids']=list(dict.fromkeys(re.findall(r'asset:([A-Za-z0-9_.-]+)',result['svg'])))
    if len(result['asset_ids'])>2:raise PipelineError('Use at most two embedded historical images per scene')
@@ -212,7 +217,9 @@ def produce(api,work,output,profile='cinematic',proof=False,resume=None,revise=F
  style=read_json(work/'style-profile.json') if (work/'style-profile.json').exists() else read_json(style_path) if style_path.exists() else {'narration_wpm':174,'median_sentence_words':10,'runtime_seconds':525.58}
  report_path=ROOT/'assets'/'style'/'reference-study.json'
  if report_path.exists():style={**style,'video_reference_study':read_json(report_path)}
+ if not revise and (work/'active-direction-style.json').exists():style=read_json(work/'active-direction-style.json')
  if revise and (work/'editorial-feedback.json').exists():style={**style,'required_creative_revision':read_json(work/'editorial-feedback.json')}
+ save_json(work/'active-direction-style.json',style)
  assets=catalog(script,work/'media')
  if proof:
   # Opening and later acted narrative samples, preserving each complete spoken scene.
@@ -223,6 +230,8 @@ def produce(api,work,output,profile='cinematic',proof=False,resume=None,revise=F
   speech={**speech,'scenes':[speech['scenes'][i] for i in selected]}
  output.mkdir(parents=True,exist_ok=True);directory=work/'directed-render';directory.mkdir(parents=True,exist_ok=True)
  plan_dir=work/'scene-programs';plan_dir.mkdir(parents=True,exist_ok=True)
+ from .director_batch import plan_all
+ plan_all(api,script,speech,assets,plan_dir,style)
  videos=[];shots=[];position=0;fps=PROFILES[profile][2];frame_cursor=0;used_assets=set()
  for scene,spoken in zip(script['scenes'],speech['scenes']):
   print(f'Directing original scene {scene["scene_id"]}: {scene["narration"][:90]}',flush=True)
