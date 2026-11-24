@@ -25,7 +25,11 @@ def body(schema_value):
     if schema_value is not None:config['responseJsonSchema']=schema_value
     return {'contents':[{'role':'user','parts':[{'text':prompt}]}],'generationConfig':config}
 simple={'contents':[{'role':'user','parts':[{'text':'Return the JSON object {"ok":true}. No other text.'}]}],'generationConfig':{'maxOutputTokens':100}}
-cases=[('simple','gemini-3.5-flash-lite',simple),('bounded_chapter','gemini-3.5-flash-lite',body(schema)),('portable_chapter','gemini-3.5-flash-lite',body(portable_schema(schema)))]
+soft=body(None)
+soft['contents'][0]['parts'][0]['text']+='\nReturn ONLY valid JSON matching this shape. All constraints are checked locally:\n'+json.dumps(portable_schema(schema))
+small_budget=json.loads(json.dumps(soft));small_budget['generationConfig']['maxOutputTokens']=2400
+no_thinking=json.loads(json.dumps(soft));no_thinking['generationConfig'].pop('thinkingConfig',None)
+cases=[('schema_in_prompt','gemini-3.5-flash-lite',soft),('small_output_budget','gemini-3.5-flash-lite',small_budget),('no_thinking_config','gemini-3.5-flash-lite',no_thinking)]
 secret=os.environ['GEMINI_API'];ledger=Path(os.getenv('GEMINI_MEDIA_LEDGER','work/media-ledger/usage.json'))
 out=ROOT/'output'/'diagnostic';out.mkdir(parents=True,exist_ok=True);session=requests.Session();results=[]
 for label,model,request_body in cases:
@@ -57,9 +61,3 @@ for label,model,request_body in cases:
     except requests.RequestException as exc:report={'case':label,'model':model,'network_error':str(exc).replace(secret,'[REDACTED]')[:500]}
     results.append(report);save_json(out/'results.json',results)
     print('DIAGNOSTIC_RESULT '+json.dumps(report),flush=True)
-# A small alternative-model check only if even the trivial request was unavailable.
-if results[0].get('http_status')!=200:
-    state=read_json(ledger);delay=max(0,state['last_start']+65-time.time())
-    while delay>0:pause=min(30,delay);time.sleep(pause);delay-=pause
-    r=session.post('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent',headers={'x-goog-api-key':secret},json=simple,timeout=(15,60))
-    print('ALTERNATIVE_SIMPLE '+json.dumps({'model':'gemini-3.1-flash-lite','http_status':r.status_code,'response':r.text.replace(secret,'[REDACTED]')[:500]}),flush=True)

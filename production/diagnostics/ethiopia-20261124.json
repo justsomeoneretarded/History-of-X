@@ -1,4 +1,5 @@
 {
-  "reason": "Compare minimal and bounded versus portable chapter requests after repeated 503s",
-  "checkpoint_run": 45446519424
+  "reason": "Test schema-in-prompt JSON, smaller output budget, and omitted thinking configuration against the exact saved chapter",
+  "checkpoint_run": 45446519424,
+  "attempt": 2
 }
