@@ -6,5 +6,6 @@
   "script_target_wpm": 160,
   "phase": "proof",
   "profile": "cinematic",
-  "director_model": "gemini-3.8-flash"
+  "director_model": "gemini-3.8-flash",
+  "attempt": 2
 }
