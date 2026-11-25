@@ -403,8 +403,8 @@ def test_concrete_spoken_payoff_passes_but_metadata_mentions_do_not():
         "Tewodros tried to reunite the regional rulers. Yohannes defended the borders. "
         "Menelik expanded through conquest and bought modern rifles. "
         "Taytu helped organize resistance to Italy. "
-        "The Wuchale treaty had different Amharic and Italian versions. Italy claimed a protectorate, but Menelik rejected it. "
-        "At Adwa, Ethiopian forces defeated Italy. The peace treaty recognized Ethiopian independence."
+        "The Wuchale treaty had different Amharic and Italian versions. The Amharic said he could use Italian diplomacy. The Italian version said he had to. Italy claimed a protectorate, but Menelik rejected it. "
+        "At Adwa, Ethiopian forces defeated Italy. The peace treaty recognized Ethiopian independence. Menelik’s expansion still put conquered peoples under his rule."
     )
     part = {"scenes": [story_scene(text, ["S3", "S4"])]}
     assert chapter_story_issues(part, "Catalyst") == []
