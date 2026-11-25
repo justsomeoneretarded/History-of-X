@@ -176,17 +176,43 @@ def background(setting):
  if setting=="mountains_night":sky=sky.replace("#F1DFC0","#1D3346")+'<circle cx="1610" cy="175" r="46" fill="#E3D5AE"/>'
  return sky+'<path d="M0 515L190 365L430 490L700 300L970 485L1240 315L1480 480L1710 320L1920 490V1080H0Z" fill="#92A491"/><path d="M0 690L300 470L580 660L930 445L1210 670L1500 475L1920 690V1080H0Z" fill="#637F76"/><path d="M0 920L350 720L700 930L1050 715L1440 932L1780 750L1920 830V1080H0Z" fill="#927D56"/><path d="M0 1000Q570 860 880 973T1920 920" fill="none" stroke="#C0A77C" stroke-width="72"/><path d="M40 1035L70 1010L65 1050M1600 1030L1635 992L1645 1048" stroke="#5B6B48" stroke-width="12" fill="none"/>'
 
+def _document_text(text, flat=False):
+ """Fit every supplied word; long text must never lose a decisive final clause."""
+ from PIL import ImageFont
+ content=str(text).strip()
+ if not content:return ""
+ width=152;available=42 if flat else 72
+ for size in range(18 if flat else 26,11,-1):
+  face=ImageFont.truetype("DejaVuSans-Bold.ttf",size)
+  lines=[];line=""
+  for word in content.split():
+   trial=(line+" "+word).strip()
+   if face.getlength(trial)<=width:line=trial
+   else:
+    if line:lines.append(line)
+    line=word
+  if line:lines.append(line)
+  leading=size*1.12
+  if any(face.getlength(line)>width for line in lines) or len(lines)*leading>available:continue
+  top=-31 if flat else -100
+  return "".join(f'<text x="92" y="{top+size+i*leading:.2f}" text-anchor="middle" font-family="DejaVu Sans" font-weight="bold" font-size="{size}" fill="#365B53">{escape(line)}</text>' for i,line in enumerate(lines))
+ raise ValueError("Paper text is too long to read; use short essential words or separate explanatory labels")
+
 def prop_art(kind, text=""):
  ink="#293631";gold="#D6B15D"
  if kind=="paper_flat":
   art=path("M0-45H160L200 15H-20Z","#F6E8C8",width=3)
   art+='<path d="M17-31H145M13-22H137" stroke="#BAA276" stroke-width="2"/>'
-  if text:art+=f'<text x="92" y="3" text-anchor="middle" font-family="DejaVu Sans" font-weight="bold" font-size="20" fill="#365B53">{escape(text[:22])}</text>'
+  if text:
+   art+=_document_text(text,True) if len(text)>12 else f'<text x="92" y="3" text-anchor="middle" font-family="DejaVu Sans" font-weight="bold" font-size="20" fill="#365B53">{escape(text)}</text>'
   return art
  if kind=="paper":
   art=path("M0-120L185-115L193 8L-5 14Z","#F6E8C8",width=3)
-  art+='<path d="M15-94H167M15-80H152M15-64H169" stroke="#BAA276" stroke-width="3"/><circle cx="162" cy="-5" r="12" fill="#A74D3A"/>'
-  if text: art+=f'<text x="94" y="-22" text-anchor="middle" font-family="DejaVu Sans" font-weight="bold" font-size="30" fill="#365B53">{escape(text[:22])}</text>'
+  art+='<circle cx="162" cy="-5" r="12" fill="#A74D3A"/>'
+  if text and len(text)>12:art+=_document_text(text)
+  else:
+   art+='<path d="M15-94H167M15-80H152M15-64H169" stroke="#BAA276" stroke-width="3"/>'
+   if text:art+=f'<text x="94" y="-22" text-anchor="middle" font-family="DejaVu Sans" font-weight="bold" font-size="30" fill="#365B53">{escape(text)}</text>'
   return art
  if kind=="table":
   return path("M-370 0L-260-65H270L370 0L335 80H-340Z","#AE7A4E")+path("M-340 80H335V115H-340Z","#674A32")+path("M-270 110L-300 300H-250L-205 110M205 110L250 300H300L270 110Z","#674A32")+'<path d="M-300 0H290M-250 27H315" stroke="#D1A16D" stroke-width="4"/>'
