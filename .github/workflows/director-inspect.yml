@@ -25,7 +25,7 @@ jobs:
           artifact=request.get('artifact','directed-checkpoint')
           if artifact not in {'directed-checkpoint','director-audio'}: raise ValueError('Unsupported checkpoint artifact')
           if not re.fullmatch(r'[0-9]+',run): raise ValueError('Numeric run ID required')
-          with open(os.environ['GITHUB_ENV'],'a') as out: out.write('CHECKPOINT_RUN='+run+'\nCHECKPOINT_ARTIFACT='+artifact+'\n')
+          with open(os.environ['GITHUB_ENV'],'a') as out: out.write('CHECKPOINT_RUN='+run+'\nCHECKPOINT_ARTIFACT='+artifact+'\nINSPECTION_CHAPTERS_ONLY='+('1' if request.get('chapters_only') else '0')+'\n')
           PY
       - uses: actions/download-artifact@v4
         with:

@@ -1,5 +1,5 @@
 """Inspect existing director programs without any provider call or credentials."""
-import base64, copy, io, json, re
+import base64, copy, io, json, os, re
 from pathlib import Path
 import xml.etree.ElementTree as ET
 from PIL import Image, ImageDraw
@@ -63,6 +63,11 @@ if outline_path.exists():
                 issues=[str(exc)]
             print('SAVED_CHAPTER '+json.dumps({'chapter':chapter,'file':str(path),
                   'checks':issues,'draft':saved},ensure_ascii=False),flush=True)
+for name in ('writing-metrics.json','narration-metrics.json'):
+    path=Path('work/director')/name
+    if path.exists(): print('SAVED_METRICS '+json.dumps({'file':name,'data':json.loads(path.read_text())}),flush=True)
+if os.getenv('INSPECTION_CHAPTERS_ONLY')=='1':
+    raise SystemExit(0)
 rows=[]
 seen=set()
 for path in paths:
