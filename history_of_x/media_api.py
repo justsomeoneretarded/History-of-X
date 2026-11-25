@@ -7,7 +7,7 @@ from .core import PipelineError,key,read_json,save_json
 from .gemini import QuotaDeferred
 
 GEMMA_MODELS={'gemma-4-26b-a4b-it','gemma-4-31b-it'}
-TEXT_MODELS={'gemini-4-hydrogen','gemini-3.8-flash','gemini-3.5-flash-lite','gemini-3.1-flash-lite'}|GEMMA_MODELS
+TEXT_MODELS={'gemini-4-hydrogen','gemini-3.6-flash','gemini-3.8-flash','gemini-3.5-flash-lite','gemini-3.1-flash-lite'}|GEMMA_MODELS
 TTS_MODELS={'gemini-3.8-flash-tts','gemini-3.8-flash-lite-tts'}
 VOICES=('Puck','Charon','Kore','Fenrir','Orus','Aoede')
 STYLE='Original animated history explainer. Conversational, brisk and articulate, with understated deadpan wit. Natural pauses. No trailer voice, no exaggerated accents. Treat suffering seriously. Read the supplied transcript exactly; do not add an introduction or closing.'

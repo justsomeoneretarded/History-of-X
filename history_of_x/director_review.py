@@ -205,7 +205,7 @@ def review(api, video, style, output):
         raise PipelineError("Editorial review requires a nonempty video")
     video_hash = _file_hash(video)
     model = os.getenv("GEMINI_REVIEW_MODEL", "gemini-3.5-flash-lite")
-    chunk_seconds = 90 if model == "gemini-4-hydrogen" else CHUNK_SECONDS
+    chunk_seconds = 90 if model in {"gemini-4-hydrogen", "gemini-3.6-flash"} else CHUNK_SECONDS
     rules = _style_rules(style or {})
     timeline_path = output / "timeline.json"
     timeline = read_json(timeline_path) if timeline_path.exists() else []

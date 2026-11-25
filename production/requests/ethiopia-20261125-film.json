@@ -6,12 +6,12 @@
   "script_target_wpm": 160,
   "phase": "film",
   "profile": "cinematic",
-  "director_model": "gemini-4-hydrogen",
-  "attempt": 5,
-  "resume_run": "45665753827",
+  "director_model": "gemma-4-26b-a4b-it",
+  "attempt": 6,
+  "resume_run": "45672733198",
   "writer_model": "gemini-3.1-flash-lite",
-  "scene_batch_size": 3,
+  "scene_batch_size": 1,
   "schema_mode": "prompt",
-  "review_model": "gemini-4-hydrogen",
-  "package_model": "gemini-4-hydrogen"
+  "review_model": "gemini-3.6-flash",
+  "package_model": "gemini-3.6-flash"
 }

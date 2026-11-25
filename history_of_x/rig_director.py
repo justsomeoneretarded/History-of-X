@@ -118,7 +118,7 @@ def _request(api,payload,primary):
  except PipelineError as exc:
   message=str(exc)
   if "unavailable after three attempts" not in message and "network deadline" not in message:raise
-  backup="gemini-3.8-flash" if primary.startswith("gemma-") else "gemma-4-26b-a4b-it"
+  backup="gemini-3.6-flash" if primary.startswith("gemma-") else "gemma-4-26b-a4b-it"
   print(f"Scene direction: {primary} unavailable; trying verified free model {backup}.",flush=True)
   return api.text(CONTRACT,payload,schema(),max_output=5000 if backup.startswith('gemma-') else 3500,preserve_bounds=True,model=backup)
 
@@ -141,7 +141,7 @@ def plan_scene(api,scene,spoken,assets,directory,style=None,request_only=False,p
  if existing is None:
   # A validated direction is reusable across provider routing changes. Compare
   # the exact narration, timings, assets and contract fingerprint before reuse.
-  for other in ("gemini-4-hydrogen","gemini-3.1-flash-lite","gemini-3.5-flash-lite","gemini-3.8-flash","gemma-4-26b-a4b-it","gemma-4-31b-it"):
+  for other in ("gemini-4-hydrogen","gemini-3.6-flash","gemini-3.1-flash-lite","gemini-3.5-flash-lite","gemini-3.8-flash","gemma-4-26b-a4b-it","gemma-4-31b-it"):
    alternate=directory/(key("rigged-scene-v1",VERSION,CONTRACT,schema(),other,context)+".json")
    if alternate.exists():
     existing=read_json(alternate)
@@ -158,18 +158,33 @@ def plan_scene(api,scene,spoken,assets,directory,style=None,request_only=False,p
  payload={**context}
  if feedback:payload["required_revision"]=feedback
  if existing:payload["previous_plan"]=existing["spec"]
+ # Prefer the latest saved repair, including drafts produced through a different
+ # verified free model. Exact context/contract identity and feedback must match.
+ draft=None
+ for draft_index in (1,0):
+  for candidate_model in (primary,"gemini-4-hydrogen","gemini-3.6-flash","gemini-3.1-flash-lite","gemini-3.5-flash-lite","gemini-3.8-flash","gemma-4-26b-a4b-it","gemma-4-31b-it"):
+   candidate_id=key("rigged-scene-v1",VERSION,CONTRACT,schema(),candidate_model,context)
+   candidate=directory/(candidate_id+"-"+feedback_id+f"-draft-{draft_index}.json")
+   if candidate.exists():
+    draft=read_json(candidate);break
+  if draft is not None:break
  if request_only:
-  draft_path=directory/(identity+"-"+feedback_id+"-draft-0.json")
   prepared={"instruction":CONTRACT,"payload":compact_payload(payload),"schema":schema()}
-  if draft_path.exists():prepared["draft"]=read_json(draft_path)
+  if draft is not None:prepared["draft"]=draft
   return prepared
+ if preplanned is None and draft is not None:preplanned=draft
  for attempt in range(2):
   draft_path=directory/(identity+"-"+feedback_id+f"-draft-{attempt}.json")
   spec=copy.deepcopy(preplanned) if attempt==0 and preplanned is not None else read_json(draft_path) if draft_path.exists() else _request(api,payload,primary)
   save_json(draft_path,spec)
   try:
+   from .rig_repair import explicit_pickups
+   spec,repairs=explicit_pickups(spec)
    program=_program(spec,seconds,approved,ident,reserved,archives)
-   save_json(target,{"spec":spec,"program":program,"feedback_id":feedback_id})
+   if repairs:
+    program["direction_repairs"]=repairs
+    print(f"Made {len(repairs)} contact pickup(s) explicit in scene {ident}; strict animation checks passed.",flush=True)
+   save_json(target,{"spec":spec,"program":program,"feedback_id":feedback_id,"local_repairs":repairs})
    print(f'Validated articulated scene {ident}: {len(program["layers"])} layers, {len(program["events"])} executed actions; creative review pending',flush=True)
    return program
   except (PipelineError,ValueError,KeyError,TypeError) as exc:

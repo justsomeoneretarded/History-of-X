@@ -274,7 +274,7 @@ class Scene:
     obj=a.get("object");target=a.get("target")
     if obj not in self.props or target not in self.nodes:raise PipelineError("Place needs the held object and a target surface")
     segment=self.prop_segment(obj,t)
-    if segment["parent"]!=self.actors.get(ident,{}).get("parts",{}).get("forearm_"+hand):raise PipelineError("The selected actor hand must hold the object before placing it")
+    if segment["parent"]!=self.actors.get(ident,{}).get("parts",{}).get("forearm_"+hand):raise PipelineError(f"The selected actor hand must hold the object before placing it: actor={ident!r}, hand={hand!r}, object={obj!r}, time={t:g}s, current_parent={segment['parent']!r}. Use an explicit take before place; reach alone does not acquire a prop.")
     self.hand(ident,hand,t,end,target_world=self.target(target,end))
     pose=self.prop_world(obj,end)
     self.ownership(obj,"",end,pose)
