@@ -136,7 +136,7 @@ def plan_scene(api,scene,spoken,assets,directory,style=None):
   try:
    program=_program(spec,seconds,approved,ident,reserved,archives)
    save_json(target,{"spec":spec,"program":program,"feedback_id":feedback_id})
-   print(f'Validated articulated scene {ident}: {len(program["layers"])} layers, {len(events)} executed actions; creative review pending',flush=True)
+   print(f'Validated articulated scene {ident}: {len(program["layers"])} layers, {len(program["events"])} executed actions; creative review pending',flush=True)
    return program
   except (PipelineError,ValueError,KeyError,TypeError) as exc:
    if attempt:raise PipelineError("Rig director failed bounded repair: "+str(exc)) from exc
