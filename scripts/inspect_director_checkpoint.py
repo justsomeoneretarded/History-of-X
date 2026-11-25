@@ -68,6 +68,9 @@ for name in ('writing-metrics.json','narration-metrics.json'):
     if path.exists(): print('SAVED_METRICS '+json.dumps({'file':name,'data':json.loads(path.read_text())}),flush=True)
 if os.getenv('INSPECTION_CHAPTERS_ONLY')=='1':
     raise SystemExit(0)
+speech_path=Path('work/director/speech/speech.json')
+spoken=json.loads(speech_path.read_text()) if speech_path.exists() else {}
+expected_durations={str(s['scene_id']):s['duration'] for s in spoken.get('scenes',[])}
 rows=[]
 seen=set()
 for path in paths:
@@ -75,7 +78,10 @@ for path in paths:
     programs=value.get('scenes',[]) if 'svg' not in value else [value]
     for original in programs:
         if not isinstance(original,dict) or not isinstance(original.get('svg'),str): continue
-        identity=(str(original.get('scene_id')),original['svg'])
+        identifier=str(original.get('scene_id'))
+        if identifier in expected_durations and abs(original.get('duration',-999)-expected_durations[identifier])>.05:
+            continue
+        identity=(identifier,original['svg'])
         if identity in seen: continue
         seen.add(identity)
         summary={'file':str(path),'scene_id':original.get('scene_id'),

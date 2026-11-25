@@ -236,8 +236,8 @@ def _validate_frames(frames, seconds):
                 raise PipelineError(f'Keyframe {name} must be finite')
             if name in {'opacity', 'reveal'} and not 0 <= value <= 1:
                 raise PipelineError(f'Keyframe {name} must be between zero and one')
-            if name == 'scale' and not .01 <= value <= 12:
-                raise PipelineError('Keyframe scale must be between .01 and 12')
+            if name == 'scale' and not 0 <= value <= 12:
+                raise PipelineError('Keyframe scale must be between zero and 12')
             if name in {'x', 'y'} and abs(value) > 20000:
                 raise PipelineError('Keyframe offset exceeds safe scene bounds')
 
@@ -407,6 +407,10 @@ class _PatchCache:
 
 def _composite(canvas, image, offset, matrix, opacity, reveal, design_scale, cache=None):
     if opacity <= 0 or reveal <= 0:
+        return
+    # A zero-scale pose is a legitimate hidden state. It has no visible area
+    # and cannot be inverted; skip it until the authored scale grows again.
+    if abs(matrix[0, 0]*matrix[1, 1] - matrix[0, 1]*matrix[1, 0]) <= 1e-12:
         return
     identity = (id(image), offset, tuple(matrix.flatten()), opacity, reveal, design_scale, canvas.size)
     cached = cache.get(identity) if cache is not None else None
