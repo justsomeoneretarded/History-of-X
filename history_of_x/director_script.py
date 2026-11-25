@@ -231,6 +231,192 @@ def chapter_revision_reasons(part, budget, cached=False):
     return reasons
 
 
+# The contract is included in cache identity. A change to beats or extraction
+# produces new writing without overwriting accepted speech or film artifacts.
+ETHIOPIA_STORY_VERSION = "ethiopia-spoken-story-v1"
+ETHIOPIA_STORY = {
+    "Hook": [
+        {"say": "Baratieri sends separated Italian columns into the hills at Adwa in 1896; losing contact makes their expected victory collapse.",
+         "patterns": [r"baratieri|italian", r"column|brigade", r"lost contact|los[et].*contact|separat|isolat|dispers"],
+         "terms": ["baratieri", "columns", "contact", "adwa", "1896"], "sources": ["S4"]},
+        {"say": "The Ethiopian victory raises the question: how can a country defeat an invading empire yet struggle over power at home? Rewind to Aksum without answering the whole story.",
+         "patterns": [r"ethiop|menelik", r"victor|defeat|won|win|rout|overwhelm"],
+         "terms": ["ethiopian", "victory", "menelik"], "sources": ["S3", "S4"]},
+    ],
+    "Roots": [
+        {"say": "Aksum uses Red Sea trade and coinage to turn local power into an international kingdom.",
+         "patterns": [r"aksum|axum", r"trad|merchant", r"coin|red sea"],
+         "terms": ["aksum", "trade", "coins", "red sea"], "sources": ["S1"]},
+        {"say": "Ezana adopts Christianity; faith gives kings another source of authority and connects them to other Christian states.",
+         "patterns": [r"ezana", r"christian", r"adopt|convert|religion|faith"],
+         "terms": ["ezana", "christianity", "adopted"], "sources": ["S1"]},
+        {"say": "Aksum declines as trade changes; the Zagwe rule from the highlands and Lalibela's rock churches express their authority.",
+         "patterns": [r"zagwe|lalibela", r"church|rock"],
+         "terms": ["decline", "zagwe", "lalibela", "churches"], "sources": ["S2", "S1"]},
+        {"say": "In 1270 Yekuno Amlak replaces the Zagwe; the Solomonic dynasty claims descent from Solomon to justify its rule. Present the descent as a claim.",
+         "patterns": [r"yekuno|solomonic", r"claim|legend|descent", r"solomon|sheba"],
+         "terms": ["1270", "yekuno", "solomon", "claimed"], "sources": ["S2"]},
+        {"say": "In the sixteenth century Adal's Ahmed attacks; Portuguese help contributes to his defeat in 1543. The fighting weakens the empire.",
+         "patterns": [r"adal|ahm[ae]d|gragn|gran\b", r"portugu", r"defeat|weak|war|fight"],
+         "terms": ["adal", "ahmed", "1543", "portuguese"], "sources": ["S2"]},
+        {"say": "Fasilides establishes Gondar in the 1630s, but later regional warlords reduce the emperor to a figurehead in the Zemene Mesafint. This explains the nineteenth-century reunification.",
+         "patterns": [r"gond[ae]r", r"fasilides|capital", r"warlord|regional|decentrali|zemene"],
+         "terms": ["fasilides", "gondar", "1630", "zemene", "warlords"], "sources": ["S2"]},
+    ],
+    "Catalyst": [
+        {"say": "Tewodros and Yohannes try to reunite and defend a country divided among regional rulers.",
+         "patterns": [r"tewodros|yohannes", r"reunit|unif|regional|defen"],
+         "terms": ["tewodros", "yohannes", "reunified"], "sources": ["S3"]},
+        {"say": "Menelik expands from Shewa through conquest and deals; resources and imported rifles strengthen his state while conquered peoples lose autonomy.",
+         "patterns": [r"menelik", r"conquer|conquest|expan|subjug", r"rifle|weapon|gun"],
+         "terms": ["menelik", "shewa", "conquests", "rifles", "expansion"], "sources": ["S3"]},
+        {"say": "Taytu helps shape resistance to Italy. Wuchale's Article 17 differs between Italian and Amharic over Ethiopia's foreign relations; the Italian must and Amharic may let Italy claim a protectorate, which Menelik rejects.",
+         "patterns": [r"taytu", r"ital|resist|command|army|advis|reject|lead|led|mobil"],
+         "terms": ["taytu", "wuchale", "amharic", "protectorate"], "sources": ["S3", "S4"]},
+        {"say": "Explain Wuchale Article 17 explicitly: the Amharic version lets Ethiopia use Italian diplomacy, while the Italian version makes it compulsory. Menelik rejects Italy's resulting protectorate claim.",
+         "patterns": [r"wuchal|uccial|treaty", r"amharic|version|translat|interpret|differ", r"protector|ital"],
+         "terms": ["wuchale", "amharic", "italian", "protectorate"], "sources": ["S4", "S3"]},
+        {"say": "Pay off Adwa here, beyond the Hook: in 1896 Ethiopian forces defeat Italy; the subsequent treaty recognizes Ethiopian independence. Victory does not erase coercion inside Menelik’s expanding empire. Explain why coalition and preparation made the opening reversal possible.",
+         "patterns": [r"adwa", r"defeat|victor|won|win|rout", r"independen|sovereign|recogn"],
+         "terms": ["adwa", "1896", "victory", "independence", "treaty"], "sources": ["S4", "S3"]},
+    ],
+    "Turning Point": [
+        {"say": "Mussolini invades in 1935; aircraft and mustard gas help Italy overcome Ethiopian resistance.",
+         "patterns": [r"mussolini|ital", r"mustard|poison|chemical", r"invad|invasion|attack|resist"],
+         "terms": ["1935", "mussolini", "mustard", "invasion"], "sources": ["S5"]},
+        {"say": "Italy occupies Addis Ababa in 1936 and Selassie goes into exile; occupation does not end resistance.",
+         "patterns": [r"selassie", r"exile|flee|fled", r"occup|ital"],
+         "terms": ["1936", "selassie", "exile", "occupation"], "sources": ["S5"]},
+        {"say": "In 1941 Ethiopian resistance and British-led forces defeat Italian rule; Haile Selassie returns and the monarchy is restored. Say 1941 and the restoration explicitly.",
+         "patterns": [r"1941|nineteen forty[\s-]one", r"selassie", r"return|restor"],
+         "terms": ["1941", "selassie", "british", "liberation"], "sources": ["S5"]},
+        {"say": "Imperial centralization and hardship meet army and public protests; the Derg removes Selassie in 1974.",
+         "patterns": [r"derg", r"1974|nineteen seventy[\s-]four", r"depos|remov|overthrow|arrest|revol"],
+         "terms": ["1974", "selassie", "protests", "drought"], "sources": ["S6"]},
+        {"say": "Mengistu consolidates military rule and the Red Terror kills opponents; revolution replaces one concentrated authority with another.",
+         "patterns": [r"mengistu", r"red terror", r"kill|execut|repress|opponent"],
+         "terms": ["mengistu", "red terror", "repression"], "sources": ["S6"]},
+        {"say": "Civil war, coercive policies and famine devastate communities; the struggle continues into the 1980s rather than resolving with the revolution.",
+         "patterns": [r"civil war|rebel|insurgen", r"famine|hunger"],
+         "terms": ["civil war", "famine", "resettlement"], "sources": ["S6"]},
+    ],
+    "Aftermath": [
+        {"say": "The famine and civil war expose the human cost; rebels overthrow the Derg in 1991.",
+         "patterns": [r"1991|nineteen ninety[\s-]one", r"derg|junta", r"rebel|overthrow|collaps|fell|fall"],
+         "terms": ["1991", "derg", "rebels", "famine"], "sources": ["S7", "S8"]},
+        {"say": "Eritrea votes for independence in 1993 while the EPRDF builds a federal political settlement in Ethiopia.",
+         "patterns": [r"eritrea", r"1993|nineteen ninety[\s-]three", r"independen|referendum", r"feder|eprdf"],
+         "terms": ["1993", "referendum", "independence"], "sources": ["S9"]},
+        {"say": "Abiy takes office in 2018; the 2019 Prosperity Party reorganization and TPLF refusal sharpen the struggle between federal and regional power.",
+         "patterns": [r"abiy", r"2018|twenty eighteen|2019|twenty nineteen", r"tplf|tigray|prosperity"],
+         "terms": ["abiy", "2018", "2019", "prosperity", "tplf"], "sources": ["S10"]},
+        {"say": "The Tigray War begins in 2020; federal and regional forces fight and civilians suffer displacement and hunger.",
+         "patterns": [r"tigray", r"2020|twenty twenty\b", r"war|fight|conflict", r"civilian|displac|hunger|famine"],
+         "terms": ["2020", "tigray", "displacement", "civilians"], "sources": ["S10"]},
+        {"say": "Finish at the 2 November 2022 Pretoria cessation-of-hostilities agreement, naming the federal government and TPLF. Answer the opening question through shared power and the human cost of internal conflict, without promising lasting peace.",
+         "patterns": [r"2022|twenty twenty[\s-]two", r"pretoria", r"agreement|cessation|hostilit", r"tplf|tigray.*liberation", r"federal|government"],
+         "terms": ["2022", "pretoria", "cessation", "government", "tigray"], "sources": ["S11", "S10"]},
+    ],
+}
+
+
+def has_ethiopia_story_contract(title, evidence):
+    return "ethiop" in title.casefold() and {f"S{i}" for i in range(1, 12)} <= {s["id"] for s in evidence["sources"]}
+
+
+def director_fingerprint(title, brief, target, target_rate, evidence):
+    if has_ethiopia_story_contract(title, evidence):
+        return key(ETHIOPIA_STORY_VERSION, title, brief, target, target_rate, evidence, STYLE_PROFILE,
+                   ETHIOPIA_STORY, ETHIOPIA_CHAPTER_SOURCES, ETHIOPIA_CHAPTER_TERMS, "milestone-passages-v1")
+    version = "director-script-v3-measured-voice-rate" if "ethiop" in title.casefold() else "director-script-v4-topic-specific-outline"
+    return key(version, title, brief, target, target_rate, evidence, STYLE_PROFILE)
+
+
+def attach_story_contract(outline):
+    outline = {**outline, "story_contract": ETHIOPIA_STORY_VERSION}
+    outline["chapters"] = [{**chapter, "required_spoken_beats": [b["say"] for b in ETHIOPIA_STORY[chapter["chapter"]]]} for chapter in outline["chapters"]]
+    return outline
+
+
+def story_chapter_evidence(evidence, chapter):
+    """Reserve a source passage for every required beat inside the same 5500-char cap."""
+    by_id = {s["id"]: s for s in evidence["sources"]}
+    source_ids = [sid for sid in ETHIOPIA_CHAPTER_SOURCES[chapter] if sid in by_id]
+    paragraphs = {sid: compact_source_extract(by_id[sid]["extract"], len(by_id[sid]["extract"]), cutoff_2022=True).split("\n") for sid in source_ids}
+    excerpts = {sid: [_source_passage(paragraphs[sid][0], 180, ())] for sid in source_ids}
+    if "S11" in excerpts:
+        excerpts["S11"] = ["\n".join(paragraphs["S11"])]
+    reserved = sum(sum(map(len, parts)) + len(parts) for parts in excerpts.values())
+    allowance = min(950, (5500 - reserved) // len(ETHIOPIA_STORY[chapter]) - 1)
+    for beat in ETHIOPIA_STORY[chapter]:
+        candidates = [(sid, p) for sid in beat["sources"] if sid in paragraphs for p in paragraphs[sid] if p]
+        if not candidates:
+            raise PipelineError("Missing evidence for required story beat: " + beat["say"])
+        sid, paragraph = max(candidates, key=lambda pair: (
+            len(_matching_terms(pair[1], beat["terms"])), -beat["sources"].index(pair[0])))
+        passage = _source_passage(paragraph, allowance, beat["terms"])
+        if passage not in excerpts[sid]:
+            excerpts[sid].append(passage)
+    return [{**{k: by_id[sid][k] for k in ("id", "title", "url") if k in by_id[sid]},
+             "extract": "\n".join(excerpts[sid])} for sid in source_ids]
+
+
+def story_scene_plan(chapter, count):
+    plan = [[] for _ in range(count)]
+    beats = ETHIOPIA_STORY[chapter]
+    for index, beat in enumerate(beats):
+        plan[min(count - 1, index * count // len(beats))].append(beat["say"])
+    return [{"scene": i + 1, "must_explain": beats or ["Explain the consequence of the previous choice and bridge to the next required event."]} for i, beats in enumerate(plan)]
+
+
+def chapter_story_issues(part, chapter):
+    """Check spoken coverage and metadata, without a second model or manual review."""
+    issues, windows = [], []
+    for scene in part["scenes"]:
+        sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", scene["narration"]) if s.strip()]
+        windows.extend((" ".join(sentences[i:i + 3]), scene.get("source_ids", [])) for i in range(len(sentences)))
+    for beat in ETHIOPIA_STORY[chapter]:
+        if not any(all(re.search(pattern, text, re.I) for pattern in beat["patterns"]) and set(ids) & set(beat["sources"]) for text, ids in windows):
+            issues.append("missing spoken cause/consequence beat: " + beat["say"])
+    previous = None
+    ranges = {"Roots": (1, 1850), "Catalyst": (1850, 1896), "Turning Point": (1935, 1990), "Aftermath": (1983, 2022)}
+    spoken_years = {1896: r"eighteen ninety[\s-]six", 1935: r"nineteen thirty[\s-]five", 1936: r"nineteen thirty[\s-]six", 1941: r"nineteen forty[\s-]one", 1974: r"nineteen seventy[\s-]four", 1991: r"nineteen ninety[\s-]one", 1993: r"nineteen ninety[\s-]three", 2018: r"twenty eighteen", 2019: r"twenty nineteen", 2020: r"twenty twenty(?![\s-](?:one|two))", 2022: r"twenty twenty[\s-]two"}
+    for index, scene in enumerate(part["scenes"], 1):
+        text, label = scene["narration"], scene.get("date_label", "")
+        years = [int(y) for y in re.findall(r"\b(?:1[0-9]{3}|20[0-9]{2})\b", label)]
+        if any(y > 2022 for y in years) or re.search(r"\b202[3-9]\b|twenty twenty[\s-](?:three|four|five|six|seven|eight|nine)\b", text, re.I):
+            issues.append(f"scene {index}: narration and date_label must stop at November 2022")
+        if chapter in ranges and any(not ranges[chapter][0] <= year <= ranges[chapter][1] for year in years):
+            issues.append(f"scene {index}: date_label falls outside this chapter’s historical period")
+        if chapter != "Hook" and years:
+            if previous is not None and min(years) < previous:
+                issues.append(f"scene {index}: date_label goes backwards within the chapter")
+            previous = min(years)
+        if chapter == "Hook" and years and set(years) != {1896}:
+            issues.append(f"scene {index}: Adwa Hook date_label must be 1896")
+        if years and re.search(r"pretoria|cessation of hostilities|meet.{0,30}south africa", text, re.I) and set(years) != {2022}:
+            issues.append(f"scene {index}: Pretoria agreement date_label must be November 2022")
+        if years and 1941 in years and re.search(r"badoglio|mussolini.{0,80}annex", text, re.I) and not re.search(r"selassie.{0,80}(?:return|restor)|1941|nineteen forty[\s-]one", text, re.I):
+            issues.append(f"scene {index}: 1936 occupation is mislabeled 1941; separate occupation from restoration")
+        explicit_years = {int(y) for y in re.findall(r"\b(?:18|19|20)[0-9]{2}\b", text)}
+        explicit_years.update(year for year, pattern in spoken_years.items() if re.search(pattern, text, re.I))
+        if years and explicit_years and not set(years) & explicit_years:
+            issues.append(f"scene {index}: date_label conflicts with the year spoken in narration")
+    return list(dict.fromkeys(issues))
+
+
+def chapter_style_issues(part):
+    metrics = script_metrics({"scenes": [{**s, "chapter": "Hook"} for s in part["scenes"]]})
+    issues = []
+    if metrics["words"] >= 100 and metrics["short_sentence_fraction"] < .18:
+        issues.append("too few short complete sentences; use at least two plain 4–8-word sentences per scene, connected to longer explanations")
+    text = " ".join(s["narration"] for s in part["scenes"])
+    filler = re.findall(r"beneath the surface|echoes of|outlast every storm|stood tall|proud empire|rich in resilience|under its own weight|inevitable clash of empires", text, re.I)
+    if filler:
+        issues.append("replace ornamental generalizations with named choices and effects: " + ", ".join(dict.fromkeys(filler)))
+    return issues
+
+
 def recover_draft_chapter(draft, title, chapter, budget, count, source_ids):
     """Recover a complete accepted chapter structurally, without rewriting its narration."""
     if not isinstance(draft, dict) or draft.get("title") != title:
@@ -274,13 +460,17 @@ def write(api, title, brief, minutes, evidence, directory):
     target = word_target(minutes)
     target_rate = float(os.getenv("SCRIPT_TARGET_WPM", "160"))
     is_ethiopia = "ethiop" in title.casefold()
-    version = "director-script-v3-measured-voice-rate" if is_ethiopia else "director-script-v4-topic-specific-outline"
-    fingerprint = key(version, title, brief, target, target_rate, evidence, STYLE_PROFILE)
+    story_contract = has_ethiopia_story_contract(title, evidence)
+    fingerprint = director_fingerprint(title, brief, target, target_rate, evidence)
     path = directory / "script.json"
     source_ids = [s["id"] for s in evidence["sources"]]
     if path.exists() and read_json(path).get("fingerprint") == fingerprint:
         result = read_json(path)
         validate(result, source_ids, target)
+        if story_contract:
+            issues = [issue for chapter in CHAPTERS for issue in (chapter_story_issues({"scenes": [s for s in result["scenes"] if s["chapter"] == chapter]}, chapter) + chapter_style_issues({"scenes": [s for s in result["scenes"] if s["chapter"] == chapter]}))]
+            if issues:
+                raise PipelineError("Cached director story fails its contract: " + "; ".join(issues))
         return result
     compact = [{**{k: s[k] for k in ("id", "title", "url") if k in s}, "extract": compact_source_extract(s["extract"], 400, cutoff_2022=is_ethiopia)} for s in evidence["sources"]]
     outline_path = directory / "outline.json"
@@ -314,18 +504,23 @@ def write(api, title, brief, minutes, evidence, directory):
         )
         if [c["chapter"] for c in outline.get("chapters", [])] != CHAPTERS:
             raise PipelineError("Director outline must contain the five ordered chapters")
+        if story_contract:
+            outline = attach_story_contract(outline)
         outline["fingerprint"] = fingerprint
+        save_json(outline_path, outline)
+    if story_contract and outline.get("story_contract") != ETHIOPIA_STORY_VERSION:
+        outline = attach_story_contract(outline)
         save_json(outline_path, outline)
     instruction = (
         "Write the complete ORIGINAL spoken documentary from this outline. The audience hears a person telling a story, not an essay. "
         f"Target {target} words, within5 percent. Use five ordered chapters: {', '.join(CHAPTERS)}. "
         "Each scene has about 55–70 spoken words in 5–7 natural complete sentences. Each chapter must have at most450 words for TTS. "
         "Aim for a sentence median of 10–14 words. Use contractions, concrete people and actions, and plain active verbs. "
-        "Mix short emphatic lines with longer explanations. No sentence fragments merely to game the length target. "
+        "Mix short emphatic lines with longer explanations. At least two sentences per scene should be 4–8 plain words and still complete thoughts. No fragments to game a target. "
         "The voice is conversational, informed, curious, occasionally dryly funny. Never a trailer announcer or academic lecturer. "
         "The first sentence must show a concrete person doing something in the opening SCENE. Do not open with an abstract question or a historical overview. "
         "Explain names and stakes before adding more names. Use cause-and-consequence transitions and an occasional direct question. "
-        "Avoid repeated bureaucracy/paperwork jokes, administrative jargon, grand generalizations and padding. "
+        "Use words people say aloud. Prefer a named person making a choice, then show who gains or loses. Cut ornamental adjectives, abstract summaries and filler about resilience, destiny, echoes or storms. Use natural contractions where they fit. "
         "Every century must advance the same organizing question. Close the historical gaps specified in the outline. "
         "Humor targets hubris and contradictions, never victims. Slow down emotionally for occupation, famine and war. "
         "Put source IDs only in source_ids metadata. Never put inline citations such as [S1] in narration. Every claim must remain within the extracts. No invented statistics or dialogue. "
@@ -363,7 +558,7 @@ def write(api, title, brief, minutes, evidence, directory):
                 print(f"Recovered complete {chapter} from saved draft without an API request", flush=True)
         cached = chapter_path.exists()
         chapter_outline = outline["chapters"][index]
-        chapter_evidence = compact_chapter_evidence(evidence, chapter_outline, is_ethiopia)
+        chapter_evidence = story_chapter_evidence(evidence, chapter) if story_contract else compact_chapter_evidence(evidence, chapter_outline, is_ethiopia)
         chapter_source_ids = [s["id"] for s in chapter_evidence]
         chapter_instruction = instruction + (
             f"\nNOW WRITE ONLY chapter {index + 1}/5: {chapter}. Exactly {count} scenes, about {budget} spoken words TOTAL, averaging {budget / count:.0f} words per scene. "
@@ -376,6 +571,9 @@ def write(api, title, brief, minutes, evidence, directory):
                    "whole_film_outline": {k: outline[k] for k in ("organizing_question", "ending_payoff") if k in outline},
                    "this_chapter": chapter_outline, "target_chapter_words": budget,
                    "previous_chapter_ending": merged[-1]["narration"] if merged else "", "evidence": chapter_evidence}
+        if story_contract:
+            payload["scene_plan"] = story_scene_plan(chapter, count)
+            chapter_instruction += "\nFollow scene_plan in order. Every required_spoken_beat must be actually spoken, with its named people, action and consequence; metadata or a vague promise does not count. Include the full payoff in this chapter, even if Hook showed part of the event. Keep date_label aligned with the narrated event, never later than November 2022."
         if cached:
             part = read_json(chapter_path)
         else:
@@ -384,21 +582,30 @@ def write(api, title, brief, minutes, evidence, directory):
         # Persist usable work before a conditional repair so service outages can resume.
         save_json(chapter_path, part)
         reasons = chapter_revision_reasons(part, budget, cached)
+        if story_contract:
+            reasons += chapter_story_issues(part, chapter) + chapter_style_issues(part)
         if reasons and not part.get("cadence_length_revision"):
             words = sum(len(s["narration"].split()) for s in part["scenes"])
             char_rate = sum(len(s["narration"]) for s in part["scenes"]) / max(1, words)
             revision_sources = list(dict.fromkeys(chapter_source_ids + [sid for s in part["scenes"] for sid in s["source_ids"]]))
             revised = api.text(
-                chapter_instruction + "\nRevise this draft ONCE for spoken length and conversational cadence together: " + "; ".join(reasons) + ". "
-                "Preserve its facts, sequence, date labels and source_ids. Use concrete phrasing and complete connected sentences, roughly 5–7 per 55–70-word scene. "
+                chapter_instruction + "\nRevise this draft ONCE for spoken length and conversational cadence together: " + "; ".join(reasons) + ". " +
+                ("Preserve supported facts and chapter order. Add missing required beats from the supplied evidence, correct date labels, and cite the appropriate source_ids for added facts. " if story_contract else "Preserve its facts, sequence, date labels and source_ids. ") +
+                "Use concrete phrasing and complete connected sentences, roughly 5–7 per 55–70-word scene. "
                 "Use the full word budget. No new fact-review workflow and no inline source-code citations.",
                 {**payload, "draft": part}, chapter_script_schema(revision_sources, budget, count, char_rate * 1.04),
                 max_output=6500, preserve_bounds=True)
             revised = clean_chapter_narration(revised, source_ids)
-            for original, scene in zip(part["scenes"], revised["scenes"]):
-                scene["source_ids"] = list(original["source_ids"])
+            if not story_contract:
+                for original, scene in zip(part["scenes"], revised["scenes"]):
+                    scene["source_ids"] = list(original["source_ids"])
             part = {**revised, "cadence_length_revision": 1}
             save_json(chapter_path, part)
+        if story_contract:
+            unresolved = chapter_story_issues(part, chapter) + chapter_style_issues(part)
+            save_json(directory / "story-checks" / f"{index + 1}-{fingerprint}.json", {"chapter": chapter, "issues": unresolved, "style_issues": chapter_style_issues(part)})
+            if unresolved:
+                raise PipelineError(f"Director {chapter} missed required spoken coverage or dates after its single revision: " + "; ".join(unresolved))
         print(f"Director drafted {chapter}: {sum(len(s['narration'].split()) for s in part['scenes'])} words", flush=True)
         for scene in part["scenes"]:
             merged.append({**scene, "chapter": chapter, "scene_id": len(merged) + 1, "visual_type": "artwork", "subtitle_highlights": [], "delivery": "calm" if chapter == "Aftermath" else "normal", "bg_music_mood": "reflective" if chapter == "Aftermath" else "tense"})
@@ -489,7 +696,7 @@ def main(argv=None):
     parser.add_argument("--title", default=os.getenv("VIDEO_TITLE", "The Entire History of Ethiopia"))
     parser.add_argument("--brief", default=os.getenv("VIDEO_BRIEF", "How Ethiopia built powerful kingdoms, defeated an invading empire, and struggled over who should hold power at home. Connect ancient Aksum to the2022 Pretoria agreement. A coherent history across centuries, not just a battle documentary."))
     parser.add_argument("--minutes", type=float, default=float(os.getenv("VIDEO_MINUTES", "8.75")))
-    parser.add_argument("--voice", default=os.getenv("NARRATOR", "auto"))
+    parser.add_argument("--voice", choices=["auto", "Puck", "Charon", "Kore", "Fenrir", "Orus", "Aoede"], default=os.getenv("NARRATOR", "auto"))
     args = parser.parse_args(argv)
     args.work.mkdir(parents=True, exist_ok=True)
     try:

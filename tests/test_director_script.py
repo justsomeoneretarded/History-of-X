@@ -4,9 +4,11 @@ import pytest
 
 from history_of_x.core import ROOT, PipelineError, key, read_json, save_json
 from history_of_x.director_script import (
-    STYLE_PROFILE, audio_review, choose_audition, compact_chapter_evidence,
+    ETHIOPIA_STORY, STYLE_PROFILE, attach_story_contract, audio_review, chapter_story_issues,
+    chapter_style_issues, choose_audition, compact_chapter_evidence,
     compact_source_extract, recover_draft_chapter, script_metrics,
-    strip_source_citations, word_target, write,
+    strip_source_citations, story_chapter_evidence, story_scene_plan, word_target, write,
+    director_fingerprint as story_fingerprint,
 )
 
 
@@ -164,6 +166,9 @@ def director_fingerprint(title, evidence):
 
 
 def test_actual_chapter_request_has_focused_sources_and_small_continuity(tmp_path, monkeypatch):
+    # Exercise the legacy compact path independently of the new story contract.
+    import history_of_x.director_script as director_module
+    monkeypatch.setattr(director_module, "has_ethiopia_story_contract", lambda *args: False)
     monkeypatch.setenv("SCRIPT_TARGET_WPM", "160")
     evidence = read_json(ROOT / "episodes" / "ethiopia.json")["evidence"]
     fingerprint = director_fingerprint("Ethiopia", evidence)
@@ -329,3 +334,132 @@ def test_cached_long_sentences_get_only_one_joint_revision_across_restarts(tmp_p
     assert repaired["cadence_length_revision"] == 1
     assert sum(len(s["narration"].split()) for s in repaired["scenes"]) == 119
     assert all(s["source_ids"] == ["S1"] for s in repaired["scenes"])
+
+
+def test_story_contract_cannot_reuse_the_old_full_script_fingerprint(tmp_path, monkeypatch):
+    monkeypatch.setenv("SCRIPT_TARGET_WPM", "160")
+    evidence = read_json(ROOT / "episodes" / "ethiopia.json")["evidence"]
+    old = director_fingerprint("Ethiopia", evidence)
+    new = story_fingerprint("Ethiopia", "Brief", 1400, 160.0, evidence)
+    assert old != new
+    save_json(tmp_path / "script.json", {"fingerprint": old, "scenes": []})
+
+    class API:
+        def text(self, instruction, payload, schema, **kwargs):
+            assert "this_chapter" not in payload
+            raise PipelineError("new outline requested")
+
+    with pytest.raises(PipelineError, match="new outline requested"):
+        write(API(), "Ethiopia", "Brief", 8.75, evidence, tmp_path)
+    assert read_json(tmp_path / "script.json")["fingerprint"] == old
+
+
+def test_story_plan_assigns_every_beat_even_when_scene_count_changes():
+    for chapter, beats in ETHIOPIA_STORY.items():
+        for count in (2, 5, 7):
+            plan = story_scene_plan(chapter, count)
+            spoken = [b for scene in plan for b in scene["must_explain"]]
+            assert len(plan) == count
+            assert all(beat["say"] in spoken for beat in beats)
+
+
+@pytest.mark.parametrize("chapter,terms", [
+    ("Roots", ["Ezana", "Portuguese", "Gondar"]),
+    ("Catalyst", ["Taytu", "Wuchale", "Adwa"]),
+    ("Turning Point", ["1941", "1974", "Red Terror"]),
+    ("Aftermath", ["1993", "Abiy", "2022"]),
+])
+def test_story_evidence_reserves_passages_for_omitted_milestones(chapter, terms):
+    evidence = read_json(ROOT / "episodes" / "ethiopia.json")["evidence"]
+    compact = story_chapter_evidence(evidence, chapter)
+    assert sum(len(s["extract"]) for s in compact) <= 5500
+    text = " ".join(s["extract"] for s in compact).casefold()
+    assert all(term.casefold() in text for term in terms)
+    assert "2025" not in text and "2026" not in text
+
+
+def story_scene(text, source_ids, date="1896"):
+    return {"narration": text, "source_ids": source_ids, "date_label": date}
+
+
+def test_actual_missing_eras_and_unpaid_adwa_setup_are_rejected():
+    roots = {"scenes": [story_scene(
+        "In 1270 Yekuno Amlak overthrew the Zagwe dynasty. He claimed descent from Solomon. "
+        "The new dynasty forged an identity that would outlast shifting alliances.", ["S2"], "1270")]}
+    issues = chapter_story_issues(roots, "Roots")
+    assert any("Adal" in issue for issue in issues)
+    assert any("Gondar" in issue for issue in issues)
+    catalyst = {"scenes": [story_scene(
+        "Menelik took the throne in 1889. His modern weaponry set the stage for the inevitable clash at Adwa.",
+        ["S3"], "1889")]}
+    issues = chapter_story_issues(catalyst, "Catalyst")
+    assert any("Taytu" in issue for issue in issues)
+    assert any("Wuchale" in issue for issue in issues)
+    assert any("Pay off Adwa" in issue for issue in issues)
+
+
+def test_concrete_spoken_payoff_passes_but_metadata_mentions_do_not():
+    text = (
+        "Tewodros tried to reunite the regional rulers. Yohannes defended the borders. "
+        "Menelik expanded through conquest and bought modern rifles. "
+        "Taytu helped organize resistance to Italy. "
+        "The Wuchale treaty had different Amharic and Italian versions. Italy claimed a protectorate, but Menelik rejected it. "
+        "At Adwa, Ethiopian forces defeated Italy. The peace treaty recognized Ethiopian independence."
+    )
+    part = {"scenes": [story_scene(text, ["S3", "S4"])]}
+    assert chapter_story_issues(part, "Catalyst") == []
+    part["scenes"][0]["narration"] = "Menelik prepared for a confrontation."
+    part["scenes"][0]["date_label"] = "1896 Adwa victory; Taytu; Wuchale"
+    assert any("Pay off Adwa" in issue for issue in chapter_story_issues(part, "Catalyst"))
+
+
+def test_wrong_occupation_and_pretoria_metadata_are_rejected():
+    turning = {"scenes": [story_scene(
+        "Badoglio's victorious troops march into Addis Ababa. Mussolini announces annexation. Resistance continues.",
+        ["S5"], "1941")]}
+    assert any("mislabeled 1941" in issue for issue in chapter_story_issues(turning, "Turning Point"))
+    aftermath = {"scenes": [story_scene(
+        "The parties meet in South Africa. The Pretoria cessation of hostilities follows in November twenty twenty two.",
+        ["S11"], "October 2025")]}
+    issues = chapter_story_issues(aftermath, "Aftermath")
+    assert any("stop at November 2022" in issue for issue in issues)
+    assert any("Pretoria agreement date_label" in issue for issue in issues)
+    turning["scenes"][0] = story_scene(
+        "In nineteen forty one, Haile Selassie returns. The monarchy is restored.",
+        ["S5"], "1936")
+    assert any("conflicts with the year spoken" in issue for issue in chapter_story_issues(turning, "Turning Point"))
+
+
+def test_median_alone_cannot_approve_formal_padded_narration():
+    sentence = "The ruling coalition maintained a powerful grip on all important state affairs."
+    part = {"scenes": [story_scene(" ".join([sentence] * 10), ["S10"], "2019")]}
+    assert script_metrics({"scenes": [{**part["scenes"][0], "chapter": "Aftermath"}]})["median_sentence_words"] == 12
+    assert any("short complete sentences" in issue for issue in chapter_style_issues(part))
+
+
+def test_failed_story_repair_is_bounded_and_cannot_publish_a_complete_script(tmp_path, monkeypatch):
+    monkeypatch.setenv("SCRIPT_TARGET_WPM", "160")
+    evidence = read_json(ROOT / "episodes" / "ethiopia.json")["evidence"]
+    fingerprint = story_fingerprint("Ethiopia", "Brief", 1400, 160.0, evidence)
+    save_json(tmp_path / "outline.json", attach_story_contract(director_outline(fingerprint)))
+
+    class API:
+        calls = []
+
+        def text(self, instruction, payload, schema, **kwargs):
+            self.calls.append(payload)
+            assert payload["scene_plan"]
+            assert payload["this_chapter"]["required_spoken_beats"]
+            if "draft" in payload:
+                assert "missing spoken cause/consequence beat" in instruction
+                assert "correct date labels" in instruction
+            return fake_chapter(payload["target_chapter_words"], 2, source="S4")
+
+    api = API()
+    for _ in range(2):
+        with pytest.raises(PipelineError, match="missed required spoken coverage"):
+            write(api, "Ethiopia", "Brief", 8.75, evidence, tmp_path)
+    assert len(api.calls) == 2
+    assert not (tmp_path / "script.json").exists()
+    checkpoint = read_json(tmp_path / "director-chapters" / ("1-" + fingerprint + ".json"))
+    assert checkpoint["cadence_length_revision"] == 1
