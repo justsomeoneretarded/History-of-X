@@ -231,7 +231,7 @@ def produce(api,work,output,profile='cinematic',proof=False,resume=None,revise=F
  output.mkdir(parents=True,exist_ok=True);directory=work/'directed-render';directory.mkdir(parents=True,exist_ok=True)
  plan_dir=work/'scene-programs';plan_dir.mkdir(parents=True,exist_ok=True)
  from .director_batch import plan_all
- plan_all(api,script,speech,assets,plan_dir,style)
+ if os.getenv('GEMINI_DIRECTOR_MODE','svg')!='rigged':plan_all(api,script,speech,assets,plan_dir,style)
  videos=[];shots=[];position=0;fps=PROFILES[profile][2];frame_cursor=0;used_assets=set()
  for scene,spoken in zip(script['scenes'],speech['scenes']):
   print(f'Directing original scene {scene["scene_id"]}: {scene["narration"][:90]}',flush=True)
@@ -263,6 +263,8 @@ def produce(api,work,output,profile='cinematic',proof=False,resume=None,revise=F
   shots.append({'scene_id':scene['scene_id'],'global_start':position,'global_end':position+spoken['duration'],
    'chapter':scene['chapter'],'narration_context':scene['narration'],'music_mood':'neutral' if scene['chapter']=='Roots' else 'somber' if scene['bg_music_mood']=='reflective' else 'tense' if scene['bg_music_mood']=='tense' else 'neutral','sting':False,'events':program.get('events',[]),'year_label':scene['date_label']})
   position+=spoken['duration'];frame_cursor=end_frame
+  save_json(output/'timeline.json',shots)
+  save_json(work/'render-progress.json',{'rendered_scenes':[s['scene_id'] for s in shots],'seconds':position,'complete':len(shots)==len(script['scenes'])})
  silent=directory/'picture.mp4';concat_video(videos,silent)
  from .animated_render import captions
  width,height,_=PROFILES[profile];captions(output,script,speech,width,height)

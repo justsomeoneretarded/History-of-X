@@ -1,6 +1,16 @@
 # Validation record
 
-## Current moving-film remake
+## November25,2026 rebuild: current status
+
+The films in the older records below were rejected creatively and are retained as implementation history. Their technical passes and old artifact labels do not establish that the current directed film is finished. Older14-day artifacts may have expired.
+
+The new Ethiopia narration is complete and verified: **508.64seconds (8:28.64),1430words, Charon via Gemini3.8FlashTTS,168.69words/minute**. No time stretching was applied. [Verified script/audio checkpoint](https://github.com/justsomeoneretarded/History-of-X/actions/runs/45616344766).
+
+The new animation uses original illustrated character rigs, exact two-link hand contact, continuous prop ownership and meaningful state changes. The [rendered15-second capability comparison](https://github.com/justsomeoneretarded/History-of-X/actions/runs/45630795454) passed264code checks and produced an actual1080p/30fps movie. Its hybrid vector/text renderer took18.34seconds versus roughly105.66seconds for the same sample's earlier raster renderer on a separate hosted run. This is a measured sample comparison, not a promised universal speedup or a film-quality score. Small text was inspected at native resolution.
+
+The current full Ethiopia film is **not yet accepted**. Saved scene directions and verified narration are being resumed after model overload/schema failures. Final delivery requires full decoded-media checks and consecutive audiovisual reviews of the entire actual film; an accepted sample alone cannot become the upload package. Current artifact retention is90days. Nothing has been published to YouTube.
+
+## Earlier moving-film attempt (creatively rejected)
 
 [Final verified upload package](https://github.com/justsomeoneretarded/History-of-X/actions/runs/42352656439/artifacts/13566745408). The picture was rendered in [the moving-film workflow](https://github.com/justsomeoneretarded/History-of-X/actions/runs/42350418522), then finished with verified audio assembly while preserving the encoded video bitstream.
 

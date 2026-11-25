@@ -54,3 +54,32 @@ def test_revision_feedback_only_invalidates_overlapping_observed_scenes():
  assert rig_director._feedback(1,style)=={"problems":[report["problems"][0]]}
  assert rig_director._feedback(3,style)["revision_priorities"]==report["revision_priorities"]
  assert rig_director._feedback(9,style)=={}
+
+
+def test_free_model_failover_is_bounded_and_does_not_retry_schema_errors():
+ from history_of_x.core import PipelineError
+ class API:
+  def __init__(self,reason):self.models=[];self.reason=reason
+  def text(self,*args,**kwargs):
+   self.models.append(kwargs["model"])
+   if len(self.models)==1:raise PipelineError(self.reason)
+   return {"nodes":[]}
+ api=API("Gemini gemini-3.1-flash-lite unavailable after three attempts")
+ assert rig_director._request(api,{},"gemini-3.1-flash-lite")=={"nodes":[]}
+ assert api.models==["gemini-3.1-flash-lite","gemini-3.5-flash-lite"]
+ api=API("Invalid Gemini structured output")
+ with pytest.raises(PipelineError):
+  rig_director._request(api,{},"gemini-3.1-flash-lite")
+ assert len(api.models)==1
+
+def test_model_switch_reuses_an_exact_accepted_scene_without_another_call(tmp_path,monkeypatch):
+ spec=json.loads((ROOT/"assets/style/rig-demo.json").read_text())
+ class API:
+  calls=0
+  def text(self,*args,**kwargs):self.calls+=1;return copy.deepcopy(spec)
+ api=API();assets={"assets":[],"scenes":{}}
+ monkeypatch.setenv("GEMINI_MODEL","gemini-3.1-flash-lite")
+ first=rig_director.plan_scene(api,passage(),spoken(),assets,tmp_path)
+ monkeypatch.setenv("GEMINI_MODEL","gemini-3.5-flash-lite")
+ assert rig_director.plan_scene(api,passage(),spoken(),assets,tmp_path)==first
+ assert api.calls==1

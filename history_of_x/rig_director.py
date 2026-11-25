@@ -102,6 +102,16 @@ def _program(spec,seconds,approved,ident,reserved,archives):
  program["director_mode"]="original-rigged-actors"
  return program
 
+def _request(api,payload,primary):
+ try:
+  return api.text(CONTRACT,payload,schema(),max_output=6500,preserve_bounds=True,model=primary)
+ except PipelineError as exc:
+  message=str(exc)
+  if "unavailable after three attempts" not in message and "network deadline" not in message:raise
+  backup="gemini-3.5-flash-lite" if primary!="gemini-3.5-flash-lite" else "gemini-3.1-flash-lite"
+  print(f"Scene direction: {primary} unavailable; trying verified free model {backup}.",flush=True)
+  return api.text(CONTRACT,payload,schema(),max_output=6500,preserve_bounds=True,model=backup)
+
 def plan_scene(api,scene,spoken,assets,directory,style=None):
  seconds=float(spoken["duration"]);ident=str(scene["scene_id"])
  catalog={a["id"]:a for a in assets["assets"]}
@@ -114,9 +124,18 @@ def plan_scene(api,scene,spoken,assets,directory,style=None):
   "reserved_archival_seconds":reserved,
   "approved_images":[{k:a.get(k) for k in ("id","subject","date","context")} for a in approved],
   "cast":list(CAST),"settings":list(SETTINGS),"props":list(PROPS)}
- identity=key("rigged-scene-v1",VERSION,CONTRACT,schema(),os.getenv("GEMINI_MODEL"),context)
+ primary=os.getenv("GEMINI_MODEL","gemini-3.1-flash-lite")
+ identity=key("rigged-scene-v1",VERSION,CONTRACT,schema(),primary,context)
  directory=Path(directory)/"rigged";target=directory/(identity+".json")
  existing=read_json(target) if target.exists() else None
+ if existing is None:
+  # A validated direction is reusable across provider routing changes. Compare
+  # the exact narration, timings, assets and contract fingerprint before reuse.
+  for other in ("gemini-3.1-flash-lite","gemini-3.5-flash-lite","gemini-3.8-flash"):
+   alternate=directory/(key("rigged-scene-v1",VERSION,CONTRACT,schema(),other,context)+".json")
+   if alternate.exists():
+    existing=read_json(alternate)
+    break
  feedback_id=key(feedback)
  if existing and (not feedback or existing.get("feedback_id")==feedback_id):
   try:
@@ -131,7 +150,7 @@ def plan_scene(api,scene,spoken,assets,directory,style=None):
  if existing:payload["previous_plan"]=existing["spec"]
  for attempt in range(2):
   draft_path=directory/(identity+"-"+feedback_id+f"-draft-{attempt}.json")
-  spec=read_json(draft_path) if draft_path.exists() else api.text(CONTRACT,payload,schema(),max_output=6500,preserve_bounds=True)
+  spec=read_json(draft_path) if draft_path.exists() else _request(api,payload,primary)
   save_json(draft_path,spec)
   try:
    program=_program(spec,seconds,approved,ident,reserved,archives)

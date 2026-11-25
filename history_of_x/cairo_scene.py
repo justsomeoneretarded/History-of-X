@@ -5,6 +5,7 @@ are decoded once; Cairo resamples and composites them in compiled code.
 """
 from __future__ import annotations
 import io
+import math
 import numpy as np
 from PIL import Image
 from .scene_film import WIDTH,HEIGHT,interpolate,transform_matrix,layer_states
@@ -33,7 +34,7 @@ class CairoCompositor:
   from .scene_film import _svg_tree,_name
   class RecordedSVG(PNGSurface):
    def _create_surface(self,width,height):
-    return cairo.RecordingSurface(cairo.CONTENT_COLOR_ALPHA,(0,0,width,height)),width,height
+    return cairo.RecordingSurface(cairo.CONTENT_COLOR_ALPHA,None),width,height
   root,_=_svg_tree(program["svg"])
   definitions=[child for child in root if _name(child.tag)=="defs"]
   groups={child.get("id"):child for child in root if _name(child.tag)=="g"}
@@ -42,28 +43,33 @@ class CairoCompositor:
    group=groups[layer["id"]]
    if not len(group):continue
    art=ET.Element(root.tag,dict(root.attrib))
+   art.set("overflow","visible")
    for definition in definitions:art.append(copy.deepcopy(definition))
    art.append(copy.deepcopy(group))
    source_bytes=ET.tostring(art)
+   tree=Tree(bytestring=source_bytes,unsafe=False)
+   drawing=RecordedSVG(tree,None,96,output_width=WIDTH,output_height=HEIGHT)
+   x,y,w,h=drawing.cairo.ink_extents()
+   if w<=0 or h<=0:continue
    if any(_name(element.tag) in ("text","tspan") for element in group.iter()):
     # Keep the verified font rendering for short labels/documents. Only these
     # small layers need supersampled pixels; characters/scenery remain vector.
     import cairosvg
     scale=max(2.,max(f.get("scale",1) for f in program["camera"]["keyframes"]))
-    png=cairosvg.svg2png(bytestring=source_bytes,output_width=round(WIDTH*scale),output_height=round(HEIGHT*scale),unsafe=False)
-    image=Image.open(io.BytesIO(png)).convert("RGBA");bounds=image.getbbox()
-    if bounds is None:continue
-    image=image.crop(bounds);data=io.BytesIO();image.save(data,format="PNG")
+    left,top=math.floor(x)-2,math.floor(y)-2
+    width,height=math.ceil(x+w)+2-left,math.ceil(y+h)+2-top
+    if width*height*scale*scale>40_000_000:raise ValueError("Text layer exceeds the raster budget")
+    # Crop around the actual ink even if it begins outside the camera. The
+    # nested SVG retains the original1920x1080 percentage-coordinate context.
+    crop=ET.Element(root.tag,{"viewBox":f"{left} {top} {width} {height}","width":str(width),"height":str(height)})
+    art.set("x","0");art.set("y","0");art.set("width",str(WIDTH));art.set("height",str(HEIGHT));crop.append(art)
+    png=cairosvg.svg2png(bytestring=ET.tostring(crop),output_width=round(width*scale),output_height=round(height*scale),unsafe=False)
+    image=Image.open(io.BytesIO(png)).convert("RGBA");data=io.BytesIO();image.save(data,format="PNG")
     pixels=cairo.ImageSurface.create_from_png(io.BytesIO(data.getvalue()))
-    matrix=np.array([[1/scale,0,bounds[0]/scale],[0,1/scale,bounds[1]/scale],[0.,0.,1.]])
+    matrix=np.array([[1/scale,0,left],[0,1/scale,top],[0.,0.,1.]])
     result[layer["id"]]=(pixels,matrix,image.width,image.height,0,0)
     continue
-   tree=Tree(bytestring=source_bytes,unsafe=False)
-   drawing=RecordedSVG(tree,None,96,output_width=WIDTH,output_height=HEIGHT)
-   # Retain the recording, never finish it: it replays vector shapes at the
-   # current fractional transform instead of resampling a full-screen bitmap.
-   x,y,w,h=drawing.cairo.ink_extents()
-   if w<=0 or h<=0:continue
+   # Retain the recording; replay shapes at the current fractional transform.
    result[layer["id"]]=(drawing.cairo,np.eye(3),w,h,x,y)
   return result
  def frame(self,time):

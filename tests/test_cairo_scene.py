@@ -35,3 +35,21 @@ def test_compiled_compositors_keep_held_and_released_props_in_contact(recording)
  point=scene.prop_world("treaty",12.5)[:2,2]
  released=compositor.frame(12.5)
  assert released.getpixel((round(point[0]+145),round(point[1]-10)))==pytest.approx((246,232,200),abs=3)
+
+
+@pytest.mark.parametrize("with_text",[False,True])
+def test_artwork_staged_offscreen_can_move_into_the_camera(with_text):
+ from history_of_x.scene_film import validate_scene
+ word='<text x="2100" y="450" font-family="DejaVu Sans" font-size="60" fill="#0000ff">MOVE</text>' if with_text else ""
+ program={"scene_id":"entry","duration":2.,"background":"#ffffff",
+  "svg":'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080"><g id="entry"><circle cx="2100" cy="300" r="60" fill="#ff0000"/>'+word+'</g></svg>',
+  "layers":[{"id":"entry","pivot":[2100,300],"start":0,"end":2,"keyframes":[{"time":0},{"time":1,"x":-1200}]}],
+  "camera":{"keyframes":[{"time":0}]},"events":[]}
+ validate_scene(program)
+ compositor=CairoCompositor(program,(1920,1080),recording=True)
+ before=compositor.frame(0);after=compositor.frame(1)
+ assert before.getpixel((900,300))==(255,255,255)
+ assert after.getpixel((900,300))==(255,0,0)
+ if with_text:
+  word=np.asarray(after)[380:460,890:1120]
+  assert ((word[:,:,2]>150)&(word[:,:,0]<100)).sum()>300

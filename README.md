@@ -31,7 +31,7 @@ These are craft references. Their scripts, characters, jokes, voices and songs a
 | Outline and script | Gemini, bounded original scene budgets, source IDs and measured spoken cadence |
 | Narration | Gemini 3.8 Flash TTS; actual voice auditions judged for completeness, naturalness, clarity and rhythm |
 | Direction | Gemini writes executable scene graphs: staging, timed decisions, expressions, movements, contact and consequences; historical image metadata accompanies approved inserts |
-| Animation | Original illustrated period characters/scenery, two-link arm kinematics, continuous prop ownership, CairoSVG rasterization, Pillow floating-point composition and bounded camera keyframes |
+| Animation | Original illustrated period characters/scenery, two-link arm kinematics, continuous prop ownership, Cairo vector replay, supersampled text and bounded camera keyframes; Pillow remains the comparison renderer |
 | Historical media | Curated Ethiopia collection and Internet Archive newsreel; other topics discover specifically matched CC0 images through Cleveland and Met museum APIs; actual use is recorded |
 | Sound | Licensed Scott Buckley recordings with restrained levels, crossfades, narration ducking, deliberate silence and explicitly requested original foley |
 | Editing | FFmpeg; cumulative frame timing, uniform audio format, 48kHz stereo AAC, loudness and decode checks |
@@ -42,7 +42,7 @@ Gemini chooses among original illustrated characters, settings and props, and di
 
 ## Free-tier limits and recovery
 
-The directed workflow currently defaults to **Gemini 3.1 Flash Lite** for writing and scene direction, **Gemini 3.5 Flash Lite** for review, and **Gemini 3.8 Flash TTS** for speech. This reflects the models responding during production tests; 3.5 and 3.8 text generation repeatedly returned overload errors. Repository variables can override these choices. `GEMINI_DIRECTOR_MODEL` can select a supported alternative; the older workflows retain their separate settings. Google's current standard pricing lists free text input/output for 3.8 Flash, but project access and quotas still vary. Consult [pricing](https://ai.google.dev/gemini-api/docs/pricing) and [project rate limits](https://ai.google.dev/gemini-api/docs/rate-limits).
+The directed workflow defaults to **Gemini 3.1 Flash Lite** for writing and scene direction, **Gemini 3.5 Flash Lite** for review, and **Gemini 3.8 Flash TTS** for speech. Direction can recover from an unavailable text model through one other verified free Gemini model, while reusing exactly matching accepted directions. This reflects the models responding during production tests; 3.5 and 3.8 text generation repeatedly returned overload errors. Repository variables can override these choices. `GEMINI_DIRECTOR_MODEL` can select a supported alternative; the older workflows retain their separate settings. Google's current standard pricing lists free text input/output for 3.8 Flash, but project access and quotas still vary. Consult [pricing](https://ai.google.dev/gemini-api/docs/pricing) and [project rate limits](https://ai.google.dev/gemini-api/docs/rate-limits).
 
 - Request starts are separated by at least 65 seconds. This is a conservative application policy, not Google's universal required sleep.
 - RPM, input TPM and daily quotas are separate and shared by a Google project. Sleeping cannot cure an exhausted daily quota.

@@ -516,7 +516,7 @@ def render_scene(program, directory, profile='cinematic',backend='vector'):
     width, height, fps = PROFILES[profile]
     frames = max(1, round(program['duration']*fps))
     if backend not in ('pillow','cairo','vector'):raise PipelineError('Unknown scene compositor')
-    identity = key('directed-svg-film-v2', program, profile, backend)
+    identity = key('directed-svg-film-v3', program, profile, backend)
     target = directory/(identity+'.mp4')
     if target.exists() and abs(duration(target)-frames/fps) < .1:
         return target
