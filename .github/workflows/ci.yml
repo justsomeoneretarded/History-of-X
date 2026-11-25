@@ -37,10 +37,12 @@ jobs:
         if: contains(github.event.head_commit.message, '[rig-benchmark]')
         run: python scripts/profile_rig.py
       - name: Compare a compiled compositor with the reference and render its motion
-        if: contains(github.event.head_commit.message, '[cairo-benchmark]')
+        if: contains(github.event.head_commit.message, '[cairo-benchmark]') || contains(github.event.head_commit.message, '[vector-benchmark]')
+        env:
+          BENCHMARK_COMPOSITOR: ${{ contains(github.event.head_commit.message, '[vector-benchmark]') && 'vector' || 'cairo' }}
         run: python scripts/benchmark_compositor.py
       - uses: actions/upload-artifact@v4
-        if: contains(github.event.head_commit.message, '[cairo-benchmark]')
+        if: contains(github.event.head_commit.message, '[cairo-benchmark]') || contains(github.event.head_commit.message, '[vector-benchmark]')
         with:
           name: original-rig-cairo-demo
           path: output/rig-demo

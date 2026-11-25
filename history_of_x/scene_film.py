@@ -515,16 +515,16 @@ def render_scene(program, directory, profile='cinematic',backend='pillow'):
     directory.mkdir(parents=True, exist_ok=True)
     width, height, fps = PROFILES[profile]
     frames = max(1, round(program['duration']*fps))
-    if backend not in ('pillow','cairo'):raise PipelineError('Unknown scene compositor')
+    if backend not in ('pillow','cairo','vector'):raise PipelineError('Unknown scene compositor')
     identity = key('directed-svg-film-v2', program, profile, backend)
     target = directory/(identity+'.mp4')
     if target.exists() and abs(duration(target)-frames/fps) < .1:
         return target
     raster_scale = max(1.5 if profile == 'cinematic' else 1., width/WIDTH)
-    raster = _raster_layers(program, raster_scale)
-    if backend=='cairo':
+    raster = {} if backend=='vector' else _raster_layers(program, raster_scale)
+    if backend in ('cairo','vector'):
         from .cairo_scene import CairoCompositor
-        compositor=CairoCompositor(program,(width,height),raster,raster_scale)
+        compositor=CairoCompositor(program,(width,height),raster,raster_scale,recording=backend=='vector')
     command = ['ffmpeg', '-hide_banner', '-loglevel', 'error', '-nostdin', '-y',
                '-f', 'rawvideo', '-pixel_format', 'rgb24', '-video_size', f'{width}x{height}',
                '-framerate', str(fps), '-i', '-', '-an', '-c:v', 'libx264',
@@ -537,7 +537,7 @@ def render_scene(program, directory, profile='cinematic',backend='pillow'):
         for frame in range(frames):
             at=frame/fps;pose=frame_identity(program,at)
             if pose!=previous_pose:
-                picture=(compositor.frame(at) if backend=='cairo'
+                picture=(compositor.frame(at) if backend in ('cairo','vector')
                          else scene_frame(program,at,(width,height),raster,raster_scale,cache))
                 raw_frame=picture.tobytes();previous_pose=pose
             process.stdin.write(raw_frame)
