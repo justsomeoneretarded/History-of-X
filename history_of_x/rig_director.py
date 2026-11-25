@@ -108,7 +108,8 @@ def compact_payload(payload):
  payload=copy.deepcopy(payload)
  words=payload.pop("word_timing",[])
  if words:
-  payload["phrase_timing"]=[[" ".join(str(w[0]) for w in words[i:i+5]),words[i][1],words[min(i+4,len(words)-1)][2]] for i in range(0,len(words),5)] return payload
+  payload["phrase_timing"]=[[" ".join(str(w[0]) for w in words[i:i+5]),words[i][1],words[min(i+4,len(words)-1)][2]] for i in range(0,len(words),5)]
+ return payload
 
 def _request(api,payload,primary):
  payload=compact_payload(payload)
