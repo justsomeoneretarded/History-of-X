@@ -509,7 +509,7 @@ def main(argv=None):
             save_json(args.work / "request.json", {"title": args.title, "brief": args.brief, "minutes": args.minutes, "voice": args.voice, "style_version": 1})
             write(api, args.title, args.brief, args.minutes, evidence, args.work)
         script = read_json(args.work / "script.json")
-        if args.stage in ("all", "audition"):
+        if args.stage == "audition" or (args.stage == "all" and args.voice == "auto"):
             audition(api, script, args.work / "voice-auditions")
         if args.stage in ("all", "voice"):
             from .gemini_speech import produce
