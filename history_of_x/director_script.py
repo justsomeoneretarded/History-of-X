@@ -270,15 +270,15 @@ ETHIOPIA_STORY = {
         {"say": "Menelik expands from Shewa through conquest and deals; resources and imported rifles strengthen his state while conquered peoples lose autonomy.",
          "patterns": [r"menelik", r"conquer|conquest|expan|subjug", r"rifle|weapon|gun"],
          "terms": ["menelik", "shewa", "conquests", "rifles", "expansion"], "sources": ["S3"]},
-        {"say": "Taytu helps shape resistance to Italy. Wuchale's Article 17 differs between Italian and Amharic over Ethiopia's foreign relations; the Italian must and Amharic may let Italy claim a protectorate, which Menelik rejects.",
-         "patterns": [r"taytu", r"ital|resist|command|army|advis|reject|lead|led|mobil"],
+        {"say": "Taytu helps organize resistance. Explain Wuchale Article 17: the Amharic version lets Ethiopia choose Italian diplomacy, while the Italian version makes it compulsory. Menelik rejects the resulting protectorate claim.",
+         "patterns": [r"taytu", r"wuchal|uccial|treaty", r"amharic|version|translat", r"may|could|optional|permit|choos|can\b", r"must|compuls|oblig|requir|had to", r"protector|ital"],
          "terms": ["taytu", "wuchale", "amharic", "protectorate"], "sources": ["S3", "S4"]},
-        {"say": "Explain Wuchale Article 17 explicitly: the Amharic version lets Ethiopia use Italian diplomacy, while the Italian version makes it compulsory. Menelik rejects Italy's resulting protectorate claim.",
-         "patterns": [r"wuchal|uccial|treaty", r"amharic|version|translat|interpret|differ", r"protector|ital"],
-         "terms": ["wuchale", "amharic", "italian", "protectorate"], "sources": ["S4", "S3"]},
-        {"say": "Pay off Adwa here, beyond the Hook: in 1896 Ethiopian forces defeat Italy; the subsequent treaty recognizes Ethiopian independence. Victory does not erase coercion inside Menelik’s expanding empire. Explain why coalition and preparation made the opening reversal possible.",
-         "patterns": [r"adwa", r"defeat|victor|won|win|rout", r"independen|sovereign|recogn"],
-         "terms": ["adwa", "1896", "victory", "independence", "treaty"], "sources": ["S4", "S3"]},
+        {"say": "Pay off Adwa here, beyond the Hook: in 1896 Menelik, Taytu and their Ethiopian coalition defeat the separated Italian forces. Explain how preparation and cooperation make the opening reversal possible.",
+         "patterns": [r"adwa", r"defeat|victor|won|win|rout", r"ethiop|menelik"],
+         "terms": ["adwa", "1896", "victory", "menelik", "taytu"], "sources": ["S4", "S3"]},
+        {"say": "Italy recognizes Ethiopian independence after Adwa. But victory does not erase coercion inside Menelik's expanding empire: conquered peoples are still fighting over who controls their lives. Bridge to Italy's later invasion.",
+         "patterns": [r"ital", r"independen|sovereign|recogn", r"conquer|expan|coerci|subjug|autonom", r"people|communit|subject|territor"],
+         "terms": ["independence", "treaty", "conquest", "expansion"], "sources": ["S4", "S3"]},
     ],
     "Turning Point": [
         {"say": "Mussolini invades in 1935; aircraft and mustard gas help Italy overcome Ethiopian resistance.",
@@ -381,7 +381,9 @@ def chapter_story_issues(part, chapter):
     issues, windows = [], []
     for scene in part["scenes"]:
         sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", scene["narration"]) if s.strip()]
-        windows.extend((" ".join(sentences[i:i + 3]), scene.get("source_ids", [])) for i in range(len(sentences)))
+        # A single short scene can express one cause and consequence in several
+        # complete sentences; requiring one long sentence encourages formal prose.
+        windows.append((" ".join(sentences), scene.get("source_ids", [])))
     for beat in ETHIOPIA_STORY[chapter]:
         if not any(all(re.search(pattern, text, re.I) for pattern in beat["patterns"]) and set(ids) & set(beat["sources"]) for text, ids in windows):
             issues.append("missing spoken cause/consequence beat: " + beat["say"])
@@ -584,7 +586,7 @@ def write(api, title, brief, minutes, evidence, directory):
         if cached:
             part = read_json(chapter_path)
         else:
-            part = api.text(chapter_instruction, payload, chapter_script_schema(chapter_source_ids, budget, count), max_output=6500, preserve_bounds=True)
+            part = api.text(chapter_instruction, payload, chapter_script_schema(chapter_source_ids, budget, count, 5.2 if story_contract else 5.6), max_output=6500, preserve_bounds=True)
         part = clean_chapter_narration(part, source_ids)
         # Persist usable work before a conditional repair so service outages can resume.
         save_json(chapter_path, part)
@@ -600,7 +602,7 @@ def write(api, title, brief, minutes, evidence, directory):
                 ("Preserve supported facts and chapter order. Add missing required beats from the supplied evidence, correct date labels, and cite the appropriate source_ids for added facts. " if story_contract else "Preserve its facts, sequence, date labels and source_ids. ") +
                 "Use concrete phrasing and complete connected sentences, roughly 5–7 per 55–70-word scene. "
                 "Use the full word budget. No new fact-review workflow and no inline source-code citations.",
-                {**payload, "draft": part}, chapter_script_schema(revision_sources, budget, count, char_rate * 1.04),
+                {**payload, "draft": part}, chapter_script_schema(revision_sources, budget, count, 5.2 if story_contract else char_rate * 1.04),
                 max_output=6500, preserve_bounds=True)
             revised = clean_chapter_narration(revised, source_ids)
             if not story_contract:
