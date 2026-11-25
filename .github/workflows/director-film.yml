@@ -86,6 +86,15 @@ jobs:
           path: work/director
           run-id: ${{ inputs.resume_run }}
           github-token: ${{ github.token }}
+      - name: Recover partial chapters from older narration checkpoints
+        if: ${{ inputs.resume_run != '' }}
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: director-audio
+          path: work/director
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ github.token }}
       - name: Write the original complete script
         env:
           GEMINI_API: ${{ secrets.GEMINI_API }}

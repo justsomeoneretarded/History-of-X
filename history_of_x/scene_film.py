@@ -452,15 +452,7 @@ def _composite(canvas, image, offset, matrix, opacity, reveal, design_scale, cac
     canvas.alpha_composite(patch, (left, top))
 
 
-def scene_frame(program, time, size=(960, 540), raster=None, raster_scale=None, cache=None):
-    """Render one frame; useful for proof sheets and directed temporal tests."""
-    scale = max(size[0]/WIDTH, size[1]/HEIGHT)
-    raster_scale = max(1., scale) if raster_scale is None else raster_scale
-    raster = raster or _raster_layers(program, raster_scale)
-    canvas = Image.new('RGBA', size, program['background'])
-    viewport = np.diag([size[0]/WIDTH, size[1]/HEIGHT, 1.])
-    camera = interpolate(program['camera']['keyframes'], time)
-    camera_matrix = transform_matrix(camera, (WIDTH/2, HEIGHT/2))
+def layer_states(program,time):
     by_id = {layer['id']: layer for layer in program['layers']}
     states = {}
     def state(layer):
@@ -484,27 +476,55 @@ def scene_frame(program, time, size=(960, 540), raster=None, raster_scale=None, 
             opacity *= parent_opacity
         states[identifier] = (matrix, opacity, pose['reveal'])
         return states[identifier]
+    return {layer['id']:state(layer) for layer in program['layers']}
+
+
+def scene_frame(program, time, size=(960, 540), raster=None, raster_scale=None, cache=None):
+    """Render one frame; useful for proof sheets and directed temporal tests."""
+    scale = max(size[0]/WIDTH, size[1]/HEIGHT)
+    raster_scale = max(1., scale) if raster_scale is None else raster_scale
+    raster = raster or _raster_layers(program, raster_scale)
+    canvas = Image.new('RGBA', size, program['background'])
+    viewport = np.diag([size[0]/WIDTH, size[1]/HEIGHT, 1.])
+    camera = interpolate(program['camera']['keyframes'], time)
+    camera_matrix = transform_matrix(camera, (WIDTH/2, HEIGHT/2))
+    states=layer_states(program,time)
     for layer in program['layers']:
-        local, opacity, reveal = state(layer)
+        local, opacity, reveal = states[layer['id']]
         image, offset = raster[layer['id']]
         matrix = viewport @ camera_matrix @ local
         _composite(canvas, image, offset, matrix, opacity*camera['opacity'], reveal, raster_scale, cache)
     return canvas.convert('RGB')
 
 
-def render_scene(program, directory, profile='cinematic'):
+def frame_identity(program,time):
+    """Exact authored pose signature; no temporal rounding or skipped motion."""
+    def channels(frames):
+        pose=interpolate(frames,time)
+        return tuple(pose[name] for name in DEFAULT)
+    return (
+        tuple(channels(layer["keyframes"])+(layer["start"]<=time<layer["end"],)
+              for layer in program["layers"]),
+        channels(program["camera"]["keyframes"]),
+    )
+
+def render_scene(program, directory, profile='cinematic',backend='pillow'):
     """Render and cache a silent shot. Invalid scenes fail before creating video."""
     validate_scene(program)
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
     width, height, fps = PROFILES[profile]
     frames = max(1, round(program['duration']*fps))
-    identity = key('directed-svg-film-v1', program, profile)
+    if backend not in ('pillow','cairo'):raise PipelineError('Unknown scene compositor')
+    identity = key('directed-svg-film-v2', program, profile, backend)
     target = directory/(identity+'.mp4')
     if target.exists() and abs(duration(target)-frames/fps) < .1:
         return target
     raster_scale = max(1.5 if profile == 'cinematic' else 1., width/WIDTH)
     raster = _raster_layers(program, raster_scale)
+    if backend=='cairo':
+        from .cairo_scene import CairoCompositor
+        compositor=CairoCompositor(program,(width,height),raster,raster_scale)
     command = ['ffmpeg', '-hide_banner', '-loglevel', 'error', '-nostdin', '-y',
                '-f', 'rawvideo', '-pixel_format', 'rgb24', '-video_size', f'{width}x{height}',
                '-framerate', str(fps), '-i', '-', '-an', '-c:v', 'libx264',
@@ -513,8 +533,14 @@ def render_scene(program, directory, profile='cinematic'):
     process = subprocess.Popen(command, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
     cache = _PatchCache()
     try:
+        previous_pose=None;raw_frame=None
         for frame in range(frames):
-            process.stdin.write(scene_frame(program, frame/fps, (width, height), raster, raster_scale, cache).tobytes())
+            at=frame/fps;pose=frame_identity(program,at)
+            if pose!=previous_pose:
+                picture=(compositor.frame(at) if backend=='cairo'
+                         else scene_frame(program,at,(width,height),raster,raster_scale,cache))
+                raw_frame=picture.tobytes();previous_pose=pose
+            process.stdin.write(raw_frame)
         process.stdin.close()
         stderr = process.stderr.read().decode('utf8', errors='replace')
         if process.wait(timeout=120):

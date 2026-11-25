@@ -106,10 +106,8 @@ jobs:
             work/director/*.json
             work/director/*.txt
             work/director/director-chapters
-            work/director/director-chapters
             work/director/speech
             work/director/voice-auditions
-            work/director/director-chapters
             work/director/gemini
           retention-days: 90
       - name: Direct and render actual scenes
@@ -147,6 +145,7 @@ jobs:
           path: |
             work/director/*.json
             work/director/*.txt
+            work/director/director-chapters
             work/director/gemini
             work/director/speech
             work/director/voice-auditions
