@@ -44,7 +44,8 @@ def schema():
                        'initial x/y/rotation=0, scale/opacity/reveal=1. Easing defaults to smooth.'}}
     props = {'id': {'type': 'string'}, 'pivot': point, 'start': number,
              'end': number, 'keyframes': frames,
-             'parent': {'type': 'string'}}
+             'parent': {'type': 'string'},
+             'stabilize_parent': {'type':'array','items':number,'minItems':4,'maxItems':4}}
     event = {'time': number, 'description': {'type': 'string'},
              'layer_ids': {'type': 'array', 'items': {'type': 'string'}},
              'sfx': {'type': 'string', 'enum': ['none', 'paper', 'stamp', 'soft_impact', 'sting']}}
@@ -52,7 +53,7 @@ def schema():
         'scene_id': {'type': 'string'}, 'duration': number,
         'background': {'type': 'string'}, 'svg': {'type': 'string'},
         'layers': {'type': 'array', 'minItems': 1, 'items': {
-            'type': 'object', 'required': [p for p in props if p != 'parent'], 'properties': props}},
+            'type': 'object', 'required': [p for p in props if p not in {'parent','stabilize_parent'}], 'properties': props}},
         'camera': {'type': 'object', 'required': ['keyframes'],
                    'properties': {'keyframes': frames}},
         'events': {'type': 'array', 'items': {
@@ -267,13 +268,19 @@ def validate_scene(program):
     if len(ids) != len(set(ids)) or set(ids) != set(groups):
         raise PipelineError('Every SVG group must have exactly one directed layer')
     for layer in layers:
-        if set(layer) - {'id', 'pivot', 'start', 'end', 'keyframes', 'parent'}:
+        if set(layer) - {'id', 'pivot', 'start', 'end', 'keyframes', 'parent', 'stabilize_parent'}:
             raise PipelineError('Unknown layer direction; refusing to ignore it')
         if 'keyframes' not in layer:
             raise PipelineError('Each layer requires keyframes')
         parent = layer.get('parent', '')
         if not isinstance(parent, str) or (parent and parent not in ids):
             raise PipelineError('Layer parent must name an existing layer')
+        if 'stabilize_parent' in layer:
+            reference=layer['stabilize_parent']
+            if not parent or not isinstance(reference,list) or len(reference)!=4 or not all(_finite(x) for x in reference):
+                raise PipelineError('Parent stabilization needs a parent and four finite matrix values')
+            if abs(reference[0]*reference[3]-reference[1]*reference[2])<1e-10:
+                raise PipelineError('Parent stabilization reference must be invertible')
         pivot = layer.get('pivot')
         if not isinstance(pivot, list) or len(pivot) != 2 or not all(_finite(v) for v in pivot):
             raise PipelineError('Layer pivot must be a finite [x,y] coordinate')
@@ -466,7 +473,14 @@ def scene_frame(program, time, size=(960, 540), raster=None, raster_scale=None, 
         parent = layer.get('parent', '')
         if parent:
             parent_matrix, parent_opacity, _ = state(by_id[parent])
+            local_linear=matrix[:2,:2].copy()
             matrix = parent_matrix @ matrix
+            if 'stabilize_parent' in layer and abs(np.linalg.det(parent_matrix[:2,:2]))>1e-12:
+                # Keep a held object upright and at its reference size while
+                # preserving the exact moving hand/attachment point.
+                point=matrix @ np.array([*layer['pivot'],1.])
+                matrix[:2,:2]=np.array(layer['stabilize_parent']).reshape(2,2) @ local_linear
+                matrix[:2,2]=point[:2]-matrix[:2,:2] @ np.array(layer['pivot'])
             opacity *= parent_opacity
         states[identifier] = (matrix, opacity, pose['reveal'])
         return states[identifier]

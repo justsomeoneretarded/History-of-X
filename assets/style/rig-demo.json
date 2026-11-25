@@ -1,0 +1,133 @@
+{
+  "setting": "court",
+  "nodes": [
+    {
+      "id": "envoy",
+      "kind": "actor",
+      "appearance": "italian_officer",
+      "x": 680,
+      "y": 1000,
+      "scale": 0.85,
+      "facing": "right",
+      "expression": "confident",
+      "z": 2
+    },
+    {
+      "id": "taytu",
+      "kind": "actor",
+      "appearance": "taytu",
+      "x": 1220,
+      "y": 1000,
+      "scale": 0.85,
+      "facing": "left",
+      "expression": "neutral",
+      "z": 2
+    },
+    {
+      "id": "desk",
+      "kind": "prop",
+      "prop": "table",
+      "x": 960,
+      "y": 770,
+      "scale": 1,
+      "z": 3
+    },
+    {
+      "id": "treaty",
+      "kind": "prop",
+      "prop": "paper",
+      "text": "MUST",
+      "x": 940,
+      "y": 740,
+      "scale": 1,
+      "z": 4
+    }
+  ],
+  "actions": [
+    {
+      "type": "take",
+      "time": 1,
+      "duration": 1.2,
+      "node": "envoy",
+      "hand": "front",
+      "target": "treaty",
+      "description": "The envoy picks up the compulsory version of the treaty.",
+      "sfx": "paper"
+    },
+    {
+      "type": "take",
+      "time": 4,
+      "duration": 1.2,
+      "node": "taytu",
+      "hand": "front",
+      "target": "treaty",
+      "description": "Taytu takes the document and begins to inspect the obligation."
+    },
+    {
+      "type": "pose",
+      "time": 6,
+      "duration": 1,
+      "node": "taytu",
+      "head": -7,
+      "expression": "worried",
+      "front_hand": [
+        240,
+        -350
+      ],
+      "description": "She brings the treaty into reading position and notices the changed obligation."
+    },
+    {
+      "type": "pose",
+      "time": 8,
+      "duration": 0.5,
+      "node": "taytu",
+      "expression": "angry",
+      "head": 4,
+      "description": "The discovery becomes a firm refusal."
+    },
+    {
+      "type": "place",
+      "time": 10,
+      "duration": 1.2,
+      "node": "taytu",
+      "object": "treaty",
+      "target": "desk",
+      "hand": "front",
+      "description": "She places the document back on the table.",
+      "sfx": "paper"
+    },
+    {
+      "type": "pose",
+      "time": 12,
+      "duration": 0.6,
+      "node": "taytu",
+      "front_hand": [
+        110,
+        -670
+      ],
+      "expression": "angry",
+      "description": "She raises a clear stop hand while the rejected treaty remains on the table.",
+      "sfx": "sting"
+    }
+  ],
+  "camera": [
+    {
+      "time": 0,
+      "focus_x": 960,
+      "focus_y": 540,
+      "zoom": 1
+    },
+    {
+      "time": 7,
+      "focus_x": 1080,
+      "focus_y": 580,
+      "zoom": 1.1
+    },
+    {
+      "time": 14,
+      "focus_x": 960,
+      "focus_y": 540,
+      "zoom": 1
+    }
+  ]
+}
