@@ -463,3 +463,13 @@ def test_failed_story_repair_is_bounded_and_cannot_publish_a_complete_script(tmp
     assert not (tmp_path / "script.json").exists()
     checkpoint = read_json(tmp_path / "director-chapters" / ("1-" + fingerprint + ".json"))
     assert checkpoint["cadence_length_revision"] == 1
+
+
+def test_mandatory_treaty_wording_does_not_require_another_generation():
+    text = ("Empress Taytu helped organize resistance. The Treaty of Wuchale differed in its versions. "
+            "The Amharic text let Ethiopia choose Italian diplomacy, while the Italian version made "
+            "it mandatory and claimed a protectorate. Menelik rejected that claim.")
+    part = {"scenes": [story_scene(text, ["S3"], "1889")]}
+    issues = chapter_story_issues(part, "Catalyst")
+    assert not any("Taytu helps organize resistance" in issue for issue in issues)
+    assert part["scenes"][0]["narration"] == text
