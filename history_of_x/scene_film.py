@@ -183,16 +183,26 @@ def validate_scene(program):
     seconds = program['duration']
     if not _finite(seconds) or not .1 <= seconds <= 180:
         raise PipelineError('Scene duration must be .1–180 seconds')
-    if not re.fullmatch(r'#[A-Fa-f0-9]{6}', program['background']):
+    if not isinstance(program.get('scene_id'), str) or not program['scene_id'].strip():
+        raise PipelineError('Scene scene_id must be a nonempty string')
+    if not isinstance(program['background'], str) or not re.fullmatch(r'#[A-Fa-f0-9]{6}', program['background']):
         raise PipelineError('Scene background must be a six-digit hex color')
     _, groups = _svg_tree(program['svg'])
     layers = program['layers']
     if not isinstance(layers, list) or not 1 <= len(layers) <= 100:
         raise PipelineError('Scene requires 1–100 directed artwork layers')
+    if any(not isinstance(layer, dict) for layer in layers):
+        raise PipelineError('Scene layers must contain objects')
     ids = [layer.get('id') for layer in layers]
+    if any(not isinstance(identifier, str) or not identifier.strip() for identifier in ids):
+        raise PipelineError('Each layer id must be a nonempty string')
     if len(ids) != len(set(ids)) or set(ids) != set(groups):
         raise PipelineError('Every SVG group must have exactly one directed layer')
     for layer in layers:
+        if set(layer) - {'id', 'pivot', 'start', 'end', 'keyframes', 'parent'}:
+            raise PipelineError('Unknown layer direction; refusing to ignore it')
+        if 'keyframes' not in layer:
+            raise PipelineError('Each layer requires keyframes')
         parent = layer.get('parent', '')
         if not isinstance(parent, str) or (parent and parent not in ids):
             raise PipelineError('Layer parent must name an existing layer')
@@ -215,17 +225,26 @@ def validate_scene(program):
             parent = by_id[parent].get('parent', '')
     if not isinstance(program['camera'], dict) or 'keyframes' not in program['camera']:
         raise PipelineError('Scene camera requires keyframes')
+    if set(program['camera']) - {'keyframes'}:
+        raise PipelineError('Unknown camera direction; refusing to ignore it')
     _validate_frames(program['camera']['keyframes'], seconds)
     if not isinstance(program['events'], list):
         raise PipelineError('Scene events must be an array')
     for event in program['events']:
+        if not isinstance(event, dict):
+            raise PipelineError('Scene events must contain objects')
+        if set(event) - {'time', 'description', 'layer_ids', 'sfx'}:
+            raise PipelineError('Unknown event direction; refusing to ignore it')
         if not _finite(event.get('time')) or not 0 <= event['time'] <= seconds:
             raise PipelineError('Event falls outside scene')
         if not isinstance(event.get('description'), str) or not event['description'].strip():
             raise PipelineError('Events require a description of a visible consequence')
-        if not set(event.get('layer_ids', [])) <= set(ids):
+        event_layers = event.get('layer_ids')
+        if not isinstance(event_layers, list) or any(not isinstance(identifier, str) for identifier in event_layers):
+            raise PipelineError('Event layer_ids must be an array of layer ID strings')
+        if not set(event_layers) <= set(ids):
             raise PipelineError('Event references an unknown layer')
-        if event.get('sfx','none') not in {'none','paper','stamp','soft_impact','sting'}:
+        if not isinstance(event.get('sfx','none'), str) or event.get('sfx','none') not in {'none','paper','stamp','soft_impact','sting'}:
             raise PipelineError('Unsupported directed sound effect')
     return program
 

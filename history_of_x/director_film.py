@@ -110,6 +110,9 @@ Return valid JSON exactly matching schema. scene_id must equal the supplied stri
   else:result=api.vision(instruction,payload,images,schema(),max_output=10000) if images else api.text(instruction,payload,schema(),max_output=10000)
   save_json(directory/(fingerprint+f'-draft-{attempt}.json'),result)
   try:
+   if not isinstance(result,dict):raise PipelineError('Director scene program must be an object')
+   if not isinstance(result.get('duration'),(int,float)) or isinstance(result.get('duration'),bool) or not math.isfinite(result['duration']):raise PipelineError('Director duration must be a finite number')
+   if not isinstance(result.get('svg'),str):raise PipelineError('Director SVG must be a string')
    if str(result.get('scene_id'))!=str(scene['scene_id']):raise PipelineError('Director returned a different scene ID')
    if abs(float(result.get('duration',-1))-seconds)>.05:raise PipelineError('Director returned an incorrect scene duration')
    result['duration']=seconds;result['scene_id']=str(scene['scene_id'])
@@ -120,7 +123,9 @@ Return valid JSON exactly matching schema. scene_id must equal the supplied stri
    events=sorted(result['events'],key=lambda e:e['time'])
    if seconds>12 and (len(events)<3 or any(b-a>7 for a,b in zip([0]+[e['time'] for e in events],[e['time'] for e in events]+[seconds]))):
     raise PipelineError('Scene lacks meaningful staged developments within the requested 3–6 second rhythm')
-   save_json(target,result);return result
+   save_json(target,result)
+   print(f'Validated scene {result["scene_id"]}: layers={len(result["layers"])} events={len(result["events"])} svg_chars={len(result["svg"])}; creative review pending',flush=True)
+   return result
   except (PipelineError,KeyError,ValueError) as exc:
    if attempt:raise PipelineError('Scene director failed bounded revision: '+str(exc)) from exc
    payload={**payload,'previous_draft':read_json(directory/(fingerprint+'-draft-0.json')),'validation_error':str(exc),
