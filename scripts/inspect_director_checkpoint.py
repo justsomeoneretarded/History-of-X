@@ -43,6 +43,8 @@ out=Path('output/inspection')
 out.mkdir(parents=True,exist_ok=True)
 paths=sorted(directory.rglob('*-draft-*.json'))
 if not paths: paths=sorted(directory.rglob('*.json'))
+rigged=sorted((directory/'rigged').glob('*.json'),key=lambda p:('-draft-' in p.name,p.name))
+paths=rigged+[p for p in paths if p not in rigged]
 from history_of_x.scene_film import acted_treaty_proof
 capability=out/'original-acting-capability.json'
 save_json(capability,acted_treaty_proof())
@@ -75,7 +77,11 @@ rows=[]
 seen=set()
 for path in paths:
     value=json.loads(path.read_text())
-    programs=value.get('scenes',[]) if 'svg' not in value else [value]
+    if isinstance(value.get('nodes'),list) and isinstance(value.get('actions'),list):
+        print('SAVED_RIG_GRAPH '+json.dumps({'file':str(path),'draft':value},ensure_ascii=False),flush=True)
+    if isinstance(value.get('spec'),dict):
+        print('SAVED_RIG_GRAPH '+json.dumps({'file':str(path),'accepted_scene':value.get('program',{}).get('scene_id'),'draft':value['spec']},ensure_ascii=False),flush=True)
+    programs=([value['program']] if isinstance(value.get('program'),dict) else value.get('scenes',[]) if 'svg' not in value else [value])
     for original in programs:
         if not isinstance(original,dict) or not isinstance(original.get('svg'),str): continue
         identifier=str(original.get('scene_id'))
