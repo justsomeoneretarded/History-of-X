@@ -35,6 +35,12 @@ class MediaAPI:
     else:part['text']+=addition
   identity=key('media-api-v1',model,endpoint,body);cache=self.directory/(identity+'.json')
   if cache.exists():return read_json(cache)
+  if kind=='text':
+   parts=[p for content in body.get('contents',[]) for p in content.get('parts',[])]
+   text_chars=sum(len(p.get('text','')) for p in parts)
+   image_parts=sum('inlineData' in p or 'fileData' in p for p in parts)
+   config=body.get('generationConfig',{})
+   print(f'Gemini request: model={model} schema={mode} text_chars={text_chars} media_parts={image_parts} max_output={config.get("maxOutputTokens",0)}',flush=True)
   for attempt in range(3):
    state=read_json(self.ledger) if self.ledger.exists() else {'calls':[],'last_start':0}
    calls=[c for c in state['calls'] if self.clock()-c['time']<86400]
