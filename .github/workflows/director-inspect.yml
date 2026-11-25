@@ -22,12 +22,14 @@ jobs:
           import json, os, re
           request=json.load(open('production/inspections/latest.json'))
           run=str(request['run_id'])
+          artifact=request.get('artifact','directed-checkpoint')
+          if artifact not in {'directed-checkpoint','director-audio'}: raise ValueError('Unsupported checkpoint artifact')
           if not re.fullmatch(r'[0-9]+',run): raise ValueError('Numeric run ID required')
-          with open(os.environ['GITHUB_ENV'],'a') as out: out.write('CHECKPOINT_RUN='+run+'\n')
+          with open(os.environ['GITHUB_ENV'],'a') as out: out.write('CHECKPOINT_RUN='+run+'\nCHECKPOINT_ARTIFACT='+artifact+'\n')
           PY
       - uses: actions/download-artifact@v4
         with:
-          name: directed-checkpoint
+          name: ${{ env.CHECKPOINT_ARTIFACT }}
           run-id: ${{ env.CHECKPOINT_RUN }}
           path: work/director
           github-token: ${{ github.token }}
