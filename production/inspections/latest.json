@@ -1,6 +1,6 @@
 {
-  "run_id": "45665325880",
-  "artifact": "qwen-cpu-direction-benchmark",
+  "run_id": "45672733198",
+  "artifact": "directed-checkpoint",
   "chapters_only": false,
-  "attempt": 9
+  "attempt": 10
 }
