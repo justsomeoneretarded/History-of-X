@@ -50,13 +50,13 @@ jobs:
       NARRATOR: ${{ inputs.voice }}
       FILM_MODE: ${{ inputs.mode }}
       GEMINI_WRITER_MODEL: ${{ vars.GEMINI_WRITER_MODEL || 'gemini-3.1-flash-lite' }}
-      GEMINI_DIRECTOR_MODEL: ${{ vars.GEMINI_DIRECTOR_MODEL || 'gemini-3.1-flash-lite' }}
+      GEMINI_DIRECTOR_MODEL: ${{ vars.GEMINI_DIRECTOR_MODEL || 'gemini-3.6-flash' }}
       GEMINI_TTS_MODEL: ${{ vars.GEMINI_TTS_MODEL || 'gemini-3.8-flash-tts' }}
       GEMINI_MEDIA_LEDGER: work/media-ledger/usage.json
       GEMINI_TEXT_REQUEST_BUDGET: '64'
       GEMINI_TTS_REQUEST_BUDGET: '16'
       GEMINI_INPUT_TOKEN_BUDGET: '40000'
-      GEMINI_SCENE_BATCH_SIZE: ${{ vars.GEMINI_SCENE_BATCH_SIZE || '1' }}
+      GEMINI_SCENE_BATCH_SIZE: ${{ vars.GEMINI_SCENE_BATCH_SIZE || '3' }}
       SCRIPT_TARGET_WPM: ${{ vars.SCRIPT_TARGET_WPM || '160' }}
     steps:
       - uses: actions/checkout@v4
@@ -136,8 +136,8 @@ jobs:
           GEMINI_SCHEMA_MODE: prompt
           GEMINI_DIRECTOR_MODE: rigged
           GEMINI_AUDIO_REVIEW_MODEL: gemini-3.5-flash-lite
-          GEMINI_PACKAGE_MODEL: gemini-3.5-flash-lite
-          GEMINI_REVIEW_MODEL: gemini-3.5-flash-lite
+          GEMINI_PACKAGE_MODEL: ${{ vars.GEMINI_PACKAGE_MODEL || 'gemini-3.6-flash' }}
+          GEMINI_REVIEW_MODEL: ${{ vars.GEMINI_REVIEW_MODEL || 'gemini-3.6-flash' }}
           GEMINI_REVIEW_CACHE: work/director/editorial-review-parts
         run: |
           if [[ "$FILM_MODE" == "proof" ]]; then

@@ -155,7 +155,9 @@ def run(title, brief, voice="Charon", minutes=8.75, work=None, output=None,
     work.mkdir(parents=True, exist_ok=True)
     output.mkdir(parents=True, exist_ok=True)
     defaults = {"GEMINI_SCHEMA_MODE": "prompt", "GEMINI_DIRECTOR_MODE": "rigged",
-                "GEMINI_SCENE_BATCH_SIZE": "1",
+                "GEMINI_SCENE_BATCH_SIZE": "3",
+                "GEMINI_PACKAGE_MODEL": "gemini-3.6-flash",
+                "GEMINI_REVIEW_MODEL": "gemini-3.6-flash",
                 "GEMINI_REVIEW_CACHE": str(work / "editorial-review-parts")}
     previous = {name: os.environ.get(name) for name in ("GEMINI_MODEL", *defaults)}
     for name, value in defaults.items():
@@ -169,7 +171,7 @@ def run(title, brief, voice="Charon", minutes=8.75, work=None, output=None,
             if status == 75:
                 raise QuotaDeferred("Writing or speech quota deferred; resume this checkpoint after quota resets")
             raise PipelineError("Writing or narration stopped; inspect the preserved work/failure.json")
-        os.environ["GEMINI_MODEL"] = os.getenv("GEMINI_DIRECTOR_MODEL", MODEL_DEFAULT)
+        os.environ["GEMINI_MODEL"] = os.getenv("GEMINI_DIRECTOR_MODEL", "gemini-3.6-flash")
         api = MediaAPI(work / "gemini")
         preflight = render_phase(api, work, output, True, profile)
         save_json(work / "runner-preflight.json", {"accepted": True, "candidate": str(preflight)})

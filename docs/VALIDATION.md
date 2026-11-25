@@ -10,6 +10,18 @@ The new animation uses original illustrated character rigs, exact two-link hand 
 
 The current full Ethiopia film is **not yet accepted**. Saved scene directions and verified narration are being resumed after model overload/schema failures. Final delivery requires full decoded-media checks and consecutive audiovisual reviews of the entire actual film; an accepted sample alone cannot become the upload package. Current artifact retention is90days. Nothing has been published to YouTube.
 
+## Rendered preflight and subsequent corrections
+
+The [actual 58.94-second preflight](https://github.com/justsomeoneretarded/History-of-X/actions/runs/45677272547) passed its technical checks: 1920×1080, 30 fps, H.264/AAC, −16.04 LUFS and −1.84 dBTP, with no black intervals. This was a three-scene sample, not the finished Ethiopia film.
+
+Gemini 3.6 Flash reviewed the complete moving sample with its audio. Scores were **4 visual specificity, 5 acting, 5 composition, 6 narration delivery and 5 editorial pacing**. The verdict was **revise**. It identified stiff sliding motion, cramped document text and repetitive table cutaways. The sample was not promoted to an upload package.
+
+The next rebuild adds exact-passage staging notes, three independently moving Italian columns, an acted cargo/payment exchange, a two-document MAY/MUST dispute, shorter documentary insert fades, missing aircraft/repression props, a concrete thumbnail hook and a tighter authentic portrait crop. A gesture can yield continuously to a later contact, while conflicting physical contacts remain errors. Two director-refined passages have explicit provenance and ownership regression checks.
+
+Gemini 3.6 completed a three-scene direction request with **5,535 input and 4,225 output tokens**. Its valid bare JSON array exposed a wrapper assumption in the batch transport; array recovery now validates every scene ID and retains accepted siblings. A subsequent Gemma 4 31B fallback returned syntactically valid JSON but invalid coordinates and was rejected.
+
+**297 tests passed** in [the precision-choreography CI run](https://github.com/justsomeoneretarded/History-of-X/actions/runs/45685511125), including exact ownership of the exchanged coin/crate and the received/rejected treaty. The fresh rendered comparison and complete film remain subject to actual audiovisual review.
+
 ## November 25 live recovery attempts
 
 The complete script and Gemini narration above were reused throughout these attempts. Provider availability and valid rendered animation remain separate from unit-test results.
@@ -18,9 +30,9 @@ The complete script and Gemini narration above were reused throughout these atte
 | --- | --- |
 | Gemini 3.8 Flash text | Repeated overload responses, then HTTP 429 with a project allowance of 20 free daily requests. The response at 17:39 UTC indicated approximately 14 hours 21 minutes until reset, around 11:00 a.m. Africa/Nairobi on November 26. This is evidence for this project and date. |
 | Gemini 3.5 Flash Lite text | Tiny earlier probes succeeded; current scene-direction attempts repeatedly returned HTTP 503. |
-| Hosted Gemma 4 26B A4B | One incomplete response was rejected; later attempts returned HTTP 503. MINIMAL thinking and final-response diagnostics were added. No accepted new direction or film resulted from this route. |
+| Hosted Gemma 4 26B A4B | Responses included incomplete output, HTTP 503 and usable scene plans. A treaty plan compiled after explicit-pickup correction, but the rendered preflight still failed creative review. |
 | Qwen3 4B Instruct 2507, Q4_K_M | Actual CPU experiment on a four-vCPU Actions runner. Startup took 59.53 seconds. First direction used 1,006 prompt tokens and generated 2,039 output tokens in 545.94 seconds, at 4.33 decoded tokens/second. It omitted required prop identities and also selected an inappropriate character for Taytu. Validation rejected it. A bounded repair hit a 660-second read timeout. No movie was rendered. |
-| Gemini 4 Hydrogen | Added from current official free-tier documentation with its required native-schema/LOW-thinking configuration. A live resumed Ethiopia run is testing it; access and successful production are not yet established. |
+| Gemini 4 Hydrogen | Configured from current official free-tier documentation with native schemas and LOW thinking. Two sets of three actual scene requests returned HTTP 503. No accepted Hydrogen output is claimed. |
 
 The [Qwen experiment](https://github.com/justsomeoneretarded/History-of-X/actions/runs/45665325880) preserved its actual draft, validation error, model metadata and failure timing. A [separate inspection](https://github.com/justsomeoneretarded/History-of-X/actions/runs/45675508616) read that saved evidence without another inference. These are direction-generation measurements, not comparable finished-film quality scores.
 
