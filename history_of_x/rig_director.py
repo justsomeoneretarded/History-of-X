@@ -102,13 +102,16 @@ def _program(spec,seconds,approved,ident,reserved,archives):
  program["director_mode"]="original-rigged-actors"
  return program
 
-def _request(api,payload,primary):
+def compact_payload(payload):
  # Phrase timings retain the performance cues with less per-word JSON overhead.
  # The full word alignment remains untouched in the speech checkpoint.
  payload=copy.deepcopy(payload)
  words=payload.pop("word_timing",[])
  if words:
-  payload["phrase_timing"]=[[" ".join(str(w[0]) for w in words[i:i+5]),words[i][1],words[min(i+4,len(words)-1)][2]] for i in range(0,len(words),5)]
+  payload["phrase_timing"]=[[" ".join(str(w[0]) for w in words[i:i+5]),words[i][1],words[min(i+4,len(words)-1)][2]] for i in range(0,len(words),5)] return payload
+
+def _request(api,payload,primary):
+ payload=compact_payload(payload)
  try:
   return api.text(CONTRACT,payload,schema(),max_output=5000 if primary.startswith('gemma-') else 3500,preserve_bounds=True,model=primary)
  except PipelineError as exc:
@@ -118,7 +121,7 @@ def _request(api,payload,primary):
   print(f"Scene direction: {primary} unavailable; trying verified free model {backup}.",flush=True)
   return api.text(CONTRACT,payload,schema(),max_output=5000 if backup.startswith('gemma-') else 3500,preserve_bounds=True,model=backup)
 
-def plan_scene(api,scene,spoken,assets,directory,style=None):
+def plan_scene(api,scene,spoken,assets,directory,style=None,request_only=False,preplanned=None,repair=True):
  seconds=float(spoken["duration"]);ident=str(scene["scene_id"])
  catalog={a["id"]:a for a in assets["assets"]}
  approved=[catalog[i] for i in assets["scenes"].get(ident,[]) if i in catalog and catalog[i].get("medium") not in ("video","archival_video")]
@@ -148,15 +151,20 @@ def plan_scene(api,scene,spoken,assets,directory,style=None):
    # Recompile the saved model directions after renderer/art fixes. No API call.
    program=_program(existing["spec"],seconds,approved,ident,reserved,archives)
    save_json(target,{**existing,"program":program})
-   return program
+   return {"accepted":program} if request_only else program
   except (PipelineError,ValueError,KeyError,TypeError):
    pass
  payload={**context}
  if feedback:payload["required_revision"]=feedback
  if existing:payload["previous_plan"]=existing["spec"]
+ if request_only:
+  draft_path=directory/(identity+"-"+feedback_id+"-draft-0.json")
+  prepared={"instruction":CONTRACT,"payload":compact_payload(payload),"schema":schema()}
+  if draft_path.exists():prepared["draft"]=read_json(draft_path)
+  return prepared
  for attempt in range(2):
   draft_path=directory/(identity+"-"+feedback_id+f"-draft-{attempt}.json")
-  spec=read_json(draft_path) if draft_path.exists() else _request(api,payload,primary)
+  spec=copy.deepcopy(preplanned) if attempt==0 and preplanned is not None else read_json(draft_path) if draft_path.exists() else _request(api,payload,primary)
   save_json(draft_path,spec)
   try:
    program=_program(spec,seconds,approved,ident,reserved,archives)
@@ -164,7 +172,7 @@ def plan_scene(api,scene,spoken,assets,directory,style=None):
    print(f'Validated articulated scene {ident}: {len(program["layers"])} layers, {len(program["events"])} executed actions; creative review pending',flush=True)
    return program
   except (PipelineError,ValueError,KeyError,TypeError) as exc:
-   if attempt:raise PipelineError("Rig director failed bounded repair: "+str(exc)) from exc
+   if attempt or not repair:raise PipelineError("Rig director failed bounded repair: "+str(exc)) from exc
    payload={**payload,"previous_plan":spec,"validation_error":str(exc),
             "revision_request":"Repair the executable plan while preserving readable staging and meaningful cause/consequence. Return a complete graph."}
  raise PipelineError("No valid rigged scene")

@@ -220,3 +220,13 @@ def test_short_final_tail_is_merged_without_losing_coverage(film, monkeypatch):
     assert [(part["start_seconds"], part["end_seconds"]) for part in report["scope"]["ranges"]] == [
         (0, 30), (30, 66),
     ]
+
+
+def test_larger_model_review_ranges_cover_every_second_without_gaps():
+    from history_of_x.director_review import _ranges
+    spans=_ranges(508.64,90)
+    assert len(spans)==6
+    assert spans[0][0]==0 and spans[-1][1]==508.64
+    assert all(a[1]==b[0] for a,b in zip(spans,spans[1:]))
+    assert sum(b-a for a,b in spans)==pytest.approx(508.64)
+    assert _ranges(184.,90)==[(0.,90.),(90.,184.)]

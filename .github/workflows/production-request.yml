@@ -117,8 +117,8 @@ jobs:
           GEMINI_DIRECTOR_MODEL: ${{ env.DIRECTOR_MODEL }}
           GEMINI_WRITER_MODEL: ${{ env.WRITER_MODEL }}
           GEMINI_SCHEMA_MODE: prompt
-          GEMINI_PACKAGE_MODEL: gemini-3.5-flash-lite
-          GEMINI_REVIEW_MODEL: gemini-3.5-flash-lite
+          GEMINI_PACKAGE_MODEL: ${{ env.PACKAGE_MODEL }}
+          GEMINI_REVIEW_MODEL: ${{ env.REVIEW_MODEL }}
           GEMINI_REVIEW_CACHE: work/director/editorial-review-parts
           GEMINI_DIRECTOR_MODE: rigged
         run: |

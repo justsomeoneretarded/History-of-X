@@ -231,7 +231,7 @@ def produce(api,work,output,profile='cinematic',proof=False,resume=None,revise=F
  output.mkdir(parents=True,exist_ok=True);directory=work/'directed-render';directory.mkdir(parents=True,exist_ok=True)
  plan_dir=work/'scene-programs';plan_dir.mkdir(parents=True,exist_ok=True)
  from .director_batch import plan_all
- if os.getenv('GEMINI_DIRECTOR_MODE','svg')!='rigged':plan_all(api,script,speech,assets,plan_dir,style)
+ if os.getenv('GEMINI_DIRECTOR_MODE','svg')!='rigged' or os.getenv('GEMINI_MODEL')=='gemini-4-hydrogen':plan_all(api,script,speech,assets,plan_dir,style)
  videos=[];shots=[];position=0;fps=PROFILES[profile][2];frame_cursor=0;used_assets=set()
  for scene,spoken in zip(script['scenes'],speech['scenes']):
   print(f'Directing original scene {scene["scene_id"]}: {scene["narration"][:90]}',flush=True)

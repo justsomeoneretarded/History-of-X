@@ -183,10 +183,10 @@ def _transcode(video, clip, start, seconds):
         raise PipelineError("Editorial review transcode did not preserve the requested clip duration")
 
 
-def _ranges(seconds):
+def _ranges(seconds, chunk_seconds=CHUNK_SECONDS):
     spans = [
-        (float(index * CHUNK_SECONDS), min(seconds, float((index + 1) * CHUNK_SECONDS)))
-        for index in range(math.ceil(seconds / CHUNK_SECONDS))
+        (float(index * chunk_seconds), min(seconds, float((index + 1) * chunk_seconds)))
+        for index in range(math.ceil(seconds / chunk_seconds))
     ]
     # A tiny final fragment lacks context; absorb it without omitting any film.
     if len(spans) > 1 and spans[-1][1] - spans[-1][0] < 8:
@@ -205,6 +205,7 @@ def review(api, video, style, output):
         raise PipelineError("Editorial review requires a nonempty video")
     video_hash = _file_hash(video)
     model = os.getenv("GEMINI_REVIEW_MODEL", "gemini-3.5-flash-lite")
+    chunk_seconds = 90 if model == "gemini-4-hydrogen" else CHUNK_SECONDS
     rules = _style_rules(style or {})
     timeline_path = output / "timeline.json"
     timeline = read_json(timeline_path) if timeline_path.exists() else []
@@ -214,7 +215,7 @@ def review(api, video, style, output):
     media = directory / "media"
     media.mkdir(parents=True, exist_ok=True)
     reviewed = []
-    for index, (start, end) in enumerate(_ranges(seconds)):
+    for index, (start, end) in enumerate(_ranges(seconds, chunk_seconds)):
         context = {
             "absolute_start_seconds": start, "absolute_end_seconds": end,
             "clip_duration_seconds": end - start,
@@ -224,7 +225,7 @@ def review(api, video, style, output):
             "version": REVIEW_VERSION, "video_sha256": video_hash, "model": model,
             "context": context, "transcode": TRANSCODE,
             "prompt_sha256": _json_hash(PROMPT), "schema_sha256": _json_hash(SCHEMA),
-            "schema_mode": os.getenv("GEMINI_SCHEMA_MODE", "prompt"),
+            "schema_mode": "native" if model=="gemini-4-hydrogen" else os.getenv("GEMINI_SCHEMA_MODE", "prompt"),
         }
         fingerprint = key(identity)
         checkpoint_path = directory / f"{index:04d}-{fingerprint}.json"
@@ -282,7 +283,7 @@ def review(api, video, style, output):
     report["scope"] = {
         "coverage": "entire_film_chunks", "duration_seconds": seconds,
         "reviewed_seconds": sum(part["end_seconds"] - part["start_seconds"] for part in reviewed),
-        "chunk_seconds": CHUNK_SECONDS, "chunk_count": len(reviewed),
+        "chunk_seconds": chunk_seconds, "chunk_count": len(reviewed),
         "models": sorted({part["model"] for part in reviewed}),
         "audio_included": True, "video_sampling_fps": 1, "video_sha256": video_hash,
         "ranges": [

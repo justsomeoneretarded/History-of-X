@@ -16,6 +16,8 @@ def validate(config):
     if config.get('profile','cinematic') not in {'draft','cinematic'}:raise ValueError('Unsupported render profile')
     if config.get('director_model','gemini-3.5-flash-lite') not in TEXT_MODELS:raise ValueError('Unsupported free director model')
     if config.get('writer_model','gemini-3.5-flash-lite') not in TEXT_MODELS:raise ValueError('Unsupported free writer model')
+    if config.get('review_model','gemini-3.5-flash-lite') not in TEXT_MODELS or str(config.get('review_model','')).startswith('gemma-'):raise ValueError('Unsupported free audiovisual review model')
+    if config.get('package_model','gemini-3.5-flash-lite') not in TEXT_MODELS:raise ValueError('Unsupported free packaging model')
     if str(config.get('scene_batch_size',1)) not in {'1','2','3'}:raise ValueError('Scene batch size must be1–3')
     if config.get('resume_run') and not str(config['resume_run']).isdigit():raise ValueError('Checkpoint run ID must be numeric')
     if config.get('phase','proof')=='film' and not str(config.get('resume_run','')).isdigit():raise ValueError('Full production requires a reviewed proof checkpoint run')
@@ -34,7 +36,7 @@ def configure(request_file=None):
     fields={'VIDEO_TITLE':config['title'],'VIDEO_BRIEF':config['brief'],'VIDEO_MINUTES':str(config.get('minutes',8.75)),
       'NARRATOR':config.get('voice','auto'),'REQUEST_PHASE':config.get('phase','proof'),'FILM_PROFILE':config.get('profile','cinematic'),
       'RESUME_RUN':str(config.get('resume_run','')),'DIRECTOR_MODEL':config.get('director_model','gemini-3.5-flash-lite'),
-      'WRITER_MODEL':config.get('writer_model','gemini-3.5-flash-lite'),'GEMINI_SCENE_BATCH_SIZE':str(config.get('scene_batch_size',1)),
+      'WRITER_MODEL':config.get('writer_model','gemini-3.5-flash-lite'),'REVIEW_MODEL':config.get('review_model','gemini-3.5-flash-lite'),'PACKAGE_MODEL':config.get('package_model','gemini-3.5-flash-lite'),'GEMINI_SCENE_BATCH_SIZE':str(config.get('scene_batch_size',1)),
       'SCRIPT_TARGET_WPM':str(config.get('script_target_wpm',160)),'REVISE_FILM':str(config.get('revise',False)).lower()}
     with open(os.environ['GITHUB_ENV'],'a') as stream:
         for name,value in fields.items():
