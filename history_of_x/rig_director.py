@@ -141,6 +141,11 @@ def plan_scene(api,scene,spoken,assets,directory,style=None,request_only=False,p
   for record in read_json(notes_path).get("passages",[]):
    if record.get("narration")==scene["narration"]:
     context["production_director_notes"]=record["directing_notes"];break
+ correction=None
+ correction_path=ROOT/"assets/style/production-corrections.json"
+ if correction_path.exists():
+  correction=next((r for r in read_json(correction_path).get("records",[]) if r.get("narration")==scene["narration"]),None)
+ if correction:context["production_direction_revision"]=key(correction["spec"])
  primary=os.getenv("GEMINI_MODEL","gemini-3.1-flash-lite")
  identity=key("rigged-scene-v1",VERSION,CONTRACT,schema(),primary,context)
  directory=Path(directory)/"rigged";target=directory/(identity+".json")
@@ -154,6 +159,13 @@ def plan_scene(api,scene,spoken,assets,directory,style=None,request_only=False,p
     existing=read_json(alternate)
     break
  feedback_id=key(feedback)
+ if correction and feedback_id in correction.get("feedback_ids",[]) and (not existing or existing.get("feedback_id") in correction.get("feedback_ids",[])):
+  spec=copy.deepcopy(correction["spec"])
+  program=_program(spec,seconds,approved,ident,reserved,archives)
+  program["direction_source"]="Original production-director refinement of Gemini blocking"
+  save_json(target,{"spec":spec,"program":program,"feedback_id":feedback_id,"direction_source":program["direction_source"]})
+  print(f"Validated director-refined scene {ident}: {len(program['layers'])} layers; creative review pending",flush=True)
+  return {"accepted":program} if request_only else program
  if existing and (not feedback or existing.get("feedback_id")==feedback_id):
   try:
    # Recompile the saved model directions after renderer/art fixes. No API call.
