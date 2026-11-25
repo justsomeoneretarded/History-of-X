@@ -1,0 +1,95 @@
+name: Inspect Gemini animation with saved narration
+on:
+  push:
+    branches: [main]
+    paths: ['production/art-tests/latest.json']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: history-gemini
+  cancel-in-progress: false
+jobs:
+  inspect-animation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      PYTHONUNBUFFERED: '1'
+      GEMINI_MODEL: gemini-3.5-flash-lite
+      GEMINI_TTS_MODEL: gemini-3.8-flash-tts
+      GEMINI_SCHEMA_MODE: prompt
+      GEMINI_DIRECTOR_POSITIVE_EXAMPLE: '1'
+      GEMINI_SCENE_BATCH_SIZE: '1'
+      GEMINI_MEDIA_LEDGER: work/media-ledger/usage.json
+      GEMINI_TEXT_REQUEST_BUDGET: '64'
+      GEMINI_INPUT_TOKEN_BUDGET: '40000'
+      GEMINI_PACKAGE_MODEL: gemini-3.5-flash-lite
+      GEMINI_REVIEW_MODEL: gemini-3.5-flash-lite
+      GEMINI_REVIEW_CACHE: work/director/editorial-review-parts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: python scripts/bootstrap_media.py
+      - run: python -m pip install -e .
+      - name: Select the saved narration checkpoint
+        run: |
+          python - <<'PY'
+          import json, os, re
+          data=json.load(open('production/art-tests/latest.json'))
+          run=str(data['checkpoint_run'])
+          if not re.fullmatch(r'[0-9]+',run): raise ValueError('Numeric checkpoint required')
+          with open(os.environ['GITHUB_ENV'],'a') as out: out.write('CHECKPOINT_RUN='+run+'\n')
+          PY
+      - uses: actions/cache/restore@v4
+        with:
+          path: work/media-ledger
+          key: media-ledger-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: media-ledger-v1-
+      - uses: actions/download-artifact@v4
+        with:
+          name: directed-checkpoint
+          run-id: ${{ env.CHECKPOINT_RUN }}
+          path: work/director
+          github-token: ${{ github.token }}
+      - name: Generate and render complete scene samples
+        env:
+          GEMINI_API: ${{ secrets.GEMINI_API }}
+        run: python -m history_of_x.director_film --proof --profile cinematic
+      - name: Inspect generated artwork even when validation fails
+        if: always()
+        run: python scripts/inspect_director_checkpoint.py
+      - name: Inspect the actual edited sample when available
+        if: always()
+        run: python scripts/production_request.py evidence
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: work/media-ledger
+          key: media-ledger-v1-${{ github.run_id }}-${{ github.run_attempt }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-test-checkpoint
+          path: |
+            work/director/*.json
+            work/director/*.txt
+            work/director/director-chapters
+            work/director/gemini
+            work/director/speech
+            work/director/media
+            work/director/scene-programs
+            work/director/directed-render
+            work/director/editorial-review-parts
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-test-candidate
+          path: |
+            output/director
+            output/inspection
+          retention-days: 90
