@@ -158,6 +158,17 @@ def plan_all(api, script, speech, assets, directory, style=None,
     if selected_scene_ids is None and set(script_index) != set(speech_index):
         raise PipelineError("Script and speech scene IDs do not match")
     accepted = {}
+    if os.getenv("GEMINI_DIRECTOR_MODE", "svg") == "rigged":
+        from .rig_director import plan_scene as plan_rigged
+        for identifier, scene in script_index.items():
+            if identifier not in selected:
+                continue
+            spoken = speech_index[identifier]
+            program = plan_rigged(api, scene, spoken, assets, directory, style)
+            if _scene_id(program) != identifier or not _duration_matches(program, spoken):
+                raise PipelineError("Articulated scene does not match its requested ID/duration")
+            accepted[identifier] = program
+        return accepted
     pending = []
 
     def accept(item, raw):

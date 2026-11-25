@@ -29,7 +29,8 @@ show/hide(node,duration): visibility change. pose(actor,expression,head,lean,fro
 head/lean are degrees; hand targets are LOCAL offsets from feet, before facing/scale.
 Rest front hand[90,-230], reading[240,-350], stop[110,-670], pointing[300,-400].
 reach(actor,hand,target): exactly contact the target grip. take(actor,hand,target): reach then hold
-a PROP; it remains physically attached as the actor moves. Another actor may take the same prop,
+a PROP; it remains physically attached as the actor moves. After pickup move it through its holder,
+not with a direct prop move; after placing it, pick it up again to move it. Another actor may take the same prop,
 after the previous take finishes. place(actor,hand,object,target): hold it first, reach target surface,
 then release it there. No overlapping actions on one hand. No invisible ownership changes or
 floating props. Put unreachable objects closer or explicitly move the actor before contact.
@@ -87,6 +88,20 @@ def _feedback(scene_id,style):
   if entries:selected[field]=entries
  return selected
 
+def _program(spec,seconds,approved,ident,reserved,archives):
+ program=compile_scene(spec,seconds,approved,ident)
+ if len(program["asset_ids"])>2:raise PipelineError("Use at most two approved historical images in a scene")
+ if reserved:
+  if any(a["time"]<reserved-.05 for a in spec["actions"]):raise PipelineError("Begin illustrated actions after the reserved real-footage opening")
+  for at in (0.,4.5)[:len(archives)]:
+   program["events"].append({"time":at,"description":"Corresponding genuine historical footage plays under narration.","layer_ids":[],"sfx":"none"})
+ events=sorted(program["events"],key=lambda e:e["time"])
+ if seconds>12 and (len(events)<3 or any(b-a>7 for a,b in zip([0]+[e["time"] for e in events],[e["time"] for e in events]+[seconds]))):
+  raise PipelineError("Add actual narrative developments at intervals of3–6seconds, including near the beginning and ending")
+ program["events"]=events
+ program["director_mode"]="original-rigged-actors"
+ return program
+
 def plan_scene(api,scene,spoken,assets,directory,style=None):
  seconds=float(spoken["duration"]);ident=str(scene["scene_id"])
  catalog={a["id"]:a for a in assets["assets"]}
@@ -103,7 +118,14 @@ def plan_scene(api,scene,spoken,assets,directory,style=None):
  directory=Path(directory)/"rigged";target=directory/(identity+".json")
  existing=read_json(target) if target.exists() else None
  feedback_id=key(feedback)
- if existing and (not feedback or existing.get("feedback_id")==feedback_id):return existing["program"]
+ if existing and (not feedback or existing.get("feedback_id")==feedback_id):
+  try:
+   # Recompile the saved model directions after renderer/art fixes. No API call.
+   program=_program(existing["spec"],seconds,approved,ident,reserved,archives)
+   save_json(target,{**existing,"program":program})
+   return program
+  except (PipelineError,ValueError,KeyError,TypeError):
+   pass
  payload={**context}
  if feedback:payload["required_revision"]=feedback
  if existing:payload["previous_plan"]=existing["spec"]
@@ -112,17 +134,7 @@ def plan_scene(api,scene,spoken,assets,directory,style=None):
   spec=read_json(draft_path) if draft_path.exists() else api.text(CONTRACT,payload,schema(),max_output=6500,preserve_bounds=True)
   save_json(draft_path,spec)
   try:
-   program=compile_scene(spec,seconds,approved,ident)
-   if len(program["asset_ids"])>2:raise PipelineError("Use at most two approved historical images in a scene")
-   if reserved:
-    if any(a["time"]<reserved-.05 for a in spec["actions"]):raise PipelineError("Begin illustrated actions after the reserved real-footage opening")
-    for at in (0.,4.5)[:len(archives)]:
-     program["events"].append({"time":at,"description":"Corresponding genuine historical footage plays under narration.","layer_ids":[],"sfx":"none"})
-   events=sorted(program["events"],key=lambda e:e["time"])
-   if seconds>12 and (len(events)<3 or any(b-a>7 for a,b in zip([0]+[e["time"] for e in events],[e["time"] for e in events]+[seconds]))):
-    raise PipelineError("Add actual narrative developments at intervals of3–6seconds, including near the beginning and ending")
-   program["events"]=events
-   program["director_mode"]="original-rigged-actors"
+   program=_program(spec,seconds,approved,ident,reserved,archives)
    save_json(target,{"spec":spec,"program":program,"feedback_id":feedback_id})
    print(f'Validated articulated scene {ident}: {len(program["layers"])} layers, {len(events)} executed actions; creative review pending',flush=True)
    return program

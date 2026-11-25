@@ -77,7 +77,10 @@ def render_phase(api, work, output, proof, profile):
         except PipelineError as exc:
             save_json(candidate / "failure.json", {"phase": phase, "error": str(exc)})
             if attempt == 1 and _creative_failure(candidate, proof):
-                save_json(work / "editorial-feedback.json", read_json(candidate / "editorial-review.json"))
+                feedback = read_json(candidate / "editorial-review.json")
+                if (candidate / "timeline.json").exists():
+                    feedback = {**feedback, "candidate_timeline": read_json(candidate / "timeline.json")}
+                save_json(work / "editorial-feedback.json", feedback)
                 print(f"Creative revision: {phase}; applying this candidate's observed feedback once.", flush=True)
                 continue
             raise
@@ -151,7 +154,7 @@ def run(title, brief, voice="Charon", minutes=8.75, work=None, output=None,
         raise PipelineError("This output already has a finished upload package; preserve it and choose another directory")
     work.mkdir(parents=True, exist_ok=True)
     output.mkdir(parents=True, exist_ok=True)
-    defaults = {"GEMINI_SCHEMA_MODE": "prompt", "GEMINI_DIRECTOR_POSITIVE_EXAMPLE": "1",
+    defaults = {"GEMINI_SCHEMA_MODE": "prompt", "GEMINI_DIRECTOR_MODE": "rigged",
                 "GEMINI_SCENE_BATCH_SIZE": "1",
                 "GEMINI_REVIEW_CACHE": str(work / "editorial-review-parts")}
     previous = {name: os.environ.get(name) for name in ("GEMINI_MODEL", *defaults)}

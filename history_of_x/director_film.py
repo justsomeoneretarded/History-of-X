@@ -24,6 +24,10 @@ ILLUSTRATION_BIBLE={
  'composition':'Deliberate wide/medium/detail changes, foreground depth, restrained shadows. Avoid the same palace, table or centered symmetrical composition in successive scenes.'}
 
 def plan_scene(api,scene,spoken,assets,directory,style=None,request_only=False,preplanned=None):
+ if os.getenv('GEMINI_DIRECTOR_MODE','svg')=='rigged':
+  from .rig_director import plan_scene as plan_rigged
+  if request_only:raise PipelineError('Articulated direction is planned directly, not through legacy SVG batching')
+  return plan_rigged(api,scene,spoken,assets,directory,style)
  from .scene_film import schema,validate_scene,normalize_artwork_groups
  seconds=round(spoken['duration'],6)
  catalog={a['id']:a for a in assets['assets']}
@@ -293,7 +297,7 @@ def produce(api,work,output,profile='cinematic',proof=False,resume=None,revise=F
   ffmpeg('-i',final,'-vf','scale=640:360','-c:v','libx264','-b:v','180k','-maxrate','220k','-bufsize','440k','-c:a','aac','-b:a','64k',sample,timeout=max(900,position*4))
  else:ffmpeg('-i',final,'-vf','scale=960:540','-c:v','libx264','-crf','27','-c:a','aac','-b:a','80k',sample)
  review=editorial_review(api,sample,style,output)
- save_json(work/'editorial-feedback.json',review)
+ save_json(work/'editorial-feedback.json',{**review,'candidate_timeline':shots})
  acceptable=review['verdict']=='ready' and min(review['scores'].values())>=7
  request=read_json(work/'request.json') if (work/'request.json').exists() else {}
  save_json(output/'production.json',{'technical_passed':technical['passed'],'editorial_accepted':acceptable,'proof':proof,'reference_craft_used':style,'runtime_target_seconds':request.get('minutes',8.75)*60,'runtime_seconds':position,'editorial_review_scope':review.get('scope','entire candidate in consecutive audiovisual chunks')})
