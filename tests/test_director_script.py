@@ -2,8 +2,12 @@ import json
 
 import pytest
 
-from history_of_x.core import PipelineError, key, read_json, save_json
-from history_of_x.director_script import STYLE_PROFILE, audio_review, choose_audition, recover_draft_chapter, script_metrics, word_target, write
+from history_of_x.core import ROOT, PipelineError, key, read_json, save_json
+from history_of_x.director_script import (
+    STYLE_PROFILE, audio_review, choose_audition, compact_chapter_evidence,
+    compact_source_extract, recover_draft_chapter, script_metrics,
+    strip_source_citations, word_target, write,
+)
 
 
 def test_natural_complete_voice_beats_fast_incomplete_voice():
@@ -39,7 +43,7 @@ def test_invalid_narrator_rates_are_rejected(monkeypatch, rate):
 
 def saved_hook():
     scene = {
-        "chapter": "Hook", "narration": " ".join(["history"] * 53),
+        "chapter": "Hook", "narration": " ".join(["The king sends his soldiers down the narrow mountain road."] * 5 + ["They keep moving."]),
         "source_ids": ["S1"], "date_label": "1896", "location": "Ethiopia",
         "asset_search_term": "Adwa 1896 commanders",
     }
@@ -141,3 +145,187 @@ def test_research_network_outage_becomes_structured_stage_failure(tmp_path, monk
     failure = read_json(tmp_path / "failure.json")
     assert failure["stage"] == "plan"
     assert "Research source request failed (ConnectionError)" in failure["error"]
+
+
+def director_outline(fingerprint):
+    return {
+        "fingerprint": fingerprint, "organizing_question": "Who holds power?",
+        "ending_payoff": "A victory abroad does not settle power at home.",
+        "chapters": [
+            {"chapter": c, "era": "Aksum through Gondar" if c == "Roots" else c,
+             "events": ["Ezana adopts Christianity", "Gondar and the regional rulers"] if c == "Roots" else [c]}
+            for c in ["Hook", "Roots", "Catalyst", "Turning Point", "Aftermath"]
+        ],
+    }
+
+
+def director_fingerprint(title, evidence):
+    return key("director-script-v3-measured-voice-rate", title, "Brief", 1400, 160.0, evidence, STYLE_PROFILE)
+
+
+def test_actual_chapter_request_has_focused_sources_and_small_continuity(tmp_path, monkeypatch):
+    monkeypatch.setenv("SCRIPT_TARGET_WPM", "160")
+    evidence = read_json(ROOT / "episodes" / "ethiopia.json")["evidence"]
+    fingerprint = director_fingerprint("Ethiopia", evidence)
+    outline = director_outline(fingerprint)
+    save_json(tmp_path / "outline.json", outline)
+    hook = saved_hook()
+    for scene in hook["scenes"]:
+        scene["source_ids"] = ["S3"]
+    save_json(tmp_path / "draft-script.json", hook)
+
+    class CaptureAPI:
+        payload = None
+
+        def text(self, instruction, payload, schema, **kwargs):
+            self.payload = payload
+            raise PipelineError("captured Roots")
+
+    api = CaptureAPI()
+    with pytest.raises(PipelineError, match="captured Roots"):
+        write(api, "Ethiopia", "Brief", 8.75, evidence, tmp_path)
+    payload = api.payload
+    assert payload["this_chapter"] == outline["chapters"][1]
+    assert set(payload["whole_film_outline"]) == {"organizing_question", "ending_payoff"}
+    assert payload["previous_chapter_ending"] == hook["scenes"][-1]["narration"]
+    assert [s["id"] for s in payload["evidence"]] == ["S1", "S2"]
+    assert sum(len(s["extract"]) for s in payload["evidence"]) <= 5500
+    assert "Gondar" in payload["evidence"][1]["extract"]
+    assert "Ezana" in payload["evidence"][0]["extract"]
+
+
+@pytest.mark.parametrize("chapter,ids", [
+    ("Hook", ["S3", "S4"]), ("Roots", ["S1", "S2"]), ("Catalyst", ["S3", "S4"]),
+    ("Turning Point", ["S4", "S5", "S6"]), ("Aftermath", ["S7", "S8", "S9", "S10", "S11"]),
+])
+def test_actual_evidence_routing_and_endpoint(chapter, ids):
+    evidence = read_json(ROOT / "episodes" / "ethiopia.json")["evidence"]
+    compact = compact_chapter_evidence(evidence, {"chapter": chapter}, is_ethiopia=True)
+    assert [s["id"] for s in compact] == ids
+    assert sum(len(s["extract"]) for s in compact) <= 5500
+    assert not any("2026" in s["extract"] or "2024" in s["extract"] for s in compact)
+    if chapter == "Aftermath":
+        assert compact[-1]["extract"] == evidence["sources"][-1]["extract"]
+
+
+def test_new_outline_uses_all_sources_with_at_most_400_characters_each(tmp_path):
+    evidence = read_json(ROOT / "episodes" / "ethiopia.json")["evidence"]
+
+    class CaptureAPI:
+        payload = None
+
+        def text(self, instruction, payload, schema, **kwargs):
+            self.payload = payload
+            raise PipelineError("captured outline")
+
+    api = CaptureAPI()
+    with pytest.raises(PipelineError, match="captured outline"):
+        write(api, "Ethiopia", "Brief", 8.75, evidence, tmp_path)
+    assert len(api.payload["evidence"]) == 11
+    assert all(len(s["extract"]) <= 400 for s in api.payload["evidence"])
+
+
+def test_relevant_paragraph_is_selected_beyond_the_article_opening():
+    extract = "An introductory description of the country.\n" + "\n".join(
+        ["An unrelated paragraph describes a different period of history."] * 200
+    ) + "\nTaytu brings the Ethiopian army to Adwa. The separated Italian columns lose contact."
+    compact = compact_source_extract(extract, 700, ("taytu", "adwa", "columns"))
+    assert compact.startswith("An introductory description")
+    assert "Taytu" in compact and "columns lose contact" in compact
+    assert len(compact) <= 700
+
+
+def test_generic_chapter_selects_a_few_relevant_sources():
+    evidence = {"sources": [
+        {"id": "S" + str(i), "title": "Other period", "extract": "Unrelated events. " * 500}
+        for i in range(8)
+    ] + [{"id": "S8", "title": "Caesar in Gaul", "extract": "Caesar campaigns in Gaul. " * 500}]}
+    compact = compact_chapter_evidence(evidence, {"chapter": "Roots", "events": ["Caesar campaigns in Gaul"]})
+    assert len(compact) == 4
+    assert compact[0]["id"] == "S8"
+    assert sum(len(s["extract"]) for s in compact) <= 5500
+
+
+def test_inline_citations_are_removed_without_changing_other_brackets_or_metadata():
+    assert strip_source_citations("The king signs [S1, S2]. He leaves[S1][S2]. [pause]", ["S1", "S2"]) == "The king signs. He leaves. [pause]"
+    draft = saved_hook()
+    for scene in draft["scenes"]:
+        scene["narration"] += " [S1]"
+    recovered = recover_draft_chapter(draft, "Ethiopia", "Hook", 119, 2, ["S1"])
+    assert sum(len(s["narration"].split()) for s in recovered["scenes"]) == 106
+    assert all(s["source_ids"] == ["S1"] and "[S1]" not in s["narration"] for s in recovered["scenes"])
+
+
+def fake_chapter(budget, count, source="S1", long_sentences=False, citations=False):
+    scenes = []
+    base = "The king sends his soldiers down the narrow mountain road".split()
+    for index in range(count):
+        words = budget // count + (index < budget % count)
+        tokens = (base * (words // 10 + 1))[:words]
+        if long_sentences:
+            narration = " ".join(tokens) + "."
+        else:
+            narration = " ".join(" ".join(tokens[start:start + 10]) + "." for start in range(0, words, 10))
+        if citations:
+            narration += " [" + source + "]"
+        scenes.append({"narration": narration, "source_ids": [source], "date_label": "1896",
+                       "location": "Ethiopia", "asset_search_term": "Ethiopian mountain road"})
+    return {"scenes": scenes}
+
+
+def test_natural_drafts_need_no_revision_and_citations_do_not_reach_tts(tmp_path, monkeypatch):
+    monkeypatch.setenv("SCRIPT_TARGET_WPM", "160")
+    evidence = {"sources": [{"id": "S1", "extract": "Historical evidence"}]}
+    fingerprint = director_fingerprint("Ethiopia", evidence)
+    save_json(tmp_path / "outline.json", director_outline(fingerprint))
+
+    class NaturalAPI:
+        calls = []
+
+        def text(self, instruction, payload, schema, **kwargs):
+            self.calls.append(payload)
+            assert "draft" not in payload
+            assert "5–7 natural complete sentences" in instruction
+            count = schema["properties"]["scenes"]["minItems"]
+            return fake_chapter(payload["target_chapter_words"], count, citations=True)
+
+    api = NaturalAPI()
+    result = write(api, "Ethiopia", "Brief", 8.75, evidence, tmp_path)
+    assert len(api.calls) == 5
+    assert result["word_count"] == 1400
+    assert all("[S1]" not in s["narration"] for s in result["scenes"])
+    accepted = (tmp_path / "script.json").read_text()
+    assert write(api, "Ethiopia", "Brief", 8.75, evidence, tmp_path) == result
+    assert len(api.calls) == 5
+    assert (tmp_path / "script.json").read_text() == accepted
+
+
+def test_cached_long_sentences_get_only_one_joint_revision_across_restarts(tmp_path, monkeypatch):
+    monkeypatch.setenv("SCRIPT_TARGET_WPM", "160")
+    evidence = {"sources": [{"id": s, "extract": "Historical evidence"} for s in ("S1", "S2")]}
+    fingerprint = director_fingerprint("Ethiopia", evidence)
+    save_json(tmp_path / "outline.json", director_outline(fingerprint))
+    chapter_path = tmp_path / "director-chapters" / ("1-" + fingerprint + ".json")
+    save_json(chapter_path, fake_chapter(106, 2, long_sentences=True))
+
+    class RepairAPI:
+        calls = []
+
+        def text(self, instruction, payload, schema, **kwargs):
+            self.calls.append((payload["this_chapter"]["chapter"], "draft" in payload))
+            if "draft" in payload:
+                assert "length and conversational cadence together" in instruction
+                assert "Preserve its facts" in instruction
+                # A stubborn model must not cause an endless rewrite loop.
+                return fake_chapter(119, 2, source="S2", long_sentences=True)
+            raise PipelineError("Roots unavailable")
+
+    api = RepairAPI()
+    for _ in range(2):
+        with pytest.raises(PipelineError, match="Roots unavailable"):
+            write(api, "Ethiopia", "Brief", 8.75, evidence, tmp_path)
+    assert api.calls == [("Hook", True), ("Roots", False), ("Roots", False)]
+    repaired = read_json(chapter_path)
+    assert repaired["cadence_length_revision"] == 1
+    assert sum(len(s["narration"].split()) for s in repaired["scenes"]) == 119
+    assert all(s["source_ids"] == ["S1"] for s in repaired["scenes"])
