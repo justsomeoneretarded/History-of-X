@@ -205,6 +205,12 @@ class Scene:
   actions=self.spec.get("actions")
   if not isinstance(actions,list) or not 3<=len(actions)<=18 or any(not isinstance(a,dict) for a in actions):raise PipelineError("Use 3–18 purposeful timed action objects")
   actions=sorted(actions,key=lambda a:a.get("time",-1))
+  taken={}
+  for a in actions:
+   if a.get("type")=="take":taken.setdefault(a.get("target"),a.get("time",0))
+  for a in actions:
+   if a.get("type")=="move" and a.get("node") in taken and a.get("time",0)>=taken[a["node"]]:
+    raise PipelineError("After pickup, move a prop through its holder; after placing it, take it again before moving it")
   # Body travel and torso/head poses are known before solving arm contacts.
   allowed_actions={"type","time","duration","node","target","object","hand","x","y","walk","expression","head","lean","front_hand","back_hand","description","sfx"}
   for a in actions:
@@ -276,7 +282,8 @@ class Scene:
    for index,segment in enumerate(prop["segments"]):
     if segment["end"]-segment["start"]<.001:continue
     base=segment["base"];pivot=base[:2,2]
-    art='<g transform="'+_matrix_text(base)+'">'+prop["svg"]+'</g>'
+    drawing=prop_art("paper_flat",str(n.get("text",""))) if n["prop"]=="paper" and not segment["upright"] else prop["svg"]
+    art='<g transform="'+_matrix_text(base)+'">'+drawing+'</g>'
     lid=self.add(ident+"__segment_"+str(index),art,segment["parent"],pivot,segment["start"],segment["end"],order=n.get("z",3))
     if segment["upright"]:
      initial=self.world(segment["parent"],segment["start"])

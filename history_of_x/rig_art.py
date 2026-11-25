@@ -25,7 +25,7 @@ CAST = {
  "roman": ("#BB8A65","#41352C","#E5D7B7","#A14B3A","robe","short","laurel"),
 }
 EXPRESSIONS = ("neutral","confident","worried","angry","surprised","sad")
-SETTINGS = ("mountains","mountains_night","tent","port,"court","rock_church","village","village_dry","city","assembly","diagram")
+SETTINGS = ("mountains","mountains_night","tent","port","court","rock_church","village","village_dry","city","assembly","diagram")
 PROPS = ("paper","table","coin","sack","crate","rifle","cross","stele","ship",
          "crown","throne","grain","ballot_box","flag","hammer","territory")
 
@@ -178,6 +178,11 @@ def background(setting):
 
 def prop_art(kind, text=""):
  ink="#293631";gold="#D6B15D"
+ if kind=="paper_flat":
+  art=path("M0-45H160L200 15H-20Z","#F6E8C8",width=3)
+  art+='<path d="M17-31H145M13-22H137" stroke="#BAA276" stroke-width="2"/>'
+  if text:art+=f'<text x="92" y="3" text-anchor="middle" font-family="DejaVu Sans" font-weight="bold" font-size="20" fill="#365B53">{escape(text[:22])}</text>'
+  return art
  if kind=="paper":
   art=path("M0-120L185-115L193 8L-5 14Z","#F6E8C8",width=3)
   art+='<path d="M15-94H167M15-80H152M15-64H169" stroke="#BAA276" stroke-width="3"/><circle cx="162" cy="-5" r="12" fill="#A74D3A"/>'

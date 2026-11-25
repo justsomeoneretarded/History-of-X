@@ -28,11 +28,14 @@ def test_holding_keeps_the_document_upright_while_the_arm_bends():
  spec=demo();spec["camera"]=[{"time":0}]
  s=Scene(spec,15,[]).execute();program=s.finish("test")
  validate_scene(program)
- for at in (5.2,7,10.5,12.5):
+ for at in (5.2,7,10.5):
   point=s.prop_world("treaty",at)[:2,2]
   frame=scene_frame(program,at,(1920,1080))
   pixel=frame.getpixel((round(point[0]+60),round(point[1]-55)))
   assert pixel==pytest.approx((246,232,200),abs=3)
+ point=s.prop_world("treaty",12.5)[:2,2]
+ released=scene_frame(program,12.5,(1920,1080))
+ assert released.getpixel((round(point[0]+145),round(point[1]-10)))==pytest.approx((246,232,200),abs=3)
  assert any(layer.get("stabilize_parent") for layer in program["layers"])
 
 def test_unreachable_prop_is_reported_instead_of_floating_into_a_hand():
