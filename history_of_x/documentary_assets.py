@@ -233,7 +233,8 @@ def catalog(script, directory, fetch=True, session=None):
 
     Returns {assets: [...], scenes: {scene_id: [asset_id]}, provider_status: [...]}.
     Only an Ethiopia film receives the Ethiopia-specific curated collection.
-    Other subjects get an explicit empty catalogue rather than Ethiopian filler.
+    Other subjects search independently licensed museum images. An unavailable
+    or unmatched object is omitted rather than replaced with Ethiopian filler.
     """
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
@@ -247,6 +248,11 @@ def catalog(script, directory, fetch=True, session=None):
             assets.extend(extra)
             status.extend(museum_status)
     else:
+        if fetch:
+            from .generic_assets import discover
+            result = discover(script, directory, session)
+            save_json(directory / "documentary-assets.json", result)
+            return result
         status.append({"provider": "Curated collection", "status": "no_subject_collection", "count": 0})
     result = {"assets": assets,
               "scenes": {str(scene["scene_id"]): matching_assets(scene, assets) for scene in script["scenes"]},
