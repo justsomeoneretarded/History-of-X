@@ -14,6 +14,7 @@ test = ["pytest>=8,<9", "PyYAML>=6,<7"]
 [project.scripts]
 history-of-x = "history_of_x.animated:main"
 history-of-x-archival = "history_of_x.cli:main"
+history-of-x-film = "history_of_x.director_runner:main"
 [tool.setuptools.packages.find]
 include = ["history_of_x*"]
 [tool.pytest.ini_options]

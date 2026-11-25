@@ -43,11 +43,16 @@ def configure(request_file=None):
 
 def evidence():
     output=Path('output/director');work=Path('work/director')
+    progress=work/'runner-progress.json'
+    if not (output/'final.mp4').exists() and progress.exists():
+        candidate=Path(json.loads(progress.read_text()).get('candidate',''))
+        if candidate.is_dir() and candidate.resolve().is_relative_to(output.resolve()):
+            output=candidate
     data={}
-    for name in ['production.json','editorial-review.json','failure.json','timeline.json','media-credits.json']:
+    for name in ['production.json','quality.json','editorial-review.json','failure.json','timeline.json','media-credits.json']:
         path=output/name
         if path.exists():data[name]=json.loads(path.read_text())
-    for name in ['writing-metrics.json','narration-metrics.json','script.json','draft-script.json','failure.json']:
+    for name in ['writing-metrics.json','narration-metrics.json','runner-progress.json','script.json','draft-script.json','failure.json']:
         path=work/name
         if path.exists():data[name]=json.loads(path.read_text())
     print('DIRECTOR_EVIDENCE_START\n'+json.dumps(data,ensure_ascii=False)+'\nDIRECTOR_EVIDENCE_END',flush=True)

@@ -5,14 +5,14 @@ A GitHub Actions pipeline for original history videos from a title and short bri
 ## Run the directed pipeline
 
 1. Keep your free Gemini key in the repository Actions secret **GEMINI_API**.
-2. Open [Actions → Directed history film](https://github.com/justsomeoneretarded/History-of-X/actions/workflows/director-film.yml) and select **Run workflow**.
-3. Enter a title and brief. The default is an original Ethiopia history, approximately **8 minutes 45 seconds**. `auto` auditions Puck and Charon; individual Gemini voices are also selectable and skip the automatic audition.
-4. Start with **proof**, which renders complete opening and selected later scenes. **film** renders the whole narration. `draft` is 540p; `cinematic` is 1080p/30fps.
-5. Download **directed-proof** or **directed-film**. Read `production.json` and `editorial-review.json`: technical success alone does not mean the candidate is upload-ready.
+2. Open [Actions → Create a complete history video](https://github.com/justsomeoneretarded/History-of-X/actions/workflows/director-film.yml) and select **Run workflow**.
+3. Enter a title and short brief. **Charon** is selected by default; other Gemini voices or an automatic Puck/Charon audition are optional. The target is **8 minutes 45 seconds**.
+4. Leave **film** selected. The runner checks complete sample scenes, makes one automatic creative revision if needed, then renders and reviews the full **1080p/30fps** film.
+5. On accepted completion, download **youtube-upload-ready**. Upload **final.mp4**, use **thumbnail.jpg**, **title.txt**, **description.txt**, and add **captions.srt** as English subtitles.
 
-The workflow writes a video, external subtitles, thumbnail, title, description, full credits, contact sheet, executable scene programs and review evidence. It does not upload to YouTube. A failed creative review preserves the candidate for revision and stops the workflow.
+The runner does not publish to YouTube. **review-candidates** contains separate samples and rejected attempts; these are not the upload package. A provider failure or a candidate that still misses the creative threshold stops production and preserves its checkpoint. Automated checks cannot guarantee audience retention or replace judgment about the finished film.
 
-`audio_run` reuses a **director-audio** checkpoint. `resume_run` reuses a **directed-checkpoint**. Select `revise` to apply the previous candidate's concrete editorial feedback. Reusing accepted audio does not rewrite the script or regenerate its voice. Artifacts expire after 90 days.
+Use **resume_run** to restore a prior run's **directed-checkpoint**. Identical accepted scripts, narration, scene programs and renders are reusable; changed writing requirements invalidate the affected writing cache. Partial chapters and narration are preserved before visual production. Artifacts expire after **90 days**. **proof** is an optional sample-only mode.
 
 ## Reference roles
 
@@ -42,7 +42,7 @@ The renderer has no required palace/army templates or implicit walking loops. Th
 
 ## Free-tier limits and recovery
 
-The directed workflow defaults to **Gemini 3.5 Flash Lite** for writing and review, **Gemini 3.8 Flash** for scene direction, and **Gemini 3.8 Flash TTS** for speech. `GEMINI_DIRECTOR_MODEL` can select a supported alternative; the older workflows retain their separate settings. Google's current standard pricing lists free text input/output for 3.8 Flash, but project access and quotas still vary. Consult [pricing](https://ai.google.dev/gemini-api/docs/pricing) and [project rate limits](https://ai.google.dev/gemini-api/docs/rate-limits).
+The directed workflow defaults to **Gemini 3.5 Flash Lite** for writing and review, **Gemini 3.5 Flash Lite** for scene direction, and **Gemini 3.8 Flash TTS** for speech. `GEMINI_DIRECTOR_MODEL` can select a supported alternative; the older workflows retain their separate settings. Google's current standard pricing lists free text input/output for 3.8 Flash, but project access and quotas still vary. Consult [pricing](https://ai.google.dev/gemini-api/docs/pricing) and [project rate limits](https://ai.google.dev/gemini-api/docs/rate-limits).
 
 - Request starts are separated by at least 65 seconds. This is a conservative application policy, not Google's universal required sleep.
 - RPM, input TPM and daily quotas are separate and shared by a Google project. Sleeping cannot cure an exhausted daily quota.
@@ -62,8 +62,7 @@ python -m venv .venv
 . .venv/bin/activate
 pip install -e '.[alignment,test]'
 export GEMINI_API='your-key'
-python -m history_of_x.director_script --title 'The Entire History of Ethiopia' --minutes 8.75
-python -m history_of_x.director_film --proof --profile draft
+history-of-x-film --title 'The Entire History of Ethiopia' --brief 'An original story across centuries, ending with the November 2022 Pretoria agreement.' --voice Charon
 pytest -q
 ```
 

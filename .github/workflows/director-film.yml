@@ -1,4 +1,4 @@
-name: Directed history film
+name: Create a complete history video
 on:
   workflow_dispatch:
     inputs:
@@ -10,39 +10,26 @@ on:
       brief:
         description: Short brief, angle and historical endpoint
         type: string
-        default: How Ethiopia built powerful kingdoms, defeated an invading empire, and struggled over power at home. Connect ancient Aksum, medieval kingdoms, Adwa, Italian occupation, restoration, revolution and the 2022 Pretoria agreement. A coherent story across centuries.
+        default: Connect ancient Aksum, medieval kingdoms, Menelik and Taytu, Adwa, Italian occupation, restoration, revolution and the November 2022 Pretoria agreement through the struggle over who holds power.
         required: true
       voice:
-        description: auto auditions actual Puck and Charon narration
+        description: Gemini narrator; auto compares Puck and Charon
         type: choice
-        options: [auto, Puck, Charon, Kore, Fenrir, Orus, Aoede]
-        default: auto
+        options: [Charon, Puck, Kore, Fenrir, Orus, Aoede, auto]
+        default: Charon
       minutes:
-        description: Target runtime; Jerusalem reference is about 8.75 minutes
+        description: Target duration; Jerusalem reference is about 8.75 minutes
         type: string
         default: '8.75'
       mode:
-        description: Proof renders selected complete scenes; film renders the whole story
+        description: Film runs creative preflight and complete production
         type: choice
-        options: [proof, film]
-        default: proof
-      profile:
-        description: Output resolution
-        type: choice
-        options: [draft, cinematic]
-        default: cinematic
-      audio_run:
-        description: Reuse a director-audio artifact from this run ID
-        type: string
-        default: ''
+        options: [film, proof]
+        default: film
       resume_run:
-        description: Reuse directed-checkpoint from a prior film run ID
+        description: Optional prior run ID containing directed-checkpoint
         type: string
         default: ''
-      revise:
-        description: Apply the previous candidate's concrete editorial feedback
-        type: boolean
-        default: false
 permissions:
   contents: read
   actions: read
@@ -50,7 +37,7 @@ concurrency:
   group: history-gemini
   cancel-in-progress: false
 jobs:
-  direct:
+  produce:
     runs-on: ubuntu-24.04
     timeout-minutes: 330
     env:
@@ -62,22 +49,15 @@ jobs:
       VIDEO_MINUTES: ${{ inputs.minutes }}
       NARRATOR: ${{ inputs.voice }}
       FILM_MODE: ${{ inputs.mode }}
-      FILM_PROFILE: ${{ inputs.profile }}
-      REVISE_FILM: ${{ inputs.revise }}
-      GEMINI_MODEL: ${{ vars.GEMINI_DIRECTOR_MODEL || 'gemini-3.8-flash' }}
+      GEMINI_WRITER_MODEL: ${{ vars.GEMINI_WRITER_MODEL || 'gemini-3.5-flash-lite' }}
+      GEMINI_DIRECTOR_MODEL: ${{ vars.GEMINI_DIRECTOR_MODEL || 'gemini-3.5-flash-lite' }}
       GEMINI_TTS_MODEL: ${{ vars.GEMINI_TTS_MODEL || 'gemini-3.8-flash-tts' }}
       GEMINI_MEDIA_LEDGER: work/media-ledger/usage.json
       GEMINI_TEXT_REQUEST_BUDGET: '64'
-      GEMINI_SCENE_BATCH_SIZE: '3'
-      SCRIPT_TARGET_WPM: ${{ vars.SCRIPT_TARGET_WPM || '160' }}
-      GEMINI_INPUT_TOKEN_BUDGET: '40000'
       GEMINI_TTS_REQUEST_BUDGET: '16'
-      GEMINI_SCHEMA_MODE: prompt
-      GEMINI_AUDIO_REVIEW_MODEL: gemini-3.5-flash-lite
-      GEMINI_PACKAGE_MODEL: gemini-3.5-flash-lite
-      GEMINI_REVIEW_MODEL: gemini-3.5-flash-lite
-      GEMINI_REVIEW_CACHE: work/director/editorial-review-parts
-      GEMINI_DIRECTOR_POSITIVE_EXAMPLE: '1'
+      GEMINI_INPUT_TOKEN_BUDGET: '40000'
+      GEMINI_SCENE_BATCH_SIZE: ${{ vars.GEMINI_SCENE_BATCH_SIZE || '1' }}
+      SCRIPT_TARGET_WPM: ${{ vars.SCRIPT_TARGET_WPM || '160' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -85,7 +65,11 @@ jobs:
           python-version: '3.11'
           cache: pip
       - run: python scripts/bootstrap_media.py
-      - run: python -m pip install -e '.[alignment]'
+      - run: python -m pip install -e '.[alignment,test]'
+      - name: Verify code before spending provider quota
+        run: |
+          python -m compileall -q history_of_x scripts
+          env -u GEMINI_MEDIA_LEDGER -u GEMINI_TEXT_REQUEST_BUDGET -u GEMINI_TTS_REQUEST_BUDGET -u GEMINI_INPUT_TOKEN_BUDGET pytest -q
       - uses: actions/cache@v4
         with:
           path: work/models
@@ -96,25 +80,20 @@ jobs:
           key: media-ledger-v1-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: media-ledger-v1-
       - uses: actions/download-artifact@v4
-        if: ${{ inputs.audio_run != '' }}
-        with:
-          name: director-audio
-          path: work/director
-          run-id: ${{ inputs.audio_run }}
-          github-token: ${{ github.token }}
-      - uses: actions/download-artifact@v4
         if: ${{ inputs.resume_run != '' }}
         with:
           name: directed-checkpoint
           path: work/director
           run-id: ${{ inputs.resume_run }}
           github-token: ${{ github.token }}
-      - name: Original script and auditioned Gemini narration
+      - name: Original script and measured Gemini narration
         env:
           GEMINI_API: ${{ secrets.GEMINI_API }}
-          GEMINI_MODEL: ${{ vars.GEMINI_WRITER_MODEL || 'gemini-3.5-flash-lite' }}
+          GEMINI_MODEL: ${{ env.GEMINI_WRITER_MODEL }}
+          GEMINI_SCHEMA_MODE: prompt
+          GEMINI_AUDIO_REVIEW_MODEL: gemini-3.5-flash-lite
         run: python -m history_of_x.director_script --stage all
-      - name: Preserve accepted narration
+      - name: Preserve narration before visual production
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -127,14 +106,24 @@ jobs:
             work/director/voice-auditions
             work/director/gemini
           retention-days: 90
-      - name: Direct, animate, mix and critically review the actual film
+      - name: Direct, render and review the complete film
         env:
           GEMINI_API: ${{ secrets.GEMINI_API }}
+          GEMINI_SCHEMA_MODE: prompt
+          GEMINI_DIRECTOR_POSITIVE_EXAMPLE: '1'
+          GEMINI_AUDIO_REVIEW_MODEL: gemini-3.5-flash-lite
+          GEMINI_PACKAGE_MODEL: gemini-3.5-flash-lite
+          GEMINI_REVIEW_MODEL: gemini-3.5-flash-lite
+          GEMINI_REVIEW_CACHE: work/director/editorial-review-parts
         run: |
-          args=(--profile "$FILM_PROFILE")
-          if [[ "$FILM_MODE" == "proof" ]]; then args+=(--proof); fi
-          if [[ "$REVISE_FILM" == "true" ]]; then args+=(--revise); fi
-          python -m history_of_x.director_film "${args[@]}"
+          if [[ "$FILM_MODE" == "proof" ]]; then
+            python -m history_of_x.director_runner --proof-only
+          else
+            python -m history_of_x.director_runner
+          fi
+      - name: Publish inspectable frame evidence
+        if: always()
+        run: python scripts/production_request.py evidence
       - uses: actions/cache/save@v4
         if: always()
         with:
@@ -147,17 +136,28 @@ jobs:
           path: |
             work/director/*.json
             work/director/*.txt
-            work/director/gemini
             work/director/director-chapters
+            work/director/story-checks
+            work/director/gemini
             work/director/speech
             work/director/voice-auditions
             work/director/media
             work/director/scene-programs
+            work/director/directed-render
             work/director/editorial-review-parts
           retention-days: 90
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: directed-${{ inputs.mode }}
-          path: output/director
+          name: review-candidates
+          path: |
+            output/director/candidates
+            output/director/failure.json
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: ${{ success() && inputs.mode != 'proof' }}
+        with:
+          name: youtube-upload-ready
+          path: output/director/upload-ready
+          if-no-files-found: error
           retention-days: 90
