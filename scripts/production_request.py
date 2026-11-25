@@ -51,7 +51,60 @@ def evidence():
         candidate=Path(json.loads(progress.read_text()).get('candidate',''))
         if candidate.is_dir() and candidate.resolve().is_relative_to(output.resolve()):
             output=candidate
-    data={}
+    latest_output=output
+    latest_failure=latest_output/'failure.json'
+    latest_error=json.loads(latest_failure.read_text()) if latest_failure.exists() else None
+    # A failed revision may precede encoding. Keep the last actually rendered
+    # candidate inspectable without presenting it as the newest or accepted one.
+    if not (output/'final.mp4').exists():
+        candidates=list(Path('output/director/candidates').glob('*/final.mp4'))
+        def order(movie):
+            attempt=__import__('re').search(r'attempt-(\d+)
+        path=output/name
+        if path.exists():data[name]=json.loads(path.read_text())
+    for name in ['writing-metrics.json','narration-metrics.json','runner-progress.json','script.json','draft-script.json','failure.json']:
+        path=work/name
+        if path.exists():data[name]=json.loads(path.read_text())
+    print('DIRECTOR_EVIDENCE_START\n'+json.dumps(data,ensure_ascii=False)+'\nDIRECTOR_EVIDENCE_END',flush=True)
+    movie=output/'final.mp4';timeline=data.get('timeline.json',[])
+    if not movie.exists():return
+    from PIL import Image,ImageDraw
+    from history_of_x.core import ffmpeg
+    frames=output/'evidence';frames.mkdir(exist_ok=True)
+    # Six successive states per scene let a reviewer verify action and reactions.
+    chosen=timeline if len(timeline)<=4 else [timeline[i] for i in sorted({0,len(timeline)//3,2*len(timeline)//3,len(timeline)-1})]
+    sheet=Image.new('RGB',(1920,max(1,len(chosen))*210),'#102934');draw=ImageDraw.Draw(sheet)
+    for row,shot in enumerate(chosen):
+        for col,fraction in enumerate([.04,.2,.4,.6,.8,.96]):
+            at=shot['global_start']+(shot['global_end']-shot['global_start'])*fraction
+            path=frames/f'{row}-{col}.jpg'
+            ffmpeg('-ss',str(at),'-i',movie,'-frames:v','1','-vf','scale=320:180',path)
+            with Image.open(path) as im:sheet.paste(im,(col*320,row*210))
+            draw.text((col*320+8,row*210+184),f'{at:.2f}s / scene{shot["scene_id"]}',fill='white')
+    image_path=output/'temporal-evidence.jpg';sheet.save(image_path,quality=82,optimize=True)
+    encoded=base64.b64encode(image_path.read_bytes()).decode()
+    print('DIRECTOR_IMAGE_START',flush=True)
+    for i in range(0,len(encoded),8000):print('DIRECTOR_IMAGE_CHUNK '+encoded[i:i+8000],flush=True)
+    print('DIRECTOR_IMAGE_END',flush=True)
+    thumbnail=output/'thumbnail.jpg'
+    if thumbnail.exists():
+        encoded=base64.b64encode(thumbnail.read_bytes()).decode()
+        print('DIRECTOR_THUMBNAIL_START',flush=True)
+        for i in range(0,len(encoded),8000):print('DIRECTOR_THUMBNAIL_CHUNK '+encoded[i:i+8000],flush=True)
+        print('DIRECTOR_THUMBNAIL_END',flush=True)
+
+def main():
+    parser=argparse.ArgumentParser();parser.add_argument('stage',choices=['configure','evidence']);parser.add_argument('--request')
+    args=parser.parse_args()
+    if args.stage=='configure':configure(args.request)
+    else:evidence()
+
+if __name__=='__main__':main()
+,movie.parent.name)
+            return (movie.parent.name.startswith('film-'),int(attempt[1]) if attempt else 0,movie.stat().st_mtime)
+        if candidates:output=max(candidates,key=order).parent
+    data={'evidence_selection':{'candidate':str(output),'latest_attempt':str(latest_output),
+          'is_latest_attempt':output==latest_output,'latest_attempt_error':latest_error}}
     for name in ['production.json','quality.json','editorial-review.json','failure.json','timeline.json','media-credits.json']:
         path=output/name
         if path.exists():data[name]=json.loads(path.read_text())

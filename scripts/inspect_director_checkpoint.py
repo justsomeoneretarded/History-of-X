@@ -70,6 +70,13 @@ for name in ('writing-metrics.json','narration-metrics.json'):
     if path.exists(): print('SAVED_METRICS '+json.dumps({'file':name,'data':json.loads(path.read_text())}),flush=True)
 if os.getenv('INSPECTION_CHAPTERS_ONLY')=='1':
     raise SystemExit(0)
+for path in sorted(Path('work/director/editorial-review-parts').glob('*.json')):
+    value=json.loads(path.read_text())
+    if isinstance(value.get('report'),dict):
+        print('SAVED_REVIEW '+json.dumps({'file':str(path),'identity':value.get('identity'), 'report':value['report']},ensure_ascii=False),flush=True)
+feedback=Path('work/director/editorial-feedback.json')
+if feedback.exists():
+    print('SAVED_FEEDBACK '+feedback.read_text(),flush=True)
 speech_path=Path('work/director/speech/speech.json')
 spoken=json.loads(speech_path.read_text()) if speech_path.exists() else {}
 expected_durations={str(s['scene_id']):s['duration'] for s in spoken.get('scenes',[])}
@@ -81,6 +88,7 @@ for path in paths:
         print('SAVED_RIG_GRAPH '+json.dumps({'file':str(path),'draft':value},ensure_ascii=False),flush=True)
     if isinstance(value.get('spec'),dict):
         print('SAVED_RIG_GRAPH '+json.dumps({'file':str(path),'accepted_scene':value.get('program',{}).get('scene_id'),'draft':value['spec']},ensure_ascii=False),flush=True)
+    if os.getenv('INSPECTION_GRAPHS_ONLY')=='1': continue
     programs=([value['program']] if isinstance(value.get('program'),dict) else value.get('scenes',[]) if 'svg' not in value else [value])
     for original in programs:
         if not isinstance(original,dict) or not isinstance(original.get('svg'),str): continue

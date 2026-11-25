@@ -25,7 +25,7 @@ jobs:
           artifact=request.get('artifact','directed-checkpoint')
           if artifact not in {'directed-checkpoint','director-audio','qwen-cpu-direction-benchmark'}: raise ValueError('Unsupported checkpoint artifact')
           if not re.fullmatch(r'[0-9]+',run): raise ValueError('Numeric run ID required')
-          with open(os.environ['GITHUB_ENV'],'a') as out: out.write('CHECKPOINT_RUN='+run+'\nCHECKPOINT_ARTIFACT='+artifact+'\nINSPECTION_CHAPTERS_ONLY='+('1' if request.get('chapters_only') else '0')+'\n')
+          with open(os.environ['GITHUB_ENV'],'a') as out: out.write('CHECKPOINT_RUN='+run+'\nCHECKPOINT_ARTIFACT='+artifact+'\nINSPECTION_CHAPTERS_ONLY='+('1' if request.get('chapters_only') else '0')+'\nINSPECTION_INCLUDE_OUTPUT='+('1' if request.get('include_output') else '0')+'\nINSPECTION_GRAPHS_ONLY='+('1' if request.get('graphs_only') else '0')+'\n')
           PY
       - uses: actions/download-artifact@v4
         with:
@@ -33,6 +33,17 @@ jobs:
           run-id: ${{ env.CHECKPOINT_RUN }}
           path: work/director
           github-token: ${{ github.token }}
+      - name: Recover actual rendered candidates
+        if: env.INSPECTION_INCLUDE_OUTPUT == '1'
+        uses: actions/download-artifact@v4
+        with:
+          name: directed-output
+          run-id: ${{ env.CHECKPOINT_RUN }}
+          path: output/director
+          github-token: ${{ github.token }}
+      - name: Prepare actual video inspection
+        if: env.INSPECTION_INCLUDE_OUTPUT == '1'
+        run: python scripts/bootstrap_media.py
       - name: Inspect measured CPU benchmark
         if: env.CHECKPOINT_ARTIFACT == 'qwen-cpu-direction-benchmark'
         run: python scripts/inspect_qwen_benchmark.py
@@ -41,6 +52,9 @@ jobs:
       - name: Inspect saved scene programs without provider requests
         if: env.CHECKPOINT_ARTIFACT != 'qwen-cpu-direction-benchmark'
         run: python scripts/inspect_director_checkpoint.py
+      - name: Inspect the actual rendered movie
+        if: env.INSPECTION_INCLUDE_OUTPUT == '1'
+        run: python scripts/production_request.py evidence
       - uses: actions/upload-artifact@v4
         if: ${{ always() }}
         with:

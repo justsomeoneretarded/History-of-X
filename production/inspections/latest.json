@@ -1,6 +1,8 @@
 {
-  "run_id": "45672733198",
+  "run_id": "45677272547",
   "artifact": "directed-checkpoint",
+  "include_output": true,
+  "graphs_only": true,
   "chapters_only": false,
-  "attempt": 10
+  "attempt": 11
 }
