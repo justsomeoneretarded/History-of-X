@@ -10,9 +10,25 @@ The new animation uses original illustrated character rigs, exact two-link hand 
 
 The current full Ethiopia film is **not yet accepted**. Saved scene directions and verified narration are being resumed after model overload/schema failures. Final delivery requires full decoded-media checks and consecutive audiovisual reviews of the entire actual film; an accepted sample alone cannot become the upload package. Current artifact retention is90days. Nothing has been published to YouTube.
 
+## November 25 live recovery attempts
+
+The complete script and Gemini narration above were reused throughout these attempts. Provider availability and valid rendered animation remain separate from unit-test results.
+
+| Path | Observed result |
+| --- | --- |
+| Gemini 3.8 Flash text | Repeated overload responses, then HTTP 429 with a project allowance of 20 free daily requests. The response at 17:39 UTC indicated approximately 14 hours 21 minutes until reset, around 11:00 a.m. Africa/Nairobi on November 26. This is evidence for this project and date. |
+| Gemini 3.5 Flash Lite text | Tiny earlier probes succeeded; current scene-direction attempts repeatedly returned HTTP 503. |
+| Hosted Gemma 4 26B A4B | One incomplete response was rejected; later attempts returned HTTP 503. MINIMAL thinking and final-response diagnostics were added. No accepted new direction or film resulted from this route. |
+| Qwen3 4B Instruct 2507, Q4_K_M | Actual CPU experiment on a four-vCPU Actions runner. Startup took 59.53 seconds. First direction used 1,006 prompt tokens and generated 2,039 output tokens in 545.94 seconds, at 4.33 decoded tokens/second. It omitted required prop identities and also selected an inappropriate character for Taytu. Validation rejected it. A bounded repair hit a 660-second read timeout. No movie was rendered. |
+| Gemini 4 Hydrogen | Added from current official free-tier documentation with its required native-schema/LOW-thinking configuration. A live resumed Ethiopia run is testing it; access and successful production are not yet established. |
+
+The [Qwen experiment](https://github.com/justsomeoneretarded/History-of-X/actions/runs/45665325880) preserved its actual draft, validation error, model metadata and failure timing. A [separate inspection](https://github.com/justsomeoneretarded/History-of-X/actions/runs/45675508616) read that saved evidence without another inference. These are direction-generation measurements, not comparable finished-film quality scores.
+
+Current code validation passes **285 tests** in [GitHub Actions](https://github.com/justsomeoneretarded/History-of-X/actions/runs/45672733197). The production runner also passed them before using provider quota. Increasing the bounded Ubuntu package-install deadline from 300 to 600 seconds allowed the latest runner to complete its slow media setup.
+
 ## Earlier moving-film attempt (creatively rejected)
 
-[Final verified upload package](https://github.com/justsomeoneretarded/History-of-X/actions/runs/42352656439/artifacts/13566745408). The picture was rendered in [the moving-film workflow](https://github.com/justsomeoneretarded/History-of-X/actions/runs/42350418522), then finished with verified audio assembly while preserving the encoded video bitstream.
+[Archived upload package — creatively rejected](https://github.com/justsomeoneretarded/History-of-X/actions/runs/42352656439/artifacts/13566745408). The picture was rendered in [the moving-film workflow](https://github.com/justsomeoneretarded/History-of-X/actions/runs/42350418522), then finished with verified audio assembly while preserving the encoded video bitstream.
 
 - 1920×1080, 30 fps, H.264/AAC, 412.9 seconds (6:53).
 - 91 visual beats: frame-by-frame articulated characters and two genuine archival moving clips. No still-card fallback.
