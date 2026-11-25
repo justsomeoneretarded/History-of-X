@@ -4,7 +4,7 @@ import copy
 import os
 import re
 from pathlib import Path
-from .core import PipelineError,key,read_json,save_json
+from .core import ROOT,PipelineError,key,read_json,save_json
 from .rig_art import CAST,EXPRESSIONS,SETTINGS,PROPS,VERSION
 from .rig_scene import compile_scene
 
@@ -40,7 +40,8 @@ A formation is2–5 detailed miniature figures for a military diagram, not a sub
 readable close actor in a human decision. Routes have2–8 world points; show/hide communicates links.
 Images use approved asset_id and width/height; a full-frame insert is centred960,540,1920x1080.
 Camera keys use time,zoom,focus_x,focus_y; zoom1establishes all. Framing is clamped to the scenery.
-Sparse, motivated camera changes; no shakes. Do not move a camera merely to manufacture activity.
+Sparse, motivated camera changes; no shakes. The camera interpolates between keys: repeat the current framing key to hold a shot before a short motivated reframing. Keep documents/essential words completely inside detail shots. Do not move a camera merely to manufacture activity.
+Trusted production_director_notes specify the intended visual explanation. Follow them with actual executable actions, not descriptive promises. A formation moves as one group: use separate nodes to split columns or show opposing movements. Use short .15–.3 second photo fades rather than long translucent ghost overlays.
 Each action needs a description of its visible NARRATIVE consequence. sfx none by default; paper,
 stamp,soft_impact or sting only when motivated. No comic stings during occupation, famine or atrocities.
 Use all supplied narration/timing. Do not copy a reference creator's words, characters, joke or song.
@@ -95,6 +96,7 @@ def _program(spec,seconds,approved,ident,reserved,archives):
   if any(a["time"]<reserved-.05 for a in spec["actions"]):raise PipelineError("Begin illustrated actions after the reserved real-footage opening")
   for at in (0.,4.5)[:len(archives)]:
    program["events"].append({"time":at,"description":"Corresponding genuine historical footage plays under narration.","layer_ids":[],"sfx":"none"})
+  program["events"].append({"time":reserved,"description":"The illustrated explanation continues after the genuine footage.","layer_ids":[],"sfx":"none"})
  events=sorted(program["events"],key=lambda e:e["time"])
  if seconds>12 and (len(events)<3 or any(b-a>7 for a,b in zip([0]+[e["time"] for e in events],[e["time"] for e in events]+[seconds]))):
   raise PipelineError("Add actual narrative developments at intervals of3–6seconds, including near the beginning and ending")
@@ -118,7 +120,7 @@ def _request(api,payload,primary):
  except PipelineError as exc:
   message=str(exc)
   if "unavailable after three attempts" not in message and "network deadline" not in message:raise
-  backup="gemini-3.6-flash" if primary.startswith("gemma-") else "gemma-4-26b-a4b-it"
+  backup="gemini-3.6-flash" if primary.startswith("gemma-") else "gemma-4-31b-it" if primary in ("gemini-3.6-flash","gemini-4-hydrogen") else "gemma-4-26b-a4b-it"
   print(f"Scene direction: {primary} unavailable; trying verified free model {backup}.",flush=True)
   return api.text(CONTRACT,payload,schema(),max_output=5000 if backup.startswith('gemma-') else 3500,preserve_bounds=True,model=backup)
 
@@ -134,6 +136,11 @@ def plan_scene(api,scene,spoken,assets,directory,style=None,request_only=False,p
   "reserved_archival_seconds":reserved,
   "approved_images":[{k:a.get(k) for k in ("id","subject","date","context")} for a in approved],
   "cast":list(CAST),"settings":list(SETTINGS),"props":list(PROPS)}
+ notes_path=ROOT/"assets/style/production-direction.json"
+ if notes_path.exists():
+  for record in read_json(notes_path).get("passages",[]):
+   if record.get("narration")==scene["narration"]:
+    context["production_director_notes"]=record["directing_notes"];break
  primary=os.getenv("GEMINI_MODEL","gemini-3.1-flash-lite")
  identity=key("rigged-scene-v1",VERSION,CONTRACT,schema(),primary,context)
  directory=Path(directory)/"rigged";target=directory/(identity+".json")

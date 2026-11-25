@@ -38,7 +38,16 @@ def plan(api,script_index,speech_index,assets,directory,style,selected,size):
   instruction=rig_director.CONTRACT+"\nDirect these passages independently. Return one scenes array with each requested scene_id exactly once. Each scene retains its own duration, assets and action timing. Do not connect their staging into one scene."
   payload={"scenes":[item["prepared"]["payload"] for item in batch]}
   path=directory/"rig-batches"/(key("rig-batch-v1",model,instruction,payload,shape)+".json")
-  response=read_json(path) if path.exists() else api.text(instruction,payload,shape,max_output=14000,preserve_bounds=True,model=model)
+  if path.exists():response=read_json(path)
+  else:
+   try:response=api.text(instruction,payload,shape,max_output=14000,preserve_bounds=True,model=model)
+   except PipelineError as exc:
+    if "unavailable after three attempts" not in str(exc) and "network deadline" not in str(exc):raise
+    backup="gemma-4-31b-it"
+    print(f"Scene batch {model} unavailable; trying verified free text model {backup}.",flush=True)
+    response=api.text(instruction,payload,shape,max_output=14000,preserve_bounds=True,model=backup)
+    if not isinstance(response,dict):raise PipelineError("Free batch recovery returned no object")
+    response={**response,"generation_model":backup}
   save_json(path,response)
   specs=response.get("scenes") if isinstance(response,dict) else None
   if not isinstance(specs,list):raise PipelineError("Batched direction returned no scenes array")

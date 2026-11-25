@@ -147,13 +147,17 @@ def package(api,script,speech,assets,output,work):
  (output/'script.txt').write_text('\n\n'.join(s['chapter'].upper()+'\n'+s['narration'] for s in script['scenes']))
  metadata_path=work/'directed-packaging.json'
  source_script=read_json(work/'script.json') if (work/'script.json').exists() else script
- metadata_id=key('directed-packaging-v3-subject-and-scope',source_script['title'],[s['narration'] for s in source_script['scenes']])
+ metadata_id=key('directed-packaging-v4-concrete-hook-and-portrait',source_script['title'],[s['narration'] for s in source_script['scenes']])
  metadata_schema={'type':'object','required':['title','thumbnail_subject','thumbnail_hook','description'], 'properties':{'title':{'type':'string'},'thumbnail_subject':{'type':'string'},'thumbnail_hook':{'type':'string'},'description':{'type':'string'}}}
  previous=read_json(metadata_path) if metadata_path.exists() else {}
  metadata=previous if previous.get('fingerprint')==metadata_id else api.text(
-  'Package this original history video for YouTube. Return a searchable title of at most100characters, thumbnail_subject naming the actual entity in1–4words, a concrete truthful thumbnail curiosity hook of2–4short words (not the full title), and a concise description of the actual scope and endpoint. No fake quotes, sensational invented claims, marketing filler, channel branding or technical implementation details. The hook should be readily legible on a mobile thumbnail. Do not imply a country was never conquered or occupied when this film covers an occupation. Do not copy any reference title.',
+  'Package this original history video for YouTube. Return a searchable title of at most100characters, thumbnail_subject naming the actual entity in1–4words, a concrete truthful thumbnail curiosity hook of2–4short words (not the full title), and a concise description of the actual scope and endpoint. No fake quotes, sensational invented claims, marketing filler, channel branding or technical implementation details. The hook must name a concrete choice, reversal or unanswered question, not an abstract theme heading such as Power and Sovereignty. It should be readily legible on a mobile thumbnail. If the supplied film is about Ethiopia, focus on why Italy lost at Adwa while acknowledging that the whole film also covers later occupation and revolution. Do not imply a country was never conquered or occupied when this film covers an occupation. Do not copy any reference title.',
   {'working_title':source_script['title'],'summary':source_script['summary'],'opening':source_script['scenes'][0]['narration'],'ending':source_script['scenes'][-1]['narration'],'scope':[{'date':s['date_label'],'passage':s['narration'][:180]} for s in source_script['scenes']]},metadata_schema,max_output=1200,model=os.getenv('GEMINI_PACKAGE_MODEL','gemini-3.5-flash-lite'))
  if 'ethiop' in source_script['title'].casefold() and re.search(r'never (?:colon[izs]+ed|conquered|occupied)|unconquered',metadata['thumbnail_hook'],re.I):metadata['thumbnail_hook']='AN EMPIRE REFUSES'
+ if 'ethiop' in source_script['title'].casefold():
+  metadata['thumbnail_subject']='ETHIOPIA'
+  if re.search(r'\b(?:power|sovereignty|legacy|journey)\b',metadata['thumbnail_hook'],re.I):
+   metadata['thumbnail_hook']='WHEN ITALY LOST'
  metadata['fingerprint']=metadata_id;save_json(metadata_path,metadata)
  (output/'title.txt').write_text(metadata['title']+'\n')
  # Authentic large portrait/architecture: purposeful composition, no tiny icon collage.
@@ -162,7 +166,12 @@ def package(api,script,speech,assets,output,work):
  im=Image.new('RGB',(1280,720),'#102934')
  if subjects:
   p=Path(subjects[0]['path']);p=p if p.is_absolute() else ROOT/p
-  with Image.open(p) as picture:im.paste(ImageOps.fit(picture.convert('RGB'),(760,720),centering=(.5,.3)),(520,0))
+  with Image.open(p) as picture:
+   portrait=picture.convert('RGB')
+   if 'ethiop' in source_script['title'].casefold() and 'menelik' in subjects[0].get('subject','').casefold():
+    # Deliberately crop the identified full-length portrait to head/shoulders.
+    w,h=portrait.size;portrait=portrait.crop((round(w*.12),0,round(w*.92),round(h*.62)))
+   im.paste(ImageOps.fit(portrait,(760,720),centering=(.5,.3)),(520,0))
  elif (output/'final.mp4').exists():
   still=output/'thumbnail-art.jpg';ffmpeg('-ss','2','-i',output/'final.mp4','-frames:v','1',still)
   with Image.open(still) as picture:im.paste(ImageOps.fit(picture.convert('RGB'),(760,720),centering=(.6,.4)),(520,0))
@@ -231,7 +240,7 @@ def produce(api,work,output,profile='cinematic',proof=False,resume=None,revise=F
  output.mkdir(parents=True,exist_ok=True);directory=work/'directed-render';directory.mkdir(parents=True,exist_ok=True)
  plan_dir=work/'scene-programs';plan_dir.mkdir(parents=True,exist_ok=True)
  from .director_batch import plan_all
- if os.getenv('GEMINI_DIRECTOR_MODE','svg')!='rigged' or os.getenv('GEMINI_MODEL')=='gemini-4-hydrogen':plan_all(api,script,speech,assets,plan_dir,style)
+ if os.getenv('GEMINI_DIRECTOR_MODE','svg')!='rigged' or os.getenv('GEMINI_MODEL') in {'gemini-4-hydrogen','gemini-3.6-flash'}:plan_all(api,script,speech,assets,plan_dir,style)
  videos=[];shots=[];position=0;fps=PROFILES[profile][2];frame_cursor=0;used_assets=set()
  for scene,spoken in zip(script['scenes'],speech['scenes']):
   print(f'Directing original scene {scene["scene_id"]}: {scene["narration"][:90]}',flush=True)
@@ -298,7 +307,7 @@ def produce(api,work,output,profile='cinematic',proof=False,resume=None,revise=F
   # Send the entire film, including audio, with a bounded payload. No three-excerpt acceptance shortcut.
   ffmpeg('-i',final,'-vf','scale=640:360','-c:v','libx264','-b:v','180k','-maxrate','220k','-bufsize','440k','-c:a','aac','-b:a','64k',sample,timeout=max(900,position*4))
  else:ffmpeg('-i',final,'-vf','scale=960:540','-c:v','libx264','-crf','27','-c:a','aac','-b:a','80k',sample)
- review=editorial_review(api,sample,style,output)
+ review=editorial_review(api,final,style,output)
  save_json(work/'editorial-feedback.json',{**review,'candidate_timeline':shots})
  acceptable=review['verdict']=='ready' and min(review['scores'].values())>=7
  request=read_json(work/'request.json') if (work/'request.json').exists() else {}

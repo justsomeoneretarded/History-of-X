@@ -31,7 +31,7 @@ def _number(value,label,low=-20000,high=20000):
 class Scene:
  def __init__(self,spec,seconds,assets):
   self.spec=spec;self.seconds=seconds;self.assets={a["id"]:a for a in assets}
-  self.layers={};self.art={};self.nodes={};self.actors={};self.props={};self.busy={}
+  self.layers={};self.art={};self.nodes={};self.actors={};self.props={};self.busy={};self.busy_kind={};self.gesture_interruptions=[]
   self.events=[];self.used=set();self.order=[]
   self.add("environment",background(spec["setting"]),pivot=(960,540),order=-100)
   records=spec.get("nodes")
@@ -147,15 +147,20 @@ class Scene:
    lid=actor["parts"]["face_"+name]
    self.animate(lid,max(0,t-.06),t,{"opacity":1 if value==name else 0})
 
- def reserve_hand(self,actor,hand,t,end):
-  token=(actor,hand)
-  if t<self.busy.get(token,-1)-1e-6:raise PipelineError("Actions on the same hand overlap")
-  self.busy[token]=end
+ def reserve_hand(self,actor,hand,t,end,gesture=False):
+  token=(actor,hand);previous=self.busy.get(token,-1)
+  if t<previous-1e-6:
+   if self.busy_kind.get(token)!="gesture":
+    raise PipelineError(f"Actions on the same hand overlap: {actor}.{hand} at {t:g}s interrupts physical contact ending at {previous:g}s")
+   # A new intentional action may interrupt an idle/pointing gesture. animate()
+   # samples its exact current joint pose before replacing its remaining tween.
+   self.gesture_interruptions.append({"actor":actor,"hand":hand,"time":t,"previous_end":previous})
+  self.busy[token]=end;self.busy_kind[token]="gesture" if gesture else "contact"
 
  def hand(self,actor_id,hand,t,end,target_world=None,local=None):
   actor=self.actors.get(actor_id)
   if actor is None or hand not in ("front","back"):raise PipelineError("Hand action needs an actor and front/back hand")
-  self.reserve_hand(actor_id,hand,t,end)
+  self.reserve_hand(actor_id,hand,t,end,gesture=local is not None)
   torso=actor["parts"]["torso"];base=actor["base"]
   if local is not None:
    if not isinstance(local,list) or len(local)!=2:raise PipelineError("Hand target is a local [x,y] point")
@@ -318,6 +323,7 @@ class Scene:
    "layers":[self.layers[ident] for ident in ordered],
    "camera":{"keyframes":camera},"events":self.events,
    "asset_ids":sorted(self.used)}
+  if self.gesture_interruptions:result["gesture_interruptions"]=self.gesture_interruptions
   validate_scene(result)
   return result
 

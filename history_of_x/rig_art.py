@@ -27,7 +27,7 @@ CAST = {
 EXPRESSIONS = ("neutral","confident","worried","angry","surprised","sad")
 SETTINGS = ("mountains","mountains_night","tent","port","court","rock_church","village","village_dry","city","assembly","diagram")
 PROPS = ("paper","table","coin","sack","crate","rifle","cross","stele","ship",
-         "crown","throne","grain","ballot_box","flag","hammer","territory")
+         "crown","throne","grain","ballot_box","flag","hammer","territory","aircraft","gas_cloud","prison_bars")
 
 def path(d, fill, stroke="#293631", width=3):
  return f'<path d="{d}" fill="{fill}" stroke="{stroke}" stroke-width="{width}" stroke-linejoin="round" stroke-linecap="round"/>'
@@ -248,4 +248,12 @@ def prop_art(kind, text=""):
   return '<path d="M0 12L20-140" stroke="#92704A" stroke-width="14"/>'+path("M-39-147L65-137L62-109L-42-119Z","#63716A")
  if kind=="territory":
   return path("M-105-50L-40-100L20-80L87-110L120-20L85 65L17 95L-82 56Z","#76A18F",width=5)
+ if kind=="aircraft":
+  return (path("M-216-22L-175-48L-130-44L-150-108L-114-108L-58-42H131Q200-42 226-14Q206 6 135 10H-143L-195 24L-186-10Z","#B8BDB1",width=5)
+   +path("M-55-35L55-136L102-127L37-30L119 73L71 88L-32-2Z","#798A7F",width=4)
+   +'<path d="M-160-30L-118-24M134-32V3M205-50V32" stroke="#394C48" stroke-width="7"/><ellipse cx="68" cy="-29" rx="34" ry="13" fill="#36546C"/><circle cx="205" cy="-13" r="7" fill="#293631"/>')
+ if kind=="gas_cloud":
+  return ('<g fill="#AEB59A" opacity=".72">'+''.join(f'<ellipse cx="{x}" cy="{y}" rx="{rx}" ry="{ry}"/>' for x,y,rx,ry in ((-180,-36,105,58),(-65,-61,138,84),(68,-40,142,69),(189,-17,94,49),(-100,12,122,45),(84,20,141,40)))+'</g>')
+ if kind=="prison_bars":
+  return '<rect x="-170" y="-410" width="340" height="430" fill="#263A31" opacity=".13"/><path d="M-176-410H176M-176 20H176M-140-410V20M-70-410V20M0-410V20M70-410V20M140-410V20" fill="none" stroke="#4C514A" stroke-width="12"/>'
  raise ValueError("Unknown original prop")

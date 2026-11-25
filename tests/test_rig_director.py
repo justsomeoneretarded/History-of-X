@@ -99,3 +99,12 @@ def test_request_compaction_preserves_alignment_without_mutating_the_checkpoint(
    return {"ok":True}
  assert rig_director._request(API(),payload,"gemini-3.8-flash")=={"ok":True}
  assert payload["word_timing"]==words and "phrase_timing" not in payload
+
+
+def test_archive_to_illustration_cut_is_a_real_visual_development():
+ spec={"setting":"mountains","nodes":[{"id":"column","kind":"formation","x":400,"y":800}],
+       "actions":[{"type":"move","node":"column","time":9,"duration":3,"x":800,"y":700,"description":"The force enters the hills."},
+                  {"type":"move","node":"column","time":13,"duration":2,"x":1100,"y":650,"description":"Its advance continues."},
+                  {"type":"move","node":"column","time":16,"duration":2,"x":1450,"y":600,"description":"The movement reaches the defended approach."}]}
+ program=rig_director._program(spec,21,[],"archive-test",9,[{},{}])
+ assert [event["time"] for event in program["events"]]==[0.,4.5,9,12.,15.,18.]
