@@ -6,9 +6,9 @@
   "script_target_wpm": 160,
   "phase": "proof",
   "profile": "cinematic",
-  "director_model": "gemini-3.5-flash-lite",
-  "attempt": 7,
-  "resume_run": "45561298049",
+  "director_model": "gemini-3.8-flash",
+  "attempt": 8,
+  "resume_run": "45564649512",
   "writer_model": "gemini-3.5-flash-lite",
   "scene_batch_size": 1,
   "schema_mode": "prompt"
