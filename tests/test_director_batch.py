@@ -87,7 +87,7 @@ def test_three_new_scenes_use_two_calls_with_individual_checkpoints(tmp_path, ho
     result = plan_all(api, *inputs(), tmp_path)
     assert list(result) == ["1", "2", "3"]
     assert [c["payload"]["required_scene_ids"] for c in api.calls] == [["1", "2"], ["3"]]
-    assert [c["max_output"] for c in api.calls] == [30000, 18000]
+    assert [c["max_output"] for c in api.calls] == [16000, 10000]
     assert hooks.validations == ["1", "2", "3"]
     assert len(list((tmp_path / "batch-drafts").glob("*.json"))) == 3
     assert len(list(tmp_path.glob("test-accepted-*.json"))) == 3
@@ -200,7 +200,7 @@ def test_three_scene_configuration_uses_one_complete_request(tmp_path, hooks, mo
     assert list(result) == ["1", "2", "3"]
     assert len(api.calls) == 1
     assert api.calls[0]["payload"]["required_scene_ids"] == ["1", "2", "3"]
-    assert api.calls[0]["max_output"] == 45000
+    assert api.calls[0]["max_output"] == 24000
     assert hooks.validations == ["1", "2", "3"]
     assert len(list((tmp_path / "batch-drafts").glob("*.json"))) == 3
 
@@ -211,7 +211,7 @@ def test_single_scene_configuration_respects_the_request_limit(tmp_path, hooks, 
     result = plan_all(api, *inputs(), tmp_path)
     assert list(result) == ["1", "2", "3"]
     assert [c["payload"]["required_scene_ids"] for c in api.calls] == [["1"], ["2"], ["3"]]
-    assert [c["max_output"] for c in api.calls] == [18000, 18000, 18000]
+    assert [c["max_output"] for c in api.calls] == [10000, 10000, 10000]
 
 
 @pytest.mark.parametrize("value", ["0", "4", "-1", "not-an-integer", "1.5", ""])

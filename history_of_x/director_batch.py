@@ -119,7 +119,7 @@ def _request(api, pending, directory):
                "attached_images": image_table, "required_scene_ids": identifiers}
     instruction = common_instruction + "\n" + BATCH_INSTRUCTION
     print("Gemini scene batch: " + ", ".join(identifiers), flush=True)
-    max_output = {1: 18000, 2: 30000, 3: 45000}[len(pending)]
+    max_output = {1: 10000, 2: 16000, 3: 24000}[len(pending)]
     if images:
         response = api.vision(instruction, payload, images, response_schema,
                               max_output=max_output)
