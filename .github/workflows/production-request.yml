@@ -91,6 +91,8 @@ jobs:
         env:
           GEMINI_API: ${{ secrets.GEMINI_API }}
           GEMINI_MODEL: ${{ env.DIRECTOR_MODEL }}
+          GEMINI_DIRECTOR_MODEL: ${{ env.DIRECTOR_MODEL }}
+          GEMINI_WRITER_MODEL: ${{ env.WRITER_MODEL }}
           GEMINI_SCHEMA_MODE: prompt
           GEMINI_PACKAGE_MODEL: gemini-3.5-flash-lite
           GEMINI_REVIEW_MODEL: gemini-3.5-flash-lite
@@ -100,7 +102,11 @@ jobs:
           args=(--profile "$FILM_PROFILE")
           if [[ "$REQUEST_PHASE" == "proof" ]]; then args+=(--proof); fi
           if [[ "$REVISE_FILM" == "true" ]]; then args+=(--revise); fi
-          python -m history_of_x.director_film "${args[@]}"
+          if [[ "$REQUEST_PHASE" == "film" ]]; then
+            python -m history_of_x.director_runner --profile "$FILM_PROFILE"
+          else
+            python -m history_of_x.director_film "${args[@]}"
+          fi
       - name: Publish inspectable temporal evidence
         if: ${{ always() }}
         run: python scripts/production_request.py evidence
@@ -121,6 +127,8 @@ jobs:
             work/director/voice-auditions
             work/director/media
             work/director/scene-programs
+            work/director/directed-render
+            work/director/story-checks
             work/director/editorial-review-parts
           retention-days: 90
       - uses: actions/upload-artifact@v4
@@ -128,4 +136,11 @@ jobs:
         with:
           name: directed-output
           path: output/director
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: ${{ success() && env.REQUEST_PHASE == 'film' }}
+        with:
+          name: youtube-upload-ready
+          path: output/director/upload-ready
+          if-no-files-found: error
           retention-days: 90
