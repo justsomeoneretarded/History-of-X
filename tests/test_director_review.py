@@ -56,7 +56,7 @@ def film(tmp_path, monkeypatch):
         durations[clip] = seconds
 
     def fake_duration(path):
-        return 61.25 if Path(path) == video else durations[Path(path)]
+        return 68.25 if Path(path) == video else durations[Path(path)]
 
     monkeypatch.setattr(subject, "ffmpeg", fake_ffmpeg)
     monkeypatch.setattr(subject, "duration", fake_duration)
@@ -71,15 +71,15 @@ def test_entire_film_including_tail_uses_actual_inline_audio_video(film):
     report = subject.review(api, video, {}, output)
 
     assert [(part["start"], part["seconds"]) for part in transcodes] == [
-        (0, 30), (30, 30), (60, 1.25),
+        (0, 30), (30, 30), (60, 8.25),
     ]
     assert report["verdict"] == "ready"
     scope = report["scope"]
     assert scope["coverage"] == "entire_film_chunks"
-    assert scope["duration_seconds"] == scope["reviewed_seconds"] == 61.25
+    assert scope["duration_seconds"] == scope["reviewed_seconds"] == 68.25
     assert scope["chunk_count"] == 3 and scope["audio_included"]
     assert [(part["start_seconds"], part["end_seconds"]) for part in scope["ranges"]] == [
-        (0, 30), (30, 60), (60, 61.25),
+        (0, 30), (30, 60), (60, 68.25),
     ]
     assert scope["models"] == ["gemini-3.5-flash-lite"]
     for call, transcode in zip(api.calls, transcodes):
@@ -98,7 +98,7 @@ def test_entire_film_including_tail_uses_actual_inline_audio_video(film):
         assert "0:a:0" in args and "-an" not in args
     assert all(
         observation.startswith(f"[{start:.3f}–{end:.3f}s] ")
-        for observation, (start, end) in zip(report["observations"], [(0, 30), (30, 60), (60, 61.25)])
+        for observation, (start, end) in zip(report["observations"], [(0, 30), (30, 60), (60, 68.25)])
     )
     assert read_json(output / "editorial-review.json") == report
     checkpoints = list((output / "editorial-review-parts").glob("*.json"))
@@ -127,7 +127,7 @@ def test_interruption_resumes_accepted_chunks_and_removes_old_final_report(film)
     assert len(list((output / "editorial-review-parts").glob("*.json"))) == 1
     api = FakeAPI()
     result = subject.review(api, video, {}, output)
-    assert len(api.calls) == 2 and result["scope"]["reviewed_seconds"] == 61.25
+    assert len(api.calls) == 2 and result["scope"]["reviewed_seconds"] == 68.25
     assert [part["start"] for part in transcodes] == [0, 30, 30, 60]
 
 
@@ -177,7 +177,7 @@ def test_only_relevant_bounded_style_and_narration_context_are_sent(film):
     video, output, _ = film
     save_json(output / "timeline.json", [
         {"global_start": 0, "global_end": 30, "narration_context": "First spoken scene."},
-        {"global_start": 30, "global_end": 61.25, "narration_context": "Second spoken scene."},
+        {"global_start": 30, "global_end": 68.25, "narration_context": "Second spoken scene."},
     ])
     api = FakeAPI()
     subject.review(api, video, {"video_reference_study": {
@@ -203,3 +203,20 @@ def test_only_relevant_bounded_style_and_narration_context_are_sent(film):
 def test_incomplete_or_malformed_response_fails_closed(response):
     with pytest.raises(PipelineError):
         subject._parse_response(response)
+
+
+def test_short_final_tail_is_merged_without_losing_coverage(film, monkeypatch):
+    video, output, transcodes = film
+    original_duration = subject.duration
+    monkeypatch.setattr(
+        subject, "duration",
+        lambda path: 66.0 if Path(path) == video else original_duration(path),
+    )
+    api = FakeAPI()
+    report = subject.review(api, video, {}, output)
+    assert [(part["start"], part["seconds"]) for part in transcodes] == [(0, 30), (30, 36)]
+    assert len(api.calls) == 2
+    assert report["scope"]["duration_seconds"] == report["scope"]["reviewed_seconds"] == 66
+    assert [(part["start_seconds"], part["end_seconds"]) for part in report["scope"]["ranges"]] == [
+        (0, 30), (30, 66),
+    ]

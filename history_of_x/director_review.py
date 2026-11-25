@@ -21,6 +21,8 @@ PROMPT = """Watch and listen to this actual history-film segment. Judge craft fr
 its description. Assess semantic visual explanation, purposeful action/reaction and prop contact,
 readable varied composition, natural spoken narration and music balance, and editorial pacing.
 Movement alone earns no credit; purposeful holds, diagrams and authentic media can work well.
+Acting includes suitable real footage or explanatory motion; cartoons are not always required.
+Do not penalize authentic archival resolution itself when the footage is intelligible and appropriate.
 Identify concrete observed strengths and defects, including generic/repetitive staging, incoherent
 acting, illegible text or audio problems where present. Do not presume success or failure.
 This is one consecutive segment of an entire-film review. Its start/end are artificial review cuts;
@@ -177,6 +179,17 @@ def _transcode(video, clip, start, seconds):
         raise PipelineError("Editorial review transcode did not preserve the requested clip duration")
 
 
+def _ranges(seconds):
+    spans = [
+        (float(index * CHUNK_SECONDS), min(seconds, float((index + 1) * CHUNK_SECONDS)))
+        for index in range(math.ceil(seconds / CHUNK_SECONDS))
+    ]
+    # A tiny final fragment lacks context; absorb it without omitting any film.
+    if len(spans) > 1 and spans[-1][1] - spans[-1][0] < 8:
+        spans[-2:] = [(spans[-2][0], spans[-1][1])]
+    return spans
+
+
 def review(api, video, style, output):
     """Review every consecutive audiovisual chunk; resume only matching valid reports."""
     video, output = Path(video), Path(output)
@@ -197,9 +210,7 @@ def review(api, video, style, output):
     media = directory / "media"
     media.mkdir(parents=True, exist_ok=True)
     reviewed = []
-    for index in range(math.ceil(seconds / CHUNK_SECONDS)):
-        start = float(index * CHUNK_SECONDS)
-        end = min(seconds, start + CHUNK_SECONDS)
+    for index, (start, end) in enumerate(_ranges(seconds)):
         context = {
             "absolute_start_seconds": start, "absolute_end_seconds": end,
             "clip_duration_seconds": end - start,
