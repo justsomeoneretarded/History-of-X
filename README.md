@@ -30,19 +30,19 @@ These are craft references. Their scripts, characters, jokes, voices and songs a
 | --- | --- |
 | Outline and script | Gemini, bounded original scene budgets, source IDs and measured spoken cadence |
 | Narration | Gemini 3.8 Flash TTS; actual voice auditions judged for completeness, naturalness, clarity and rhythm |
-| Direction | Gemini generates original SVG artwork and explicit timed layer transforms; it also sees approved historical subject images |
-| Animation | CairoSVG rasterization, Pillow floating-point composition, parent rigs, expressions, gestures, props, reveals and camera keyframes |
+| Direction | Gemini writes executable scene graphs: staging, timed decisions, expressions, movements, contact and consequences; historical image metadata accompanies approved inserts |
+| Animation | Original illustrated period characters/scenery, two-link arm kinematics, continuous prop ownership, CairoSVG rasterization, Pillow floating-point composition and bounded camera keyframes |
 | Historical media | Curated Ethiopia collection and Internet Archive newsreel; other topics discover specifically matched CC0 images through Cleveland and Met museum APIs; actual use is recorded |
 | Sound | Licensed Scott Buckley recordings with restrained levels, crossfades, narration ducking, deliberate silence and explicitly requested original foley |
 | Editing | FFmpeg; cumulative frame timing, uniform audio format, 48kHz stereo AAC, loudness and decode checks |
 | Packaging | Gemini title/description/hook, large authentic subject composition, complete source and media attribution outside the picture |
 | Review | Actual video/audio critique for visual relevance, acting, composition, narration and pacing; technical checks remain separate |
 
-The renderer has no required palace/army templates or implicit walking loops. The scene program actually executes the authored timing. Purposeful stillness is allowed; decorative movement does not earn creative approval.
+Gemini chooses among original illustrated characters, settings and props, and directs their actions through a validated scene graph. Hands reach exact targets, held props stay attached, and walking occurs only during explicit travel. The renderer does not invent actions from prose. Purposeful holds are allowed; decorative movement does not earn creative approval. Saved directions are recompiled after artwork or renderer fixes without another provider request.
 
 ## Free-tier limits and recovery
 
-The directed workflow currently defaults to **Gemini 3.1 Flash Lite** for writing and scene direction, **Gemini 3.5 Flash Lite** for review, and **Gemini 3.8 Flash TTS** for speech. This reflects the models responding during production tests;3.5 and3.8text generation repeatedly returned overload errors. Repository variables can override these choices. `GEMINI_DIRECTOR_MODEL` can select a supported alternative; the older workflows retain their separate settings. Google's current standard pricing lists free text input/output for 3.8 Flash, but project access and quotas still vary. Consult [pricing](https://ai.google.dev/gemini-api/docs/pricing) and [project rate limits](https://ai.google.dev/gemini-api/docs/rate-limits).
+The directed workflow currently defaults to **Gemini 3.1 Flash Lite** for writing and scene direction, **Gemini 3.5 Flash Lite** for review, and **Gemini 3.8 Flash TTS** for speech. This reflects the models responding during production tests; 3.5 and 3.8 text generation repeatedly returned overload errors. Repository variables can override these choices. `GEMINI_DIRECTOR_MODEL` can select a supported alternative; the older workflows retain their separate settings. Google's current standard pricing lists free text input/output for 3.8 Flash, but project access and quotas still vary. Consult [pricing](https://ai.google.dev/gemini-api/docs/pricing) and [project rate limits](https://ai.google.dev/gemini-api/docs/rate-limits).
 
 - Request starts are separated by at least 65 seconds. This is a conservative application policy, not Google's universal required sleep.
 - RPM, input TPM and daily quotas are separate and shared by a Google project. Sleeping cannot cure an exhausted daily quota.

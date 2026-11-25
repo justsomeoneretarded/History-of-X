@@ -66,3 +66,14 @@ def test_discovery_keeps_specific_provenance_and_caches_network_results(tmp_path
     assert second["assets"][0]["license"]=="CC0 1.0"
     assert second["assets"][0]["sha256"]
     assert not any(k.startswith("_") for k in second["assets"][0])
+
+
+def test_shared_material_and_object_words_cannot_replace_the_named_culture():
+    record=normalize_record("met",met(title="Roman gold coin",culture="Roman",
+                 medium="Gold",objectName="Coin"))
+    assert not relevant(record,{"date_label":"300"},"Aksum gold coin")
+    assert relevant(record,{"date_label":"300"},"Roman gold coin")
+
+def test_matching_culture_alone_cannot_replace_a_named_person():
+    record=normalize_record("met",met(title="Portrait of Nero",culture="Roman"))
+    assert not relevant(record,{"date_label":"54"},"Roman Augustus marble bust")

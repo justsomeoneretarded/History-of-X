@@ -19,6 +19,15 @@ STOP = {"the", "and", "with", "from", "into", "during", "historical", "history",
         "ancient", "modern", "dramatic", "image", "images", "photo", "photograph",
         "painting", "illustration", "archive", "archival", "portrait", "scene"}
 
+# Shared material/object words must not make a different culture or person a hit.
+GENERIC_SUBJECT = {
+ "gold","silver","bronze","copper","wood","marble","stone","clay","terracotta",
+ "coin","coins","statue","bust","sculpture","pottery","vase","vessel","relief",
+ "man","woman","people","king","queen","ruler","emperor","soldier","soldiers",
+ "army","battle","war","military","ship","ships","fleet","naval","weapon",
+ "church","temple","building","architecture","century","medieval","early","late",
+ "museum","collection","open","access","public","domain","royal","imperial",
+}
 
 def subject_terms(text):
     return set(re.findall(r"[a-z]{3,}", str(text).casefold())) - STOP
@@ -90,6 +99,9 @@ def normalize_record(provider, raw):
 def relevant(record, scene, query):
     terms = subject_terms(query)
     if not terms or len(terms & record["_match"]) < min(2, len(terms)):
+        return False
+    specific = terms - GENERIC_SUBJECT
+    if specific and len(specific & record["_match"]) < min(2, len(specific)):
         return False
     if record["medium"] == "historical_photo":
         period = scene_period(scene)
