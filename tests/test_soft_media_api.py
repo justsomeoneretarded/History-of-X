@@ -60,7 +60,7 @@ def test_gemma_uses_plain_text_schema_and_supported_generation_controls(tmp_path
     sent=session.bodies[0]
     assert 'responseJsonSchema' not in sent['generationConfig']
     assert 'responseMimeType' not in sent['generationConfig']
-    assert 'thinkingConfig' not in sent['generationConfig']
+    assert sent['generationConfig']['thinkingConfig']=={'thinkingLevel':'MINIMAL'}
     assert '"required": ["ok"]' in sent['contents'][0]['parts'][0]['text']
 
 def test_plain_text_gemma_accepts_only_a_complete_json_fence():
@@ -89,3 +89,25 @@ def test_gemma_is_not_used_for_video_or_image_review(tmp_path,monkeypatch):
     with pytest.raises(PipelineError,match='text-only'):
         api.request('gemma-4-31b-it','models/test:generateContent',body,'text')
     assert session.bodies==[]
+
+
+def test_incomplete_output_retains_finish_and_usage_without_thought_content(tmp_path,monkeypatch):
+    from history_of_x.core import PipelineError
+    class Incomplete(Session):
+        def post(self,url,**kwargs):
+            response=super().post(url,**kwargs)
+            response._content=json.dumps({
+             'candidates':[{'finishReason':'MAX_TOKENS','content':{'parts':[
+              {'thought':True,'text':'private intermediate reasoning'},
+              {'text':'{"nodes":['}]}}],
+             'usageMetadata':{'thoughtsTokenCount':3400}}).encode()
+            return response
+    monkeypatch.setenv('GEMINI_MEDIA_LEDGER',str(tmp_path/'ledger.json'))
+    api=MediaAPI(tmp_path/'api',session=Incomplete())
+    with pytest.raises(PipelineError,match='finishReason=MAX_TOKENS'):
+        api.text('Return JSON.',{}, {'type':'object'},max_output=3500,model='gemma-4-26b-a4b-it')
+    assert not list((tmp_path/'api').glob('*.json'))
+    diagnostic=json.loads(next((tmp_path/'api/diagnostics').glob('*.json')).read_text())
+    assert diagnostic['requested_max_output']==3500
+    assert diagnostic['response']['usageMetadata']['thoughtsTokenCount']==3400
+    assert 'private intermediate' not in json.dumps(diagnostic)

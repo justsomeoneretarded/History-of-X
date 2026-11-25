@@ -110,13 +110,13 @@ def _request(api,payload,primary):
  if words:
   payload["phrase_timing"]=[[" ".join(str(w[0]) for w in words[i:i+5]),words[i][1],words[min(i+4,len(words)-1)][2]] for i in range(0,len(words),5)]
  try:
-  return api.text(CONTRACT,payload,schema(),max_output=3500,preserve_bounds=True,model=primary)
+  return api.text(CONTRACT,payload,schema(),max_output=5000 if primary.startswith('gemma-') else 3500,preserve_bounds=True,model=primary)
  except PipelineError as exc:
   message=str(exc)
   if "unavailable after three attempts" not in message and "network deadline" not in message:raise
   backup="gemini-3.8-flash" if primary.startswith("gemma-") else "gemma-4-26b-a4b-it"
   print(f"Scene direction: {primary} unavailable; trying verified free model {backup}.",flush=True)
-  return api.text(CONTRACT,payload,schema(),max_output=3500,preserve_bounds=True,model=backup)
+  return api.text(CONTRACT,payload,schema(),max_output=5000 if backup.startswith('gemma-') else 3500,preserve_bounds=True,model=backup)
 
 def plan_scene(api,scene,spoken,assets,directory,style=None):
  seconds=float(spoken["duration"]);ident=str(scene["scene_id"])

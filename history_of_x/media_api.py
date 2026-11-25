@@ -40,7 +40,7 @@ class MediaAPI:
    if any('inlineData' in p or 'fileData' in p for p in parts):
     raise PipelineError('Gemma recovery is text-only; use Gemini for audiovisual review')
    config=body.setdefault('generationConfig',{})
-   config.pop('responseMimeType',None);config.pop('thinkingConfig',None)
+   config.pop('responseMimeType',None);config['thinkingConfig']={'thinkingLevel':'MINIMAL'}
   identity=key('media-api-v1',model,endpoint,body);cache=self.directory/(identity+'.json')
   if cache.exists():return read_json(cache)
   if kind=='text':
@@ -80,14 +80,21 @@ class MediaAPI:
     continue
    if r.ok:
     result=r.json()
-    if kind=='text' and (not result.get('candidates') or result['candidates'][0].get('finishReason')!='STOP'):
-     raise PipelineError('Gemini text incomplete or blocked; response was not cached')
+    if kind=='text':
+     candidates=result.get('candidates',[]);reason=candidates[0].get('finishReason','MISSING') if candidates else 'MISSING'
+     usage=result.get('usageMetadata',{})
+     print('GEMINI_TEXT_RESULT '+json.dumps({'model':model,'finish_reason':reason,'usage':usage}),flush=True)
+     if reason!='STOP':
+      generation_diagnostic(self.directory,identity,model,body,result)
+      raise PipelineError(f'Gemini text incomplete or blocked (finishReason={reason}); response was not cached')
     if kind=='speech' and not any(c.get('type')=='audio' for step in result.get('steps',[]) for c in step.get('content',[])):
      raise PipelineError('Gemini returned no audio; response was not cached')
     if model in GEMMA_MODELS:
      raw=''.join(p.get('text','') for p in result['candidates'][0]['content']['parts'] if not p.get('thought'))
      try:json.loads(json_text(raw,model))
-     except (TypeError,ValueError):raise PipelineError('Gemma returned invalid JSON; response was not cached') from None
+     except (TypeError,ValueError):
+      generation_diagnostic(self.directory,identity,model,body,result)
+      raise PipelineError('Gemma returned invalid JSON; response was not cached') from None
     save_json(cache,result);return result
    detail=r.text.replace(self.secret,'[REDACTED]') if self.secret else r.text
    print(f'Gemini {model}: HTTP {r.status_code}: {detail[:650]}',flush=True)
@@ -158,3 +165,14 @@ def json_text(raw,model):
  if len(lines)>=3 and lines[0].strip().lower() in (fence,fence+'json') and lines[-1].strip()==fence:
   return '\n'.join(lines[1:-1])
  return raw
+
+
+def generation_diagnostic(directory,identity,model,body,result):
+ """Preserve finish/usage data and final output without caching it as accepted."""
+ response=copy.deepcopy(result)
+ for candidate in response.get('candidates',[]):
+  content=candidate.get('content',{})
+  content['parts']=[part for part in content.get('parts',[]) if not part.get('thought')]
+ save_json(Path(directory)/'diagnostics'/(identity+'.json'),{
+  'model':model,'requested_max_output':body.get('generationConfig',{}).get('maxOutputTokens'),
+  'response':response})
