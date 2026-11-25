@@ -73,7 +73,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: visual-test-checkpoint
+          name: directed-checkpoint
           path: |
             work/director/*.json
             work/director/*.txt

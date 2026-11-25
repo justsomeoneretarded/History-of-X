@@ -24,7 +24,7 @@ ILLUSTRATION_BIBLE={
  'composition':'Deliberate wide/medium/detail changes, foreground depth, restrained shadows. Avoid the same palace, table or centered symmetrical composition in successive scenes.'}
 
 def plan_scene(api,scene,spoken,assets,directory,style=None,request_only=False,preplanned=None):
- from .scene_film import schema,validate_scene
+ from .scene_film import schema,validate_scene,normalize_artwork_groups
  seconds=round(spoken['duration'],6)
  catalog={a['id']:a for a in assets['assets']}
  candidates=[catalog[x] for x in assets['scenes'].get(str(scene['scene_id']),[]) if x in catalog and catalog[x].get('medium') not in ('video','archival_video')]
@@ -119,6 +119,7 @@ Return valid JSON exactly matching schema. scene_id must equal the supplied stri
    result['asset_ids']=list(dict.fromkeys(re.findall(r'asset:([A-Za-z0-9_.-]+)',result['svg'])))
    if len(result['asset_ids'])>2:raise PipelineError('Use at most two embedded historical images per scene')
    result['svg']=re.sub(r'asset:([A-Za-z0-9_.-]+)',embed,result['svg'])
+   result=normalize_artwork_groups(result)
    validate_scene(result)
    events=sorted(result['events'],key=lambda e:e['time'])
    if seconds>12 and (len(events)<3 or any(b-a>7 for a,b in zip([0]+[e['time'] for e in events],[e['time'] for e in events]+[seconds]))):

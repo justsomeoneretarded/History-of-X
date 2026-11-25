@@ -144,6 +144,74 @@ def _svg_tree(source):
     return root, groups
 
 
+
+def normalize_artwork_groups(program):
+    """Preserve standard SVG paint order when visible root shapes need layers.
+
+    Ungrouped SVG artwork is static by definition unless its own ID already has
+    authored keyframes. Wrap it without inventing motion, captions or semantic
+    events. This is a syntax adaptation, never creative approval.
+    """
+    if not isinstance(program, dict) or not isinstance(program.get('svg'), str):
+        return program
+    try:
+        _svg_tree(program['svg'])
+        return program
+    except PipelineError as exc:
+        if str(exc) not in {
+            'Every top-level artwork group requires an ID',
+            'All visible SVG artwork must be inside named top-level groups',
+        }:
+            raise
+    # _svg_tree has already checked declarations, resources and element safety
+    # before reaching either root-group error.
+    root = ET.fromstring(program['svg'])
+    layers = program.get('layers')
+    if not isinstance(layers, list) or any(
+            not isinstance(layer, dict) or not isinstance(layer.get('id'), str)
+            for layer in layers):
+        return program
+    directed = {layer['id']: copy.deepcopy(layer) for layer in layers}
+    if len(directed) != len(layers):
+        return program
+    existing = [child.get('id') for child in root
+                if _name(child.tag) == 'g' and child.get('id') in directed]
+    requested = [layer['id'] for layer in layers if layer['id'] in existing]
+    if existing != requested:
+        raise PipelineError('Ungrouped SVG artwork requires unambiguous document/layer paint order')
+    identifiers = {element.get('id') for element in root.iter() if element.get('id')}
+    order = []
+    for index, child in enumerate(list(root)):
+        tag = _name(child.tag)
+        if tag in {'defs', 'title', 'desc'}:
+            continue
+        identifier = child.get('id')
+        if not identifier:
+            identifier = 'static_svg_' + str(index)
+            while identifier in identifiers:
+                identifier += '_'
+            identifiers.add(identifier)
+        if tag != 'g':
+            group = ET.Element('{' + SVG + '}g', {'id': identifier})
+            child.attrib.pop('id', None)
+            root.remove(child)
+            root.insert(index, group)
+            group.append(child)
+        else:
+            child.set('id', identifier)
+        if identifier not in directed:
+            directed[identifier] = {
+                'id': identifier, 'pivot': [WIDTH / 2, HEIGHT / 2],
+                'start': 0, 'end': program['duration'],
+                'keyframes': [{'time': 0}]}
+        order.append(identifier)
+    # Do not silently drop an authored layer that still has no SVG artwork.
+    missing = set(directed) - set(order)
+    if missing:
+        raise PipelineError('Authored layers have no SVG artwork: ' + ', '.join(sorted(missing)))
+    return {**program, 'svg': ET.tostring(root, encoding='unicode'),
+            'layers': [directed[identifier] for identifier in order]}
+
 def _finite(value):
     return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
 
