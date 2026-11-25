@@ -6,7 +6,8 @@ import requests
 from .core import PipelineError,key,read_json,save_json
 from .gemini import QuotaDeferred
 
-TEXT_MODELS={'gemini-3.8-flash','gemini-3.5-flash-lite','gemini-3.1-flash-lite'}
+GEMMA_MODELS={'gemma-4-26b-a4b-it','gemma-4-31b-it'}
+TEXT_MODELS={'gemini-3.8-flash','gemini-3.5-flash-lite','gemini-3.1-flash-lite'}|GEMMA_MODELS
 TTS_MODELS={'gemini-3.8-flash-tts','gemini-3.8-flash-lite-tts'}
 VOICES=('Puck','Charon','Kore','Fenrir','Orus','Aoede')
 STYLE='Original animated history explainer. Conversational, brisk and articulate, with understated deadpan wit. Natural pauses. No trailer voice, no exaggerated accents. Treat suffering seriously. Read the supplied transcript exactly; do not add an introduction or closing.'
@@ -22,7 +23,7 @@ class MediaAPI:
  def request(self,model,endpoint,body,kind):
   if model not in (TEXT_MODELS if kind=='text' else TTS_MODELS):raise PipelineError('Unverified free-tier model; no paid fallback')
   if kind=='text':
-   mode=os.getenv('GEMINI_SCHEMA_MODE','native')
+   mode='prompt' if model in GEMMA_MODELS else os.getenv('GEMINI_SCHEMA_MODE','native')
    if mode not in {'native','prompt'}:raise PipelineError('Choose native or prompt Gemini schema mode')
    if mode=='prompt' and 'responseJsonSchema' in body.get('generationConfig',{}):
     body=copy.deepcopy(body);config=body['generationConfig'];shape=config.pop('responseJsonSchema')
@@ -33,6 +34,13 @@ class MediaAPI:
     part=next((p for p in target.setdefault('parts',[]) if 'text' in p),None)
     if part is None:target['parts'].insert(0,{'text':addition})
     else:part['text']+=addition
+  if model in GEMMA_MODELS:
+   body=copy.deepcopy(body)
+   parts=[p for content in body.get('contents',[]) for p in content.get('parts',[])]
+   if any('inlineData' in p or 'fileData' in p for p in parts):
+    raise PipelineError('Gemma recovery is text-only; use Gemini for audiovisual review')
+   config=body.setdefault('generationConfig',{})
+   config.pop('responseMimeType',None);config.pop('thinkingConfig',None)
   identity=key('media-api-v1',model,endpoint,body);cache=self.directory/(identity+'.json')
   if cache.exists():return read_json(cache)
   if kind=='text':
@@ -54,7 +62,7 @@ class MediaAPI:
    start=self.clock();calls.append({'time':start,'model':model,'kind':kind,'request':identity})
    save_json(self.ledger,{'calls':calls,'last_start':start})
    try:
-    if kind=='text' and self.use_sdk and os.getenv('GEMINI_SCHEMA_MODE','native')!='prompt':
+    if kind=='text' and self.use_sdk and mode!='prompt':
      # Keep the established SDK's wire conversion for newer text-model enums/schema.
      from google import genai
      from google.genai import types
@@ -76,6 +84,10 @@ class MediaAPI:
      raise PipelineError('Gemini text incomplete or blocked; response was not cached')
     if kind=='speech' and not any(c.get('type')=='audio' for step in result.get('steps',[]) for c in step.get('content',[])):
      raise PipelineError('Gemini returned no audio; response was not cached')
+    if model in GEMMA_MODELS:
+     raw=''.join(p.get('text','') for p in result['candidates'][0]['content']['parts'] if not p.get('thought'))
+     try:json.loads(json_text(raw,model))
+     except (TypeError,ValueError):raise PipelineError('Gemma returned invalid JSON; response was not cached') from None
     save_json(cache,result);return result
    detail=r.text.replace(self.secret,'[REDACTED]') if self.secret else r.text
    print(f'Gemini {model}: HTTP {r.status_code}: {detail[:650]}',flush=True)
@@ -95,7 +107,7 @@ class MediaAPI:
   candidates=result.get('candidates',[])
   if not candidates or candidates[0].get('finishReason')!='STOP':raise PipelineError('Gemini text incomplete or blocked')
   raw=''.join(p.get('text','') for p in candidates[0]['content']['parts'] if not p.get('thought'))
-  try:return json.loads(raw)
+  try:return json.loads(json_text(raw,model))
   except ValueError:raise PipelineError('Invalid Gemini structured output') from None
  def speech(self,text,voice,output,attempt=0):
   if voice not in VOICES:raise PipelineError('Choose a supported Gemini voice')
@@ -137,3 +149,12 @@ def portable_schema(value):
  if isinstance(value,dict):return {k:portable_schema(v) for k,v in value.items() if k not in {'minLength','maxLength','minItems','maxItems','minimum','maximum'}}
  if isinstance(value,list):return [portable_schema(v) for v in value]
  return value
+
+
+def json_text(raw,model):
+ """Allow only a complete optional Markdown JSON fence on plain-text Gemma."""
+ if model not in GEMMA_MODELS:return raw
+ raw=raw.strip();lines=raw.splitlines();fence=chr(96)*3
+ if len(lines)>=3 and lines[0].strip().lower() in (fence,fence+'json') and lines[-1].strip()==fence:
+  return '\n'.join(lines[1:-1])
+ return raw

@@ -50,3 +50,42 @@ def test_schema_modes_use_distinct_response_cache_entries(tmp_path,monkeypatch):
     api.request('gemini-3.5-flash-lite','models/test:generateContent',body,'text')
     api.request('gemini-3.5-flash-lite','models/test:generateContent',body,'text')
     assert len(session.bodies)==2
+
+
+def test_gemma_uses_plain_text_schema_and_supported_generation_controls(tmp_path,monkeypatch):
+    api,session=gateway(tmp_path,monkeypatch)
+    monkeypatch.setenv('GEMINI_SCHEMA_MODE','native')
+    shape={'type':'object','required':['ok'],'properties':{'ok':{'type':'boolean'}}}
+    assert api.text('Return JSON.',{},shape,model='gemma-4-26b-a4b-it')=={'ok':True}
+    sent=session.bodies[0]
+    assert 'responseJsonSchema' not in sent['generationConfig']
+    assert 'responseMimeType' not in sent['generationConfig']
+    assert 'thinkingConfig' not in sent['generationConfig']
+    assert '"required": ["ok"]' in sent['contents'][0]['parts'][0]['text']
+
+def test_plain_text_gemma_accepts_only_a_complete_json_fence():
+    from history_of_x.media_api import json_text
+    fence=chr(96)*3
+    assert json_text(fence+'json\n{"ok":true}\n'+fence,'gemma-4-31b-it')=='{"ok":true}'
+    assert json_text('Here is some text {"ok":true}','gemma-4-31b-it').startswith('Here is')
+
+def test_gemma_invalid_json_is_not_saved_as_an_accepted_response(tmp_path,monkeypatch):
+    from history_of_x.core import PipelineError
+    class InvalidSession(Session):
+        def post(self,url,**kwargs):
+            response=super().post(url,**kwargs)
+            response._content=json.dumps({'candidates':[{'finishReason':'STOP','content':{'parts':[{'text':'not JSON'}]}}]}).encode()
+            return response
+    monkeypatch.setenv('GEMINI_MEDIA_LEDGER',str(tmp_path/'ledger.json'))
+    api=MediaAPI(tmp_path/'api',session=InvalidSession())
+    with pytest.raises(PipelineError,match='not cached'):
+        api.text('Return JSON.',{}, {'type':'object'},model='gemma-4-26b-a4b-it')
+    assert not list((tmp_path/'api').glob('*.json'))
+
+def test_gemma_is_not_used_for_video_or_image_review(tmp_path,monkeypatch):
+    from history_of_x.core import PipelineError
+    api,session=gateway(tmp_path,monkeypatch)
+    body={'contents':[{'parts':[{'inlineData':{'mimeType':'video/mp4','data':'AA=='}}]}],'generationConfig':{}}
+    with pytest.raises(PipelineError,match='text-only'):
+        api.request('gemma-4-31b-it','models/test:generateContent',body,'text')
+    assert session.bodies==[]

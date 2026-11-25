@@ -114,7 +114,7 @@ def _request(api,payload,primary):
  except PipelineError as exc:
   message=str(exc)
   if "unavailable after three attempts" not in message and "network deadline" not in message:raise
-  backup="gemini-3.5-flash-lite" if primary!="gemini-3.5-flash-lite" else "gemini-3.1-flash-lite"
+  backup="gemini-3.8-flash" if primary.startswith("gemma-") else "gemma-4-26b-a4b-it"
   print(f"Scene direction: {primary} unavailable; trying verified free model {backup}.",flush=True)
   return api.text(CONTRACT,payload,schema(),max_output=3500,preserve_bounds=True,model=backup)
 
@@ -137,7 +137,7 @@ def plan_scene(api,scene,spoken,assets,directory,style=None):
  if existing is None:
   # A validated direction is reusable across provider routing changes. Compare
   # the exact narration, timings, assets and contract fingerprint before reuse.
-  for other in ("gemini-3.1-flash-lite","gemini-3.5-flash-lite","gemini-3.8-flash"):
+  for other in ("gemini-3.1-flash-lite","gemini-3.5-flash-lite","gemini-3.8-flash","gemma-4-26b-a4b-it","gemma-4-31b-it"):
    alternate=directory/(key("rigged-scene-v1",VERSION,CONTRACT,schema(),other,context)+".json")
    if alternate.exists():
     existing=read_json(alternate)
