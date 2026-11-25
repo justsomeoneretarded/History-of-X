@@ -193,3 +193,13 @@ def test_only_relevant_bounded_style_and_narration_context_are_sent(film):
     assert contexts[2]["narration_context"] == ["Second spoken scene."]
     assert all(context["visual_rules"] == ["composition: Use a clear focal point."] for context in contexts)
     assert "irrelevant large guide" not in api.calls[0][2]["contents"][0]["parts"][0]["text"]
+
+
+@pytest.mark.parametrize("response", [
+    {"candidates": [None]},
+    {"candidates": [{"finishReason": "STOP", "content": {"parts": [None]}}]},
+    {"candidates": [{"finishReason": "MAX_TOKENS", "content": {"parts": []}}]},
+])
+def test_incomplete_or_malformed_response_fails_closed(response):
+    with pytest.raises(PipelineError):
+        subject._parse_response(response)

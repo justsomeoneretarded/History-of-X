@@ -156,7 +156,7 @@ def _parse_response(response):
             if not part.get("thought")
         )
         return _validate(json.loads(text))
-    except (KeyError, IndexError, TypeError, ValueError) as exc:
+    except (AttributeError, KeyError, IndexError, TypeError, ValueError) as exc:
         raise PipelineError("Invalid Gemini editorial review structured output") from exc
 
 
