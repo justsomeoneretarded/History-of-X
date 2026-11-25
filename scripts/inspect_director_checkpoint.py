@@ -47,6 +47,22 @@ from history_of_x.scene_film import acted_treaty_proof
 capability=out/'original-acting-capability.json'
 save_json(capability,acted_treaty_proof())
 paths.append(capability)
+from history_of_x.director_script import chapter_story_issues, chapter_style_issues
+from history_of_x.script import CHAPTERS
+outline_path=Path('work/director/outline.json')
+if outline_path.exists():
+    outline=json.loads(outline_path.read_text())
+    fingerprint=outline.get('fingerprint','')
+    if fingerprint:
+        for path in sorted(Path('work/director/director-chapters').glob('*-'+fingerprint+'.json')):
+            chapter=CHAPTERS[int(path.name.split('-',1)[0])-1]
+            saved=json.loads(path.read_text())
+            try:
+                issues=chapter_story_issues(saved,chapter)+chapter_style_issues(saved)
+            except Exception as exc:
+                issues=[str(exc)]
+            print('SAVED_CHAPTER '+json.dumps({'chapter':chapter,'file':str(path),
+                  'checks':issues,'draft':saved},ensure_ascii=False),flush=True)
 rows=[]
 seen=set()
 for path in paths:
