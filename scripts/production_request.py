@@ -77,6 +77,12 @@ def evidence():
     print('DIRECTOR_IMAGE_START',flush=True)
     for i in range(0,len(encoded),8000):print('DIRECTOR_IMAGE_CHUNK '+encoded[i:i+8000],flush=True)
     print('DIRECTOR_IMAGE_END',flush=True)
+    thumbnail=output/'thumbnail.jpg'
+    if thumbnail.exists():
+        encoded=base64.b64encode(thumbnail.read_bytes()).decode()
+        print('DIRECTOR_THUMBNAIL_START',flush=True)
+        for i in range(0,len(encoded),8000):print('DIRECTOR_THUMBNAIL_CHUNK '+encoded[i:i+8000],flush=True)
+        print('DIRECTOR_THUMBNAIL_END',flush=True)
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('stage',choices=['configure','evidence']);parser.add_argument('--request')

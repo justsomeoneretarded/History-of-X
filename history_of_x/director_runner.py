@@ -19,7 +19,7 @@ from .director_review import CATEGORIES
 
 UPLOAD_FILES = ("final.mp4", "thumbnail.jpg", "title.txt", "description.txt",
                 "captions.srt", "script.txt", "sources-and-credits.txt")
-MODEL_DEFAULT = "gemini-3.5-flash-lite"
+MODEL_DEFAULT = "gemini-3.1-flash-lite"
 
 
 def _reports(output, proof):

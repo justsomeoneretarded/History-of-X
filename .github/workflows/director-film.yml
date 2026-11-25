@@ -49,8 +49,8 @@ jobs:
       VIDEO_MINUTES: ${{ inputs.minutes }}
       NARRATOR: ${{ inputs.voice }}
       FILM_MODE: ${{ inputs.mode }}
-      GEMINI_WRITER_MODEL: ${{ vars.GEMINI_WRITER_MODEL || 'gemini-3.5-flash-lite' }}
-      GEMINI_DIRECTOR_MODEL: ${{ vars.GEMINI_DIRECTOR_MODEL || 'gemini-3.5-flash-lite' }}
+      GEMINI_WRITER_MODEL: ${{ vars.GEMINI_WRITER_MODEL || 'gemini-3.1-flash-lite' }}
+      GEMINI_DIRECTOR_MODEL: ${{ vars.GEMINI_DIRECTOR_MODEL || 'gemini-3.1-flash-lite' }}
       GEMINI_TTS_MODEL: ${{ vars.GEMINI_TTS_MODEL || 'gemini-3.8-flash-tts' }}
       GEMINI_MEDIA_LEDGER: work/media-ledger/usage.json
       GEMINI_TEXT_REQUEST_BUDGET: '64'

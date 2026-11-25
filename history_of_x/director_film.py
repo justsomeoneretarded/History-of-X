@@ -143,12 +143,13 @@ def package(api,script,speech,assets,output,work):
  (output/'script.txt').write_text('\n\n'.join(s['chapter'].upper()+'\n'+s['narration'] for s in script['scenes']))
  metadata_path=work/'directed-packaging.json'
  source_script=read_json(work/'script.json') if (work/'script.json').exists() else script
- metadata_id=key('directed-packaging-v2-full-scope',source_script['title'],[s['narration'] for s in source_script['scenes']])
- metadata_schema={'type':'object','required':['title','thumbnail_hook','description'], 'properties':{'title':{'type':'string'},'thumbnail_hook':{'type':'string'},'description':{'type':'string'}}}
+ metadata_id=key('directed-packaging-v3-subject-and-scope',source_script['title'],[s['narration'] for s in source_script['scenes']])
+ metadata_schema={'type':'object','required':['title','thumbnail_subject','thumbnail_hook','description'], 'properties':{'title':{'type':'string'},'thumbnail_subject':{'type':'string'},'thumbnail_hook':{'type':'string'},'description':{'type':'string'}}}
  previous=read_json(metadata_path) if metadata_path.exists() else {}
  metadata=previous if previous.get('fingerprint')==metadata_id else api.text(
-  'Package this original history video for YouTube. Return a clear searchable title naming the subject, a concrete truthful thumbnail curiosity hook of2–4short words (not the full title), and a concise description of the actual scope and endpoint. No fake quotes, sensational invented claims, marketing filler, channel branding or technical implementation details. The hook should be readily legible on a mobile thumbnail. Do not copy any reference title.',
-  {'working_title':source_script['title'],'summary':source_script['summary'],'opening':source_script['scenes'][0]['narration'],'ending':source_script['scenes'][-1]['narration']},metadata_schema,max_output=1200,model=os.getenv('GEMINI_PACKAGE_MODEL','gemini-3.5-flash-lite'))
+  'Package this original history video for YouTube. Return a searchable title of at most100characters, thumbnail_subject naming the actual entity in1–4words, a concrete truthful thumbnail curiosity hook of2–4short words (not the full title), and a concise description of the actual scope and endpoint. No fake quotes, sensational invented claims, marketing filler, channel branding or technical implementation details. The hook should be readily legible on a mobile thumbnail. Do not imply a country was never conquered or occupied when this film covers an occupation. Do not copy any reference title.',
+  {'working_title':source_script['title'],'summary':source_script['summary'],'opening':source_script['scenes'][0]['narration'],'ending':source_script['scenes'][-1]['narration'],'scope':[{'date':s['date_label'],'passage':s['narration'][:180]} for s in source_script['scenes']]},metadata_schema,max_output=1200,model=os.getenv('GEMINI_PACKAGE_MODEL','gemini-3.5-flash-lite'))
+ if 'ethiop' in source_script['title'].casefold() and re.search(r'never (?:colon[izs]+ed|conquered|occupied)|unconquered',metadata['thumbnail_hook'],re.I):metadata['thumbnail_hook']='AN EMPIRE REFUSES'
  metadata['fingerprint']=metadata_id;save_json(metadata_path,metadata)
  (output/'title.txt').write_text(metadata['title']+'\n')
  # Authentic large portrait/architecture: purposeful composition, no tiny icon collage.
@@ -165,8 +166,11 @@ def package(api,script,speech,assets,output,work):
  d=ImageDraw.Draw(shade)
  for x in range(1280):d.line((x,0,x,720),fill=(9,27,34,255 if x<420 else max(0,255-int((x-420)*.6))))
  im=Image.alpha_composite(im.convert('RGBA'),shade);d=ImageDraw.Draw(im)
- title='ETHIOPIA' if 'ethiop' in script['title'].lower() else script['title'].split(':')[0].upper()[:18]
- d.text((58,115),title,font=font(76,True),fill='#F4D588')
+ topic=re.sub(r'^(?:the\s+)?(?:entire\s+)?history\s+of\s+','',source_script['title'],flags=re.I)
+ title=str(metadata.get('thumbnail_subject') or topic.split(':')[0]).upper().strip()
+ size=76
+ while size>28 and d.textlength(title,font=font(size,True))>580:size-=2
+ d.text((58,115),title,font=font(size,True),fill='#F4D588')
  words=metadata['thumbnail_hook'].upper().split()[:5];middle=max(1,math.ceil(len(words)/2))
  for i,line in enumerate([' '.join(words[:middle]),' '.join(words[middle:])]):
   size=88
