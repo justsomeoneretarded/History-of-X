@@ -46,11 +46,12 @@ def plan(api,script_index,speech_index,assets,directory,style,selected,size):
     backup="gemma-4-31b-it"
     print(f"Scene batch {model} unavailable; trying verified free text model {backup}.",flush=True)
     response=api.text(instruction,payload,shape,max_output=14000,preserve_bounds=True,model=backup)
+    if isinstance(response,list):response={"scenes":response}
     if not isinstance(response,dict):raise PipelineError("Free batch recovery returned no object")
     response={**response,"generation_model":backup}
   save_json(path,response)
-  specs=response.get("scenes") if isinstance(response,dict) else None
-  if not isinstance(specs,list):raise PipelineError("Batched direction returned no scenes array")
+  specs=response if isinstance(response,list) else response.get("scenes") if isinstance(response,dict) else None
+  if not isinstance(specs,list):raise PipelineError("Batched direction returned no scenes array; response type="+type(response).__name__+" keys="+str(list(response) if isinstance(response,dict) else []))
   ids=[str(spec.get("scene_id","")) for spec in specs if isinstance(spec,dict)]
   counts=Counter(ids);expected={item["id"] for item in batch}
   by_id={str(spec["scene_id"]):spec for spec in specs if isinstance(spec,dict)

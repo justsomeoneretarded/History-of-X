@@ -62,3 +62,18 @@ def test_duplicate_ids_do_not_reassign_another_scenes_speech(tmp_path,monkeypatc
  with pytest.raises(PipelineError,match="IDs missing, duplicated or unexpected"):
   director_batch.plan_all(API(),script,speech,assets,tmp_path)
  assert accepted_ids(tmp_path)=={"3"}
+
+
+def test_gemini_36_bare_scene_array_is_validated_by_identity_and_cached(tmp_path,monkeypatch):
+ setup(monkeypatch)
+ monkeypatch.setenv("GEMINI_MODEL","gemini-3.6-flash")
+ class API:
+  calls=0
+  def text(self,*args,**kwargs):
+   self.calls+=1
+   return [spec(3),spec(1),spec(2)]
+ api=API();script,speech,assets=input_scenes()
+ result=director_batch.plan_all(api,script,speech,assets,tmp_path)
+ assert list(result)==["1","2","3"] and api.calls==1
+ assert [result[k]["scene_id"] for k in result]==["1","2","3"]
+ assert director_batch.plan_all(api,script,speech,assets,tmp_path)==result and api.calls==1

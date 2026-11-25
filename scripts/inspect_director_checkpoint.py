@@ -70,6 +70,9 @@ for name in ('writing-metrics.json','narration-metrics.json'):
     if path.exists(): print('SAVED_METRICS '+json.dumps({'file':name,'data':json.loads(path.read_text())}),flush=True)
 if os.getenv('INSPECTION_CHAPTERS_ONLY')=='1':
     raise SystemExit(0)
+for path in sorted(Path('work/director/scene-programs/rig-batches').glob('*.json')):
+    value=json.loads(path.read_text())
+    print('SAVED_RIG_BATCH '+json.dumps({'file':str(path),'response_type':type(value).__name__,'response':value},ensure_ascii=False),flush=True)
 for path in sorted(Path('work/director/editorial-review-parts').glob('*.json')):
     value=json.loads(path.read_text())
     if isinstance(value.get('report'),dict):
