@@ -43,6 +43,10 @@ out=Path('output/inspection')
 out.mkdir(parents=True,exist_ok=True)
 paths=sorted(directory.rglob('*-draft-*.json'))
 if not paths: paths=sorted(directory.rglob('*.json'))
+from history_of_x.scene_film import acted_treaty_proof
+capability=out/'original-acting-capability.json'
+save_json(capability,acted_treaty_proof())
+paths.append(capability)
 rows=[]
 seen=set()
 for path in paths:
