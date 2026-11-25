@@ -15,3 +15,9 @@ def test_proof_accepts_original_topic_brief():
 def test_unsupported_model_cannot_silently_change_billing():
     with pytest.raises(ValueError,match='free director'):
         module.validate({'title':'Ethiopia','brief':'Power','director_model':'unverified-paid-model'})
+
+@pytest.mark.parametrize("model", sorted(module.TEXT_MODELS))
+def test_request_accepts_every_verified_free_text_model(model):
+    config={"title":"Ethiopia","brief":"Power across centuries",
+            "writer_model":model,"director_model":model}
+    assert module.validate(config)==config
