@@ -8,7 +8,7 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: ${{ contains(github.event.head_commit.message, '[qwen-benchmark]') && 40 || 15 }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -46,4 +46,18 @@ jobs:
         with:
           name: original-rig-cairo-demo
           path: output/rig-demo
+          retention-days: 90
+      - uses: actions/cache@v4
+        if: contains(github.event.head_commit.message, '[qwen-benchmark]')
+        with:
+          path: work/models/ollama
+          key: qwen3-4b-instruct-2507-q4-k-m-ollama-01210
+      - name: Test an actual CPU-only Qwen scene without a provider key
+        if: contains(github.event.head_commit.message, '[qwen-benchmark]')
+        run: python scripts/qwen_graph_benchmark.py
+      - uses: actions/upload-artifact@v4
+        if: always() && contains(github.event.head_commit.message, '[qwen-benchmark]')
+        with:
+          name: qwen-cpu-direction-benchmark
+          path: output/qwen-benchmark
           retention-days: 90
