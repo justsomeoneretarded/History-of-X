@@ -83,3 +83,19 @@ def test_model_switch_reuses_an_exact_accepted_scene_without_another_call(tmp_pa
  monkeypatch.setenv("GEMINI_MODEL","gemini-3.5-flash-lite")
  assert rig_director.plan_scene(api,passage(),spoken(),assets,tmp_path)==first
  assert api.calls==1
+
+
+def test_request_compaction_preserves_alignment_without_mutating_the_checkpoint():
+ words=[[f"word{i}",i/2,(i+1)/2] for i in range(12)]
+ payload={"word_timing":words,"scene_id":"1"}
+ class API:
+  def text(self,instruction,data,schema,**kwargs):
+   assert data["phrase_timing"]==[
+    ["word0 word1 word2 word3 word4",0.,2.5],
+    ["word5 word6 word7 word8 word9",2.5,5.],
+    ["word10 word11",5.,6.]]
+   assert "word_timing" not in data
+   assert kwargs["max_output"]==3500
+   return {"ok":True}
+ assert rig_director._request(API(),payload,"gemini-3.8-flash")=={"ok":True}
+ assert payload["word_timing"]==words and "phrase_timing" not in payload

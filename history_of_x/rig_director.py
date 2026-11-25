@@ -103,14 +103,20 @@ def _program(spec,seconds,approved,ident,reserved,archives):
  return program
 
 def _request(api,payload,primary):
+ # Phrase timings retain the performance cues with less per-word JSON overhead.
+ # The full word alignment remains untouched in the speech checkpoint.
+ payload=copy.deepcopy(payload)
+ words=payload.pop("word_timing",[])
+ if words:
+  payload["phrase_timing"]=[[" ".join(str(w[0]) for w in words[i:i+5]),words[i][1],words[min(i+4,len(words)-1)][2]] for i in range(0,len(words),5)]
  try:
-  return api.text(CONTRACT,payload,schema(),max_output=6500,preserve_bounds=True,model=primary)
+  return api.text(CONTRACT,payload,schema(),max_output=3500,preserve_bounds=True,model=primary)
  except PipelineError as exc:
   message=str(exc)
   if "unavailable after three attempts" not in message and "network deadline" not in message:raise
   backup="gemini-3.5-flash-lite" if primary!="gemini-3.5-flash-lite" else "gemini-3.1-flash-lite"
   print(f"Scene direction: {primary} unavailable; trying verified free model {backup}.",flush=True)
-  return api.text(CONTRACT,payload,schema(),max_output=6500,preserve_bounds=True,model=backup)
+  return api.text(CONTRACT,payload,schema(),max_output=3500,preserve_bounds=True,model=backup)
 
 def plan_scene(api,scene,spoken,assets,directory,style=None):
  seconds=float(spoken["duration"]);ident=str(scene["scene_id"])
