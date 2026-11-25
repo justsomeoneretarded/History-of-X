@@ -63,3 +63,28 @@ def test_original_people_have_connected_rigs_and_distinct_costumes():
   names={p for p,_,_,_ in parts}
   assert {"head","torso","upper_front","forearm_front","leg_front","face_angry"}<=names
   assert all(not parent or parent in names for _,_,parent,_ in parts)
+
+
+def test_pickup_object_alias_preserves_the_same_contact_and_visibility_track():
+ spec=demo()
+ take=spec["actions"][0];take["object"]=take.pop("target")
+ spec["actions"].append({"type":"hide","time":7.5,"duration":.5,"node":"treaty",
+                         "description":"The document is removed from view."})
+ scene=Scene(spec,15,[]).execute();program=scene.finish("test")
+ assert wrist(scene,"envoy",2.2)==pytest.approx(scene.prop_world("treaty",2.2)[:2,2],abs=1e-6)
+ from history_of_x.scene_film import interpolate
+ held=next(l for l in program["layers"] if l["id"].startswith("treaty__segment_")
+           and l["start"]<=8<l["end"])
+ assert interpolate(held["keyframes"],8)["opacity"]==0
+
+def test_historical_images_are_full_frame_inserts_above_the_acting_set(tmp_path):
+ from PIL import Image
+ image=tmp_path/"archive.jpg";Image.new("RGB",(32,32),"#825533").save(image)
+ spec=demo()
+ spec["nodes"].append({"id":"archive","kind":"image","asset_id":"A1",
+                       "x":500,"y":500,"width":600,"height":400})
+ scene=Scene(spec,15,[{"id":"A1","path":str(image),"medium":"historical_photo"}])
+ assert scene.nodes["archive"]["x"]==960 and scene.nodes["archive"]["width"]==1920
+ program=scene.execute().finish("test")
+ assert program["layers"][-1]["id"]=="archive__art"
+ assert program["asset_ids"]==["A1"]

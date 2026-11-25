@@ -508,7 +508,7 @@ def frame_identity(program,time):
         channels(program["camera"]["keyframes"]),
     )
 
-def render_scene(program, directory, profile='cinematic',backend='pillow'):
+def render_scene(program, directory, profile='cinematic',backend='vector'):
     """Render and cache a silent shot. Invalid scenes fail before creating video."""
     validate_scene(program)
     directory = Path(directory)

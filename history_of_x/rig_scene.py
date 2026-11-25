@@ -67,7 +67,11 @@ class Scene:
    raise PipelineError("Use unique short node IDs")
   allowed={"id","kind","x","y","scale","start","end","visible","z","appearance","facing","expression","count","prop","text","asset_id","width","height","points","color","dashed"}
   if set(n)-allowed:raise PipelineError("Unknown node direction; refusing to ignore it")
-  kind=n.get("kind");x=_number(n.get("x"),"node x");y=_number(n.get("y"),"node y")
+  kind=n.get("kind")
+  if kind=="image":
+   # Documentary insert is an editorial full-frame shot, never a prop/card on set.
+   n={**n,"x":960,"y":540,"scale":1,"width":1920,"height":1080,"z":8}
+  x=_number(n.get("x"),"node x");y=_number(n.get("y"),"node y")
   scale=_number(n.get("scale",1),"node scale",.15,1.8)
   start=_number(n.get("start",0),"node start",0,self.seconds);end=_number(n.get("end",self.seconds),"node end",0,self.seconds)
   if start>=end:raise PipelineError("Node lifetime must be positive")
@@ -204,7 +208,13 @@ class Scene:
  def execute(self):
   actions=self.spec.get("actions")
   if not isinstance(actions,list) or not 3<=len(actions)<=18 or any(not isinstance(a,dict) for a in actions):raise PipelineError("Use 3–18 purposeful timed action objects")
-  actions=sorted(actions,key=lambda a:a.get("time",-1))
+  normalized=[]
+  for a in actions:
+   if a.get("type")=="take" and a.get("object"):
+    if a.get("target") and a["target"]!=a["object"]:raise PipelineError("Pickup target and object must identify the same prop")
+    a={**a,"target":a["object"]}
+   normalized.append(a)
+  actions=sorted(normalized,key=lambda a:a.get("time",-1))
   taken={}
   for a in actions:
    if a.get("type")=="take":taken.setdefault(a.get("target"),a.get("time",0))
@@ -254,7 +264,7 @@ class Scene:
      if side+"_hand" in a:self.hand(ident,side,t,end,local=a[side+"_hand"])
    elif op in ("reach","take"):
     target=a.get("target")
-    if target not in self.nodes:raise PipelineError("Reach/take needs a target node")
+    if target not in self.nodes:raise PipelineError(f"Reach/take target {target!r} must name one of these scene nodes: "+", ".join(self.nodes))
     point=self.target(target,end)
     parent=self.hand(ident,hand,t,end,target_world=point)
     if op=="take":
@@ -264,7 +274,7 @@ class Scene:
     obj=a.get("object");target=a.get("target")
     if obj not in self.props or target not in self.nodes:raise PipelineError("Place needs the held object and a target surface")
     segment=self.prop_segment(obj,t)
-    if not str(segment["parent"]).startswith(ident+"__"):raise PipelineError("Actor must hold the object before placing it")
+    if segment["parent"]!=self.actors.get(ident,{}).get("parts",{}).get("forearm_"+hand):raise PipelineError("The selected actor hand must hold the object before placing it")
     self.hand(ident,hand,t,end,target_world=self.target(target,end))
     pose=self.prop_world(obj,end)
     self.ownership(obj,"",end,pose)
@@ -285,6 +295,9 @@ class Scene:
     drawing=prop_art("paper_flat",str(n.get("text",""))) if n["prop"]=="paper" and not segment["upright"] else prop["svg"]
     art='<g transform="'+_matrix_text(base)+'">'+drawing+'</g>'
     lid=self.add(ident+"__segment_"+str(index),art,segment["parent"],pivot,segment["start"],segment["end"],order=n.get("z",3))
+    if segment["parent"]!=n["master"]:
+     # Ownership changes do not discard the prop's directed visibility track.
+     self.layers[lid]["keyframes"]=[{"time":f["time"],"opacity":f["opacity"],"ease":f.get("ease","smooth")} for f in self.layers[n["master"]]["keyframes"]]
     if segment["upright"]:
      initial=self.world(segment["parent"],segment["start"])
      self.layers[lid]["stabilize_parent"]=[float(x) for x in initial[:2,:2].flatten()]

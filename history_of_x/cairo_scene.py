@@ -42,10 +42,23 @@ class CairoCompositor:
    group=groups[layer["id"]]
    if not len(group):continue
    art=ET.Element(root.tag,dict(root.attrib))
-   art.set("text-rendering","geometricPrecision")
    for definition in definitions:art.append(copy.deepcopy(definition))
    art.append(copy.deepcopy(group))
-   tree=Tree(bytestring=ET.tostring(art),unsafe=False)
+   source_bytes=ET.tostring(art)
+   if any(_name(element.tag) in ("text","tspan") for element in group.iter()):
+    # Keep the verified font rendering for short labels/documents. Only these
+    # small layers need supersampled pixels; characters/scenery remain vector.
+    import cairosvg
+    scale=max(2.,max(f.get("scale",1) for f in program["camera"]["keyframes"]))
+    png=cairosvg.svg2png(bytestring=source_bytes,output_width=round(WIDTH*scale),output_height=round(HEIGHT*scale),unsafe=False)
+    image=Image.open(io.BytesIO(png)).convert("RGBA");bounds=image.getbbox()
+    if bounds is None:continue
+    image=image.crop(bounds);data=io.BytesIO();image.save(data,format="PNG")
+    pixels=cairo.ImageSurface.create_from_png(io.BytesIO(data.getvalue()))
+    matrix=np.array([[1/scale,0,bounds[0]/scale],[0,1/scale,bounds[1]/scale],[0.,0.,1.]])
+    result[layer["id"]]=(pixels,matrix,image.width,image.height,0,0)
+    continue
+   tree=Tree(bytestring=source_bytes,unsafe=False)
    drawing=RecordedSVG(tree,None,96,output_width=WIDTH,output_height=HEIGHT)
    # Retain the recording, never finish it: it replays vector shapes at the
    # current fractional transform instead of resampling a full-screen bitmap.
