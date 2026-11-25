@@ -266,7 +266,7 @@ ETHIOPIA_STORY = {
     "Catalyst": [
         {"say": "Tewodros and Yohannes try to reunite and defend a country divided among regional rulers.",
          "patterns": [r"tewodros|yohannes", r"reunit|unif|regional|defen"],
-         "terms": ["tewodros", "yohannes", "reunified"], "sources": ["S3"]},
+         "terms": ["tewodros", "yohannes", "reunified"], "sources": ["S2", "S3"]},
         {"say": "Menelik expands from Shewa through conquest and deals; resources and imported rifles strengthen his state while conquered peoples lose autonomy.",
          "patterns": [r"menelik", r"conquer|conquest|expan|subjug", r"rifle|weapon|gun"],
          "terms": ["menelik", "shewa", "conquests", "rifles", "expansion"], "sources": ["S3"]},
@@ -305,8 +305,8 @@ ETHIOPIA_STORY = {
          "patterns": [r"1991|nineteen ninety[\s-]one", r"derg|junta", r"rebel|overthrow|collaps|fell|fall"],
          "terms": ["1991", "derg", "rebels", "famine"], "sources": ["S7", "S8"]},
         {"say": "Eritrea votes for independence in 1993 while the EPRDF builds a federal political settlement in Ethiopia.",
-         "patterns": [r"eritrea", r"1993|nineteen ninety[\s-]three", r"independen|referendum", r"feder|eprdf"],
-         "terms": ["1993", "referendum", "independence"], "sources": ["S9"]},
+         "patterns": [r"eritrea", r"1993|nineteen ninety[\s-]three", r"independen|referendum", r"feder"],
+         "terms": ["1993", "referendum", "independence", "federal", "ethnic"], "sources": ["S9", "S7"]},
         {"say": "Abiy takes office in 2018; the 2019 Prosperity Party reorganization and TPLF refusal sharpen the struggle between federal and regional power.",
          "patterns": [r"abiy", r"2018|twenty eighteen|2019|twenty nineteen", r"tplf|tigray|prosperity"],
          "terms": ["abiy", "2018", "2019", "prosperity", "tplf"], "sources": ["S10"]},
@@ -341,7 +341,7 @@ def attach_story_contract(outline):
 def story_chapter_evidence(evidence, chapter):
     """Reserve a source passage for every required beat inside the same 5500-char cap."""
     by_id = {s["id"]: s for s in evidence["sources"]}
-    source_ids = [sid for sid in ETHIOPIA_CHAPTER_SOURCES[chapter] if sid in by_id]
+    source_ids = list(dict.fromkeys([sid for sid in ETHIOPIA_CHAPTER_SOURCES[chapter] if sid in by_id] + [sid for beat in ETHIOPIA_STORY[chapter] for sid in beat["sources"] if sid in by_id]))
     paragraphs = {sid: compact_source_extract(by_id[sid]["extract"], len(by_id[sid]["extract"]), cutoff_2022=True).split("\n") for sid in source_ids}
     excerpts = {sid: [_source_passage(paragraphs[sid][0], 180, ())] for sid in source_ids}
     if "S11" in excerpts:
@@ -354,9 +354,16 @@ def story_chapter_evidence(evidence, chapter):
             raise PipelineError("Missing evidence for required story beat: " + beat["say"])
         sid, paragraph = max(candidates, key=lambda pair: (
             len(_matching_terms(pair[1], beat["terms"])), -beat["sources"].index(pair[0])))
-        passage = _source_passage(paragraph, allowance, beat["terms"])
-        if passage not in excerpts[sid]:
-            excerpts[sid].append(passage)
+        selected = [(sid, paragraph)]
+        uncovered = set(beat["terms"]) - _matching_terms(paragraph, beat["terms"])
+        if uncovered:
+            extra_sid, extra = max(candidates, key=lambda pair: len(_matching_terms(pair[1], uncovered)))
+            if _matching_terms(extra, uncovered):
+                selected.append((extra_sid, extra))
+        for source, block in selected:
+            passage = _source_passage(block, allowance // len(selected), beat["terms"])
+            if passage not in excerpts[source]:
+                excerpts[source].append(passage)
     return [{**{k: by_id[sid][k] for k in ("id", "title", "url") if k in by_id[sid]},
              "extract": "\n".join(excerpts[sid])} for sid in source_ids]
 
