@@ -48,7 +48,7 @@ class MediaAPI:
    start=self.clock();calls.append({'time':start,'model':model,'kind':kind,'request':identity})
    save_json(self.ledger,{'calls':calls,'last_start':start})
    try:
-    if kind=='text' and self.use_sdk:
+    if kind=='text' and self.use_sdk and os.getenv('GEMINI_SCHEMA_MODE','native')!='prompt':
      # Keep the established SDK's wire conversion for newer text-model enums/schema.
      from google import genai
      from google.genai import types
@@ -60,7 +60,7 @@ class MediaAPI:
      except Exception as exc:
       r=requests.Response();r.status_code=getattr(exc,'code',None) or 504;r._content=str(getattr(exc,'message','SDK deadline')).encode()
      finally:client.close()
-    else:r=self.session.post('https://generativelanguage.googleapis.com/v1beta/'+endpoint,headers={'x-goog-api-key':self.secret or 'test','Content-Type':'application/json'},json=body,timeout=(15,180))
+    else:r=self.session.post('https://generativelanguage.googleapis.com/v1beta/'+endpoint,headers={'x-goog-api-key':self.secret or 'test','Content-Type':'application/json'},json=body,timeout=(15,300 if kind=='text' and body.get('generationConfig',{}).get('maxOutputTokens',0)>18000 else 180))
    except requests.RequestException:
     if attempt==2:raise PipelineError('Gemini network deadline; accepted checkpoints preserved') from None
     continue
