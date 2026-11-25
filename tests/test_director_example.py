@@ -21,7 +21,7 @@ def test_sparse_example_preserves_every_authored_pose_and_easing():
 
 def test_original_example_and_guide_never_become_approved_historical_assets(tmp_path):
     # Seed a valid cached JPEG so this transport test needs no SVG rasterizer.
-    guide = tmp_path / "original-acting-craft-guide-v1.jpg"
+    guide = tmp_path / "original-acting-craft-guide-v2.jpg"
     Image.new("RGB", (320, 180), "#789077").save(guide)
     payload = {"scene_id": "9", "duration": 20, "scene": {"narration": "Original passage."},
                "approved_assets": [{"id": "approved", "date": "1896", "context": "Portrait."}]}
@@ -32,7 +32,11 @@ def test_original_example_and_guide_never_become_approved_historical_assets(tmp_
     assert result["approved_assets"] == original["approved_assets"]
     assert result["scene"] == original["scene"]
     example = result["original_craft_example"]
-    assert example["svg_artwork"] == acted_treaty_proof()["svg"]
+    assert 'id="left_body"' in example["svg_artwork"]
+    assert 'id="left_reading_arm"' in example["svg_artwork"]
+    assert 'id="architecture"' not in example["svg_artwork"]
+    assert len(example["svg_artwork"]) < len(acted_treaty_proof()["svg"])
+    assert "attached full scene" in example["excerpt_note"]
     assert any(layer["id"] == "left_reading_arm" for layer in example["choreography_excerpt"])
     assert images[-1] == guide
     assert "not a historical subject" in roles[-1]

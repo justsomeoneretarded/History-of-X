@@ -30,7 +30,7 @@ def plan_scene(api,scene,spoken,assets,directory,style=None,request_only=False,p
  candidates=[catalog[x] for x in assets['scenes'].get(str(scene['scene_id']),[]) if x in catalog and catalog[x].get('medium') not in ('video','archival_video')]
  archives=[catalog[x] for x in assets['scenes'].get(str(scene['scene_id']),[]) if x in catalog and catalog[x].get('medium')=='archival_video'][:2]
  archive_seconds=4.5*len(archives) if seconds>12 else 0
- fingerprint=key('director-scene-v5-guided',os.getenv('GEMINI_MODEL','gemini-3.8-flash'),os.getenv('GEMINI_DIRECTOR_POSITIVE_EXAMPLE','0'),ILLUSTRATION_BIBLE,scene,seconds,candidates,style)
+ fingerprint=key('director-scene-v6-compact-guided',os.getenv('GEMINI_MODEL','gemini-3.8-flash'),os.getenv('GEMINI_DIRECTOR_POSITIVE_EXAMPLE','0'),ILLUSTRATION_BIBLE,scene,seconds,candidates,style)
  target=directory/(fingerprint+'.json')
  if target.exists():return {'accepted':read_json(target)} if request_only else read_json(target)
  prompt=CRAFT+'''
@@ -90,7 +90,7 @@ Return valid JSON exactly matching schema. scene_id must equal the supplied stri
   return 'data:image/jpeg;base64,'+base64.b64encode(out.getvalue()).decode()
  # Approved historical references inform illustration, never arbitrary network fetches.
  images=[]
- for a in candidates[:3]:
+ for a in candidates[:1 if os.getenv('GEMINI_DIRECTOR_POSITIVE_EXAMPLE','0')=='1' else 3]:
   p=Path(a['path']);p=p if p.is_absolute() else ROOT/p
   try:
    with Image.open(p) as im:

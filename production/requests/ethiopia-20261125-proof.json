@@ -7,7 +7,7 @@
   "phase": "proof",
   "profile": "cinematic",
   "director_model": "gemini-3.1-flash-lite",
-  "attempt": 12,
+  "attempt": 13,
   "resume_run": "45612605991",
   "writer_model": "gemini-3.1-flash-lite",
   "scene_batch_size": 1,

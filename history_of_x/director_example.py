@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+import xml.etree.ElementTree as ET
 from functools import lru_cache
 
 POSITIVE_CRAFT_INSTRUCTION = """
@@ -44,14 +45,19 @@ def _example():
     from .scene_film import acted_treaty_proof
     source = acted_treaty_proof()
     selected = {"left_body", "left_calm_face", "left_angry_face",
-                "left_reading_arm", "right_surprised_face", "document"}
+                "left_reading_arm", "document"}
+    artwork = ET.fromstring(source["svg"])
+    for child in list(artwork):
+        if child.tag.rsplit("}", 1)[-1] == "g" and child.get("id") not in selected:
+            artwork.remove(child)
     layers = []
     for layer in source["layers"]:
         if layer["id"] in selected:
             layers.append({**layer, "keyframes": _sparse(layer["keyframes"])})
     return {
         "role": "Internal original craft demonstration; never historical evidence or a scene template.",
-        "svg_artwork": source["svg"],
+        "svg_artwork": ET.tostring(artwork, encoding="unicode"),
+        "excerpt_note": "Original figure, expressions, arm and prop geometry only. The attached full scene demonstrates finished scenic composition. Invent the new scene.",
         "choreography_excerpt": layers,
         "camera_excerpt": {"keyframes": _sparse(source["camera"]["keyframes"])},
         "acting_observations": [
@@ -72,9 +78,9 @@ def positive_request(instruction, payload, images, directory):
     from pathlib import Path
     from .scene_film import acted_treaty_proof, scene_frame
     directory = Path(directory)
-    guide = directory / "original-acting-craft-guide-v1.jpg"
+    guide = directory / "original-acting-craft-guide-v2.jpg"
     if not guide.exists():
-        scene_frame(acted_treaty_proof(), 6.8, (1280, 720)).save(guide, quality=88)
+        scene_frame(acted_treaty_proof(), 6.8, (800, 450)).save(guide, quality=88)
     result = copy.deepcopy(payload)
     result["original_craft_example"] = copy.deepcopy(_example())
     roles = ["Approved historical subject reference; honor its date/context."] * len(images)
