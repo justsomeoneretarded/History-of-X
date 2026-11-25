@@ -367,7 +367,7 @@ def test_story_plan_assigns_every_beat_even_when_scene_count_changes():
     ("Roots", ["Ezana", "Portuguese", "Gondar"]),
     ("Catalyst", ["Taytu", "Wuchale", "Adwa"]),
     ("Turning Point", ["1941", "1974", "Red Terror"]),
-    ("Aftermath", ["1993", "Abiy", "2022"]),
+    ("Aftermath", ["1993", "federal", "Abiy", "2018", "2022"]),
 ])
 def test_story_evidence_reserves_passages_for_omitted_milestones(chapter, terms):
     evidence = read_json(ROOT / "episodes" / "ethiopia.json")["evidence"]
