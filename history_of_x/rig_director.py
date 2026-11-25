@@ -137,7 +137,7 @@ def plan_scene(api,scene,spoken,assets,directory,style=None):
  if existing is None:
   # A validated direction is reusable across provider routing changes. Compare
   # the exact narration, timings, assets and contract fingerprint before reuse.
-  for other in ("gemini-3.1-flash-lite","gemini-3.5-flash-lite","gemini-3.8-flash","gemma-4-26b-a4b-it","gemma-4-31b-it"):
+  for other in ("gemini-4-hydrogen","gemini-3.1-flash-lite","gemini-3.5-flash-lite","gemini-3.8-flash","gemma-4-26b-a4b-it","gemma-4-31b-it"):
    alternate=directory/(key("rigged-scene-v1",VERSION,CONTRACT,schema(),other,context)+".json")
    if alternate.exists():
     existing=read_json(alternate)

@@ -111,3 +111,28 @@ def test_incomplete_output_retains_finish_and_usage_without_thought_content(tmp_
     assert diagnostic['requested_max_output']==3500
     assert diagnostic['response']['usageMetadata']['thoughtsTokenCount']==3400
     assert 'private intermediate' not in json.dumps(diagnostic)
+
+
+def test_hydrogen_keeps_native_json_and_uses_its_documented_thinking_budget(tmp_path,monkeypatch):
+    api,session=gateway(tmp_path,monkeypatch)
+    monkeypatch.setenv('GEMINI_SCHEMA_MODE','prompt')
+    shape={'type':'object','required':['ok'],'properties':{'ok':{'type':'boolean'}}}
+    body={'contents':[{'role':'user','parts':[{'text':'Return JSON.'}]}],
+          'generationConfig':{'responseJsonSchema':shape,'responseMimeType':'application/json',
+                              'maxOutputTokens':3500,'temperature':.65,'topP':.9,'topK':32}}
+    api.request('gemini-4-hydrogen','models/gemini-4-hydrogen:generateContent',body,'text')
+    sent=session.bodies[0]['generationConfig']
+    assert sent['responseJsonSchema']==shape
+    assert sent['responseMimeType']=='application/json'
+    assert sent['maxOutputTokens']==65536
+    assert sent['thinkingConfig']=={'thinkingLevel':'LOW'}
+    assert not {'temperature','topP','topK'} & set(sent)
+    assert body['generationConfig']['maxOutputTokens']==3500
+
+@pytest.mark.parametrize('model',['gemini-4-carbon','gemini-4-argon','gemini-4-neon'])
+def test_paid_only_gemini4_models_remain_outside_the_free_router(model,tmp_path,monkeypatch):
+    from history_of_x.core import PipelineError
+    api,session=gateway(tmp_path,monkeypatch)
+    with pytest.raises(PipelineError,match='Unverified free-tier'):
+        api.request(model,'models/test:generateContent',{},'text')
+    assert not session.bodies

@@ -7,7 +7,7 @@ from .core import PipelineError,key,read_json,save_json
 from .gemini import QuotaDeferred
 
 GEMMA_MODELS={'gemma-4-26b-a4b-it','gemma-4-31b-it'}
-TEXT_MODELS={'gemini-3.8-flash','gemini-3.5-flash-lite','gemini-3.1-flash-lite'}|GEMMA_MODELS
+TEXT_MODELS={'gemini-4-hydrogen','gemini-3.8-flash','gemini-3.5-flash-lite','gemini-3.1-flash-lite'}|GEMMA_MODELS
 TTS_MODELS={'gemini-3.8-flash-tts','gemini-3.8-flash-lite-tts'}
 VOICES=('Puck','Charon','Kore','Fenrir','Orus','Aoede')
 STYLE='Original animated history explainer. Conversational, brisk and articulate, with understated deadpan wit. Natural pauses. No trailer voice, no exaggerated accents. Treat suffering seriously. Read the supplied transcript exactly; do not add an introduction or closing.'
@@ -23,7 +23,12 @@ class MediaAPI:
  def request(self,model,endpoint,body,kind):
   if model not in (TEXT_MODELS if kind=='text' else TTS_MODELS):raise PipelineError('Unverified free-tier model; no paid fallback')
   if kind=='text':
-   mode='prompt' if model in GEMMA_MODELS else os.getenv('GEMINI_SCHEMA_MODE','native')
+   mode='native' if model=='gemini-4-hydrogen' else 'prompt' if model in GEMMA_MODELS else os.getenv('GEMINI_SCHEMA_MODE','native')
+   if model=='gemini-4-hydrogen':
+    body=copy.deepcopy(body);config=body.setdefault('generationConfig',{})
+    for parameter in ('temperature','topP','topK'):config.pop(parameter,None)
+    config['thinkingConfig']={'thinkingLevel':'LOW'}
+    config['maxOutputTokens']=65536
    if mode not in {'native','prompt'}:raise PipelineError('Choose native or prompt Gemini schema mode')
    if mode=='prompt' and 'responseJsonSchema' in body.get('generationConfig',{}):
     body=copy.deepcopy(body);config=body['generationConfig'];shape=config.pop('responseJsonSchema')
@@ -62,7 +67,7 @@ class MediaAPI:
    start=self.clock();calls.append({'time':start,'model':model,'kind':kind,'request':identity})
    save_json(self.ledger,{'calls':calls,'last_start':start})
    try:
-    if kind=='text' and self.use_sdk and mode!='prompt':
+    if kind=='text' and self.use_sdk and mode!='prompt' and model!='gemini-4-hydrogen':
      # Keep the established SDK's wire conversion for newer text-model enums/schema.
      from google import genai
      from google.genai import types
