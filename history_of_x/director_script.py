@@ -489,7 +489,7 @@ def main(argv=None):
     parser.add_argument("--title", default=os.getenv("VIDEO_TITLE", "The Entire History of Ethiopia"))
     parser.add_argument("--brief", default=os.getenv("VIDEO_BRIEF", "How Ethiopia built powerful kingdoms, defeated an invading empire, and struggled over who should hold power at home. Connect ancient Aksum to the2022 Pretoria agreement. A coherent history across centuries, not just a battle documentary."))
     parser.add_argument("--minutes", type=float, default=float(os.getenv("VIDEO_MINUTES", "8.75")))
-    parser.add_argument("--voice", default=os.getenv("NARRATOR", "auto"))
+    parser.add_argument("--voice", choices=["auto", "Puck", "Charon", "Kore", "Fenrir", "Orus", "Aoede"], default=os.getenv("NARRATOR", "auto"))
     args = parser.parse_args(argv)
     args.work.mkdir(parents=True, exist_ok=True)
     try:
@@ -509,7 +509,7 @@ def main(argv=None):
             save_json(args.work / "request.json", {"title": args.title, "brief": args.brief, "minutes": args.minutes, "voice": args.voice, "style_version": 1})
             write(api, args.title, args.brief, args.minutes, evidence, args.work)
         script = read_json(args.work / "script.json")
-        if args.stage in ("all", "audition"):
+        if args.stage == "audition" or (args.stage == "all" and args.voice == "auto"):
             audition(api, script, args.work / "voice-auditions")
         if args.stage in ("all", "voice"):
             from .gemini_speech import produce

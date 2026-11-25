@@ -6,13 +6,13 @@ A GitHub Actions pipeline for original history videos from a title and short bri
 
 1. Keep your free Gemini key in the repository Actions secret **GEMINI_API**.
 2. Open [Actions → Directed history film](https://github.com/justsomeoneretarded/History-of-X/actions/workflows/director-film.yml) and select **Run workflow**.
-3. Enter a title and brief. The default is an original Ethiopia history, approximately **8 minutes 45 seconds**. `auto` auditions Puck and Charon; individual Gemini voices are also selectable.
-4. Start with **proof**, which renders complete opening and treaty scenes. **film** renders the whole narration. `draft` is 540p; `cinematic` is 1080p/30fps.
+3. Enter a title and brief. The default is an original Ethiopia history, approximately **8 minutes 45 seconds**. `auto` auditions Puck and Charon; individual Gemini voices are also selectable and skip the automatic audition.
+4. Start with **proof**, which renders complete opening and selected later scenes. **film** renders the whole narration. `draft` is 540p; `cinematic` is 1080p/30fps.
 5. Download **directed-proof** or **directed-film**. Read `production.json` and `editorial-review.json`: technical success alone does not mean the candidate is upload-ready.
 
 The workflow writes a video, external subtitles, thumbnail, title, description, full credits, contact sheet, executable scene programs and review evidence. It does not upload to YouTube. A failed creative review preserves the candidate for revision and stops the workflow.
 
-`audio_run` reuses a **director-audio** checkpoint. `resume_run` reuses a **directed-checkpoint**. Select `revise` to apply the previous candidate's concrete editorial feedback. Reusing accepted audio does not rewrite the script or regenerate its voice. Artifacts expire after 14 days.
+`audio_run` reuses a **director-audio** checkpoint. `resume_run` reuses a **directed-checkpoint**. Select `revise` to apply the previous candidate's concrete editorial feedback. Reusing accepted audio does not rewrite the script or regenerate its voice. Artifacts expire after 90 days.
 
 ## Reference roles
 
@@ -42,11 +42,11 @@ The renderer has no required palace/army templates or implicit walking loops. Th
 
 ## Free-tier limits and recovery
 
-The directed workflow defaults to **Gemini 3.8 Flash** for complex writing/direction/review, and **Gemini 3.8 Flash TTS** for speech. `GEMINI_DIRECTOR_MODEL` can select a supported alternative; the older workflows retain their separate settings. Google's current standard pricing lists free text input/output for 3.8 Flash, but project access and quotas still vary. Consult [pricing](https://ai.google.dev/gemini-api/docs/pricing) and [project rate limits](https://ai.google.dev/gemini-api/docs/rate-limits).
+The directed workflow defaults to **Gemini 3.5 Flash Lite** for writing and review, **Gemini 3.8 Flash** for scene direction, and **Gemini 3.8 Flash TTS** for speech. `GEMINI_DIRECTOR_MODEL` can select a supported alternative; the older workflows retain their separate settings. Google's current standard pricing lists free text input/output for 3.8 Flash, but project access and quotas still vary. Consult [pricing](https://ai.google.dev/gemini-api/docs/pricing) and [project rate limits](https://ai.google.dev/gemini-api/docs/rate-limits).
 
 - Request starts are separated by at least 65 seconds. This is a conservative application policy, not Google's universal required sleep.
 - RPM, input TPM and daily quotas are separate and shared by a Google project. Sleeping cannot cure an exhausted daily quota.
-- Local rolling budgets default to 48 text attempts and 16 speech attempts. They are guardrails, not a claim about the provider allowance.
+- Local rolling budgets default to 64 text attempts per model and 16 speech attempts. They are guardrails, not a claim about the provider allowance.
 - 3.8 Flash documents a 1,048,576-token input limit and 65,536-token output limit. This application uses substantially smaller requests and bounded outputs.
 - Speech is split by chapter, with at most 450 words per request as an application reliability bound. ASR checks completeness before audio is accepted.
 - Accepted responses, scripts, audio and scene programs are checkpointed. Provider quota failures preserve progress; the pipeline does not silently use a paid provider.
