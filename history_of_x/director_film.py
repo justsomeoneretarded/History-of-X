@@ -100,7 +100,11 @@ Return valid JSON exactly matching schema. scene_id must equal the supplied stri
  instruction=prompt+'\nAttached images are approved historical subject references. Match the supplied context and dates.'
  from .director_context import compact_request
  instruction,payload=compact_request(instruction,payload)
- if request_only:return {'instruction':instruction,'payload':payload,'images':images,'schema':schema()}
+ image_roles=[]
+ if os.getenv('GEMINI_DIRECTOR_POSITIVE_EXAMPLE','0')=='1':
+  from .director_example import positive_request
+  instruction,payload,images,image_roles=positive_request(instruction,payload,images,directory)
+ if request_only:return {'instruction':instruction,'payload':payload,'images':images,'image_roles':image_roles,'schema':schema()}
  for attempt in range(2):
   if attempt==0 and preplanned is not None:result=copy.deepcopy(preplanned)
   else:result=api.vision(instruction,payload,images,schema(),max_output=10000) if images else api.text(instruction,payload,schema(),max_output=10000)

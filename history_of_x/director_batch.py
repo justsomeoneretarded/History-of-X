@@ -78,7 +78,7 @@ def _request(api, pending, directory):
     common_instruction = first["instruction"]
     payloads = []
     shared = {}
-    for name in ("reference_craft", "illustration_bible"):
+    for name in ("reference_craft", "illustration_bible", "original_craft_example"):
         values = [item["prepared"]["payload"].get(name) for item in pending]
         if all(value == values[0] for value in values):
             shared[name] = values[0]
@@ -93,13 +93,16 @@ def _request(api, pending, directory):
         if prepared["instruction"] != common_instruction:
             payload["additional_scene_instruction"] = prepared["instruction"]
         payloads.append(payload)
-        for image in prepared.get("images", []):
+        for image_offset, image in enumerate(prepared.get("images", [])):
             identity = str(Path(image).resolve())
             if identity not in image_indices:
                 image_indices[identity] = len(images)
                 images.append(image)
                 image_table.append({"image_index": len(images), "scene_ids": []})
             row = image_table[image_indices[identity]]
+            roles = prepared.get("image_roles", [])
+            if image_offset < len(roles):
+                row["purpose"] = roles[image_offset]
             if item["id"] not in row["scene_ids"]:
                 row["scene_ids"].append(item["id"])
     item_schema = copy.deepcopy(first["schema"])
