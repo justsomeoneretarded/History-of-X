@@ -15,12 +15,16 @@ CATEGORIES = (
 )
 CHUNK_SECONDS = 30
 INLINE_LIMIT = 12_000_000
-REVIEW_VERSION = "director-review-chunks-v1"
+REVIEW_VERSION = "director-review-chunks-v2"
 TRANSCODE = {"size": "640x360", "fps": 15, "video_kbps": 180, "audio_kbps": 64}
 PROMPT = """Watch and listen to this actual history-film segment. Judge craft from the media, not from
 its description. Assess semantic visual explanation, purposeful action/reaction and prop contact,
 readable varied composition, natural spoken narration and music balance, and editorial pacing.
 Movement alone earns no credit; purposeful holds, diagrams and authentic media can work well.
+Use firm score anchors: generic rectangles standing in for people/armies, tiny empty staging, or
+successive nouns merely appearing without explaining their relationship cannot score above 4 in
+visual_specificity or acting. Flat minimal art may score highly when silhouettes, readable gestures,
+state changes and consequences communicate the spoken idea. Elaborate detail alone earns no credit.
 Acting includes suitable real footage or explanatory motion; cartoons are not always required.
 Do not penalize authentic archival resolution itself when the footage is intelligible and appropriate.
 Identify concrete observed strengths and defects, including generic/repetitive staging, incoherent
