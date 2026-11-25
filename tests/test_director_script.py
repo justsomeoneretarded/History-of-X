@@ -473,3 +473,17 @@ def test_mandatory_treaty_wording_does_not_require_another_generation():
     issues = chapter_story_issues(part, "Catalyst")
     assert not any("Taytu helps organize resistance" in issue for issue in issues)
     assert part["scenes"][0]["narration"] == text
+
+
+def test_known_two_year_political_scene_has_a_range_without_rewriting_narration():
+    from history_of_x.director_script import normalize_story_dates
+    text = ("Abiy Ahmed took office in 2018. He soon merged parties into the Prosperity Party. "
+            "The TPLF refused to join.")
+    original = {"scenes": [story_scene(text, ["S10"], "December 2019")]}
+    corrected = normalize_story_dates(original, "Aftermath")
+    assert corrected["scenes"][0]["date_label"] == "2018–2019"
+    assert corrected["scenes"][0]["narration"] == text
+    assert original["scenes"][0]["date_label"] == "December 2019"
+    assert not any("conflicts with the year" in issue for issue in chapter_story_issues(corrected, "Aftermath"))
+    wrong = {"scenes": [story_scene("Haile Selassie returned in 1941.", ["S5"], "1936")]}
+    assert normalize_story_dates(wrong, "Turning Point") == wrong

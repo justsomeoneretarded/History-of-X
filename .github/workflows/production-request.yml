@@ -75,13 +75,28 @@ jobs:
           path: work/director
           run-id: ${{ env.RESUME_RUN }}
           github-token: ${{ github.token }}
-      - name: Original script and measured Gemini narration
+      - name: Write the original complete script
         env:
           GEMINI_API: ${{ secrets.GEMINI_API }}
           GEMINI_MODEL: ${{ env.WRITER_MODEL }}
           GEMINI_SCHEMA_MODE: prompt
           GEMINI_AUDIO_REVIEW_MODEL: gemini-3.5-flash-lite
-        run: python -m history_of_x.director_script --stage all
+        run: python -m history_of_x.director_script --stage plan
+      - name: Audition Gemini voices when requested
+        if: ${{ env.NARRATOR == 'auto' }}
+        env:
+          GEMINI_API: ${{ secrets.GEMINI_API }}
+          GEMINI_MODEL: ${{ env.WRITER_MODEL }}
+          GEMINI_SCHEMA_MODE: prompt
+          GEMINI_AUDIO_REVIEW_MODEL: gemini-3.5-flash-lite
+        run: python -m history_of_x.director_script --stage audition
+      - name: Generate and verify Gemini narration
+        env:
+          GEMINI_API: ${{ secrets.GEMINI_API }}
+          GEMINI_MODEL: ${{ env.WRITER_MODEL }}
+          GEMINI_SCHEMA_MODE: prompt
+          GEMINI_AUDIO_REVIEW_MODEL: gemini-3.5-flash-lite
+        run: python -m history_of_x.director_script --stage voice
       - name: Preserve accepted narration
         if: ${{ always() }}
         uses: actions/upload-artifact@v4

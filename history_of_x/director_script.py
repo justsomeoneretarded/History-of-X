@@ -455,6 +455,23 @@ def chapter_style_issues(part):
     return issues
 
 
+def normalize_story_dates(part, chapter):
+    """Display the complete known span of the Abiy/party-reorganization scene."""
+    if chapter != "Aftermath":
+        return part
+    scenes = []
+    for original in part["scenes"]:
+        scene = dict(original)
+        text = scene["narration"]
+        if (re.search(r"\babiy\b", text, re.I)
+                and re.search(r"\b2018\b|twenty eighteen", text, re.I)
+                and re.search(r"\bprosperity party\b", text, re.I)
+                and re.search(r"\b2019\b", scene.get("date_label", ""))):
+            scene["date_label"] = "2018–2019"
+        scenes.append(scene)
+    return {**part, "scenes": scenes}
+
+
 def recover_draft_chapter(draft, title, chapter, budget, count, source_ids):
     """Recover a complete accepted chapter structurally, without rewriting its narration."""
     if not isinstance(draft, dict) or draft.get("title") != title:
@@ -617,6 +634,8 @@ def write(api, title, brief, minutes, evidence, directory):
         else:
             part = api.text(chapter_instruction, payload, chapter_script_schema(chapter_source_ids, budget, count, 5.2 if story_contract else 5.6), max_output=6500, preserve_bounds=True)
         part = clean_chapter_narration(part, source_ids)
+        if story_contract:
+            part = normalize_story_dates(part, chapter)
         # Persist usable work before a conditional repair so service outages can resume.
         save_json(chapter_path, part)
         reasons = chapter_revision_reasons(part, budget, cached)
@@ -634,6 +653,8 @@ def write(api, title, brief, minutes, evidence, directory):
                 {**payload, "draft": part}, chapter_script_schema(revision_sources, budget, count, 5.2 if story_contract else char_rate * 1.04),
                 max_output=6500, preserve_bounds=True)
             revised = clean_chapter_narration(revised, source_ids)
+            if story_contract:
+                revised = normalize_story_dates(revised, chapter)
             if not story_contract:
                 for original, scene in zip(part["scenes"], revised["scenes"]):
                     scene["source_ids"] = list(original["source_ids"])
