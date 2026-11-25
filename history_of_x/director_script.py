@@ -266,19 +266,19 @@ ETHIOPIA_STORY = {
     "Catalyst": [
         {"say": "Tewodros and Yohannes try to reunite and defend a country divided among regional rulers.",
          "patterns": [r"tewodros|yohannes", r"reunit|unif|regional|defen"],
-         "terms": ["tewodros", "yohannes", "reunified"], "sources": ["S3"]},
+         "terms": ["tewodros", "yohannes", "reunified"], "sources": ["S2", "S3"]},
         {"say": "Menelik expands from Shewa through conquest and deals; resources and imported rifles strengthen his state while conquered peoples lose autonomy.",
          "patterns": [r"menelik", r"conquer|conquest|expan|subjug", r"rifle|weapon|gun"],
          "terms": ["menelik", "shewa", "conquests", "rifles", "expansion"], "sources": ["S3"]},
-        {"say": "Taytu helps shape resistance to Italy. Wuchale's Article 17 differs between Italian and Amharic over Ethiopia's foreign relations; the Italian must and Amharic may let Italy claim a protectorate, which Menelik rejects.",
-         "patterns": [r"taytu", r"ital|resist|command|army|advis|reject|lead|led|mobil"],
+        {"say": "Taytu helps organize resistance. Explain Wuchale Article 17: the Amharic version lets Ethiopia choose Italian diplomacy, while the Italian version makes it compulsory. Menelik rejects the resulting protectorate claim.",
+         "patterns": [r"taytu", r"wuchal|uccial|treaty", r"amharic|version|translat", r"may|could|optional|permit|choos|can\b", r"must|compuls|oblig|requir|had to", r"protector|ital"],
          "terms": ["taytu", "wuchale", "amharic", "protectorate"], "sources": ["S3", "S4"]},
-        {"say": "Explain Wuchale Article 17 explicitly: the Amharic version lets Ethiopia use Italian diplomacy, while the Italian version makes it compulsory. Menelik rejects Italy's resulting protectorate claim.",
-         "patterns": [r"wuchal|uccial|treaty", r"amharic|version|translat|interpret|differ", r"protector|ital"],
-         "terms": ["wuchale", "amharic", "italian", "protectorate"], "sources": ["S4", "S3"]},
-        {"say": "Pay off Adwa here, beyond the Hook: in 1896 Ethiopian forces defeat Italy; the subsequent treaty recognizes Ethiopian independence. Victory does not erase coercion inside Menelik’s expanding empire. Explain why coalition and preparation made the opening reversal possible.",
-         "patterns": [r"adwa", r"defeat|victor|won|win|rout", r"independen|sovereign|recogn"],
-         "terms": ["adwa", "1896", "victory", "independence", "treaty"], "sources": ["S4", "S3"]},
+        {"say": "Pay off Adwa here, beyond the Hook: in 1896 Menelik, Taytu and their Ethiopian coalition defeat the separated Italian forces. Explain how preparation and cooperation make the opening reversal possible.",
+         "patterns": [r"adwa", r"defeat|victor|won|win|rout", r"ethiop|menelik"],
+         "terms": ["adwa", "1896", "victory", "menelik", "taytu"], "sources": ["S4", "S3"]},
+        {"say": "Italy recognizes Ethiopian independence after Adwa. But victory does not erase coercion inside Menelik's expanding empire: conquered peoples are still fighting over who controls their lives. Bridge to Italy's later invasion.",
+         "patterns": [r"ital", r"independen|sovereign|recogn", r"conquer|expan|coerci|subjug|autonom", r"people|communit|subject|territor"],
+         "terms": ["independence", "treaty", "conquest", "expansion"], "sources": ["S4", "S3"]},
     ],
     "Turning Point": [
         {"say": "Mussolini invades in 1935; aircraft and mustard gas help Italy overcome Ethiopian resistance.",
@@ -305,8 +305,8 @@ ETHIOPIA_STORY = {
          "patterns": [r"1991|nineteen ninety[\s-]one", r"derg|junta", r"rebel|overthrow|collaps|fell|fall"],
          "terms": ["1991", "derg", "rebels", "famine"], "sources": ["S7", "S8"]},
         {"say": "Eritrea votes for independence in 1993 while the EPRDF builds a federal political settlement in Ethiopia.",
-         "patterns": [r"eritrea", r"1993|nineteen ninety[\s-]three", r"independen|referendum", r"feder|eprdf"],
-         "terms": ["1993", "referendum", "independence"], "sources": ["S9"]},
+         "patterns": [r"eritrea", r"1993|nineteen ninety[\s-]three", r"independen|referendum", r"feder"],
+         "terms": ["1993", "referendum", "independence", "federal", "ethnic"], "sources": ["S9", "S7"]},
         {"say": "Abiy takes office in 2018; the 2019 Prosperity Party reorganization and TPLF refusal sharpen the struggle between federal and regional power.",
          "patterns": [r"abiy", r"2018|twenty eighteen|2019|twenty nineteen", r"tplf|tigray|prosperity"],
          "terms": ["abiy", "2018", "2019", "prosperity", "tplf"], "sources": ["S10"]},
@@ -327,7 +327,7 @@ def has_ethiopia_story_contract(title, evidence):
 def director_fingerprint(title, brief, target, target_rate, evidence):
     if has_ethiopia_story_contract(title, evidence):
         return key(ETHIOPIA_STORY_VERSION, title, brief, target, target_rate, evidence, STYLE_PROFILE,
-                   ETHIOPIA_STORY, ETHIOPIA_CHAPTER_SOURCES, ETHIOPIA_CHAPTER_TERMS, "milestone-passages-v1")
+                   ETHIOPIA_STORY, ETHIOPIA_CHAPTER_SOURCES, ETHIOPIA_CHAPTER_TERMS, "milestone-passages-v2")
     version = "director-script-v3-measured-voice-rate" if "ethiop" in title.casefold() else "director-script-v4-topic-specific-outline"
     return key(version, title, brief, target, target_rate, evidence, STYLE_PROFILE)
 
@@ -339,26 +339,59 @@ def attach_story_contract(outline):
 
 
 def story_chapter_evidence(evidence, chapter):
-    """Reserve a source passage for every required beat inside the same 5500-char cap."""
+    """Reserve complete evidence sentences for every milestone inside 5500 chars.
+
+    Select against terms still missing from the actual excerpt, rather than from
+    the full source paragraph: a later trimming pass must not silently remove
+    the election year or the federal settlement the scene needs to explain.
+    """
     by_id = {s["id"]: s for s in evidence["sources"]}
-    source_ids = [sid for sid in ETHIOPIA_CHAPTER_SOURCES[chapter] if sid in by_id]
-    paragraphs = {sid: compact_source_extract(by_id[sid]["extract"], len(by_id[sid]["extract"]), cutoff_2022=True).split("\n") for sid in source_ids}
-    excerpts = {sid: [_source_passage(paragraphs[sid][0], 180, ())] for sid in source_ids}
+    source_ids = list(dict.fromkeys(
+        [sid for sid in ETHIOPIA_CHAPTER_SOURCES[chapter] if sid in by_id] +
+        [sid for beat in ETHIOPIA_STORY[chapter] for sid in beat["sources"] if sid in by_id]))
+    paragraphs = {}
+    excerpts = {}
+    for sid in source_ids:
+        text = compact_source_extract(by_id[sid]["extract"], len(by_id[sid]["extract"]), cutoff_2022=True)
+        paragraphs[sid] = [p for p in text.split("\n") if p.strip()]
+        if not paragraphs[sid]:
+            raise PipelineError("Empty source extract: " + sid)
+        excerpts[sid] = [_source_passage(paragraphs[sid][0], 180, ())]
     if "S11" in excerpts:
         excerpts["S11"] = ["\n".join(paragraphs["S11"])]
-    reserved = sum(sum(map(len, parts)) + len(parts) for parts in excerpts.values())
-    allowance = min(950, (5500 - reserved) // len(ETHIOPIA_STORY[chapter]) - 1)
+    reserved = sum(sum(len(p) + 1 for p in parts) for parts in excerpts.values())
+    allowance = min(950, (5480 - reserved) // len(ETHIOPIA_STORY[chapter]))
     for beat in ETHIOPIA_STORY[chapter]:
-        candidates = [(sid, p) for sid in beat["sources"] if sid in paragraphs for p in paragraphs[sid] if p]
+        candidates = [(sid, sentence) for sid in beat["sources"] if sid in paragraphs
+                      for paragraph in paragraphs[sid]
+                      for sentence in re.split(r"(?<=[.!?])\s+", paragraph) if sentence.strip()]
         if not candidates:
             raise PipelineError("Missing evidence for required story beat: " + beat["say"])
-        sid, paragraph = max(candidates, key=lambda pair: (
-            len(_matching_terms(pair[1], beat["terms"])), -beat["sources"].index(pair[0])))
-        passage = _source_passage(paragraph, allowance, beat["terms"])
-        if passage not in excerpts[sid]:
-            excerpts[sid].append(passage)
-    return [{**{k: by_id[sid][k] for k in ("id", "title", "url") if k in by_id[sid]},
-             "extract": "\n".join(excerpts[sid])} for sid in source_ids]
+        present = " ".join(p for sid in beat["sources"] if sid in excerpts for p in excerpts[sid])
+        uncovered = set(beat["terms"]) - _matching_terms(present, beat["terms"])
+        remaining = allowance
+        while candidates and uncovered and remaining > 40:
+            # Complete short sentences can carry complementary causes without
+            # filling the chapter context with an unrelated paragraph.
+            sid, sentence = max(candidates, key=lambda pair: (
+                len(_matching_terms(pair[1], uncovered)),
+                -beat["sources"].index(pair[0]), -len(pair[1])))
+            candidates.remove((sid, sentence))
+            if not _matching_terms(sentence, uncovered):
+                break
+            passage = _source_passage(sentence, remaining - 1, tuple(uncovered))
+            covered = _matching_terms(passage, uncovered)
+            if not covered:
+                continue
+            if passage not in excerpts[sid]:
+                excerpts[sid].append(passage)
+                remaining -= len(passage) + 1
+            uncovered -= covered
+    result = [{**{k: by_id[sid][k] for k in ("id", "title", "url") if k in by_id[sid]},
+               "extract": "\n".join(excerpts[sid])} for sid in source_ids]
+    if sum(len(s["extract"]) for s in result) > 5500:
+        raise PipelineError("Chapter evidence exceeded its compact context budget")
+    return result
 
 
 def story_scene_plan(chapter, count):
@@ -374,7 +407,9 @@ def chapter_story_issues(part, chapter):
     issues, windows = [], []
     for scene in part["scenes"]:
         sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", scene["narration"]) if s.strip()]
-        windows.extend((" ".join(sentences[i:i + 3]), scene.get("source_ids", [])) for i in range(len(sentences)))
+        # A single short scene can express one cause and consequence in several
+        # complete sentences; requiring one long sentence encourages formal prose.
+        windows.append((" ".join(sentences), scene.get("source_ids", [])))
     for beat in ETHIOPIA_STORY[chapter]:
         if not any(all(re.search(pattern, text, re.I) for pattern in beat["patterns"]) and set(ids) & set(beat["sources"]) for text, ids in windows):
             issues.append("missing spoken cause/consequence beat: " + beat["say"])
@@ -577,7 +612,7 @@ def write(api, title, brief, minutes, evidence, directory):
         if cached:
             part = read_json(chapter_path)
         else:
-            part = api.text(chapter_instruction, payload, chapter_script_schema(chapter_source_ids, budget, count), max_output=6500, preserve_bounds=True)
+            part = api.text(chapter_instruction, payload, chapter_script_schema(chapter_source_ids, budget, count, 5.2 if story_contract else 5.6), max_output=6500, preserve_bounds=True)
         part = clean_chapter_narration(part, source_ids)
         # Persist usable work before a conditional repair so service outages can resume.
         save_json(chapter_path, part)
@@ -593,7 +628,7 @@ def write(api, title, brief, minutes, evidence, directory):
                 ("Preserve supported facts and chapter order. Add missing required beats from the supplied evidence, correct date labels, and cite the appropriate source_ids for added facts. " if story_contract else "Preserve its facts, sequence, date labels and source_ids. ") +
                 "Use concrete phrasing and complete connected sentences, roughly 5–7 per 55–70-word scene. "
                 "Use the full word budget. No new fact-review workflow and no inline source-code citations.",
-                {**payload, "draft": part}, chapter_script_schema(revision_sources, budget, count, char_rate * 1.04),
+                {**payload, "draft": part}, chapter_script_schema(revision_sources, budget, count, 5.2 if story_contract else char_rate * 1.04),
                 max_output=6500, preserve_bounds=True)
             revised = clean_chapter_narration(revised, source_ids)
             if not story_contract:

@@ -367,14 +367,14 @@ def test_story_plan_assigns_every_beat_even_when_scene_count_changes():
     ("Roots", ["Ezana", "Portuguese", "Gondar"]),
     ("Catalyst", ["Taytu", "Wuchale", "Adwa"]),
     ("Turning Point", ["1941", "1974", "Red Terror"]),
-    ("Aftermath", ["1993", "Abiy", "2022"]),
+    ("Aftermath", ["1993", "federal", "Abiy", "2018", "2022"]),
 ])
 def test_story_evidence_reserves_passages_for_omitted_milestones(chapter, terms):
     evidence = read_json(ROOT / "episodes" / "ethiopia.json")["evidence"]
     compact = story_chapter_evidence(evidence, chapter)
     assert sum(len(s["extract"]) for s in compact) <= 5500
     text = " ".join(s["extract"] for s in compact).casefold()
-    assert all(term.casefold() in text for term in terms)
+    assert all(term.casefold() in text for term in terms), [term for term in terms if term.casefold() not in text]
     assert "2025" not in text and "2026" not in text
 
 
@@ -403,8 +403,8 @@ def test_concrete_spoken_payoff_passes_but_metadata_mentions_do_not():
         "Tewodros tried to reunite the regional rulers. Yohannes defended the borders. "
         "Menelik expanded through conquest and bought modern rifles. "
         "Taytu helped organize resistance to Italy. "
-        "The Wuchale treaty had different Amharic and Italian versions. Italy claimed a protectorate, but Menelik rejected it. "
-        "At Adwa, Ethiopian forces defeated Italy. The peace treaty recognized Ethiopian independence."
+        "The Wuchale treaty had different Amharic and Italian versions. The Amharic said he could use Italian diplomacy. The Italian version said he had to. Italy claimed a protectorate, but Menelik rejected it. "
+        "At Adwa, Ethiopian forces defeated Italy. The peace treaty recognized Ethiopian independence. Menelik’s expansion still put conquered peoples under his rule."
     )
     part = {"scenes": [story_scene(text, ["S3", "S4"])]}
     assert chapter_story_issues(part, "Catalyst") == []
