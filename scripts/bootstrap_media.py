@@ -14,7 +14,7 @@ def main():
         print('Installing maintained Ubuntu media packages (FFmpeg, Cairo and fonts).',flush=True)
         common=['-o','Acquire::Retries=2','-o','Acquire::http::Timeout=30','-o','Acquire::https::Timeout=30']
         subprocess.run(['sudo','apt-get',*common,'update'],check=True,timeout=240)
-        subprocess.run(['sudo','apt-get',*common,'install','-y','--no-install-recommends','ffmpeg','libcairo2','fonts-dejavu-core'],check=True,timeout=300)
+        subprocess.run(['sudo','apt-get',*common,'install','-y','--no-install-recommends','ffmpeg','libcairo2','fonts-dejavu-core'],check=True,timeout=600)
     if not usable():raise SystemExit('FFmpeg is missing required subtitle/loudness filters.')
     print(subprocess.run(['ffmpeg','-version'],capture_output=True,text=True,check=True).stdout.splitlines()[0])
 
