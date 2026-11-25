@@ -98,10 +98,12 @@ Return valid JSON exactly matching schema. scene_id must equal the supplied stri
    images.append(ref)
   except (OSError,ValueError):continue
  instruction=prompt+'\nAttached images are approved historical subject references. Match the supplied context and dates.'
+ from .director_context import compact_request
+ instruction,payload=compact_request(instruction,payload)
  if request_only:return {'instruction':instruction,'payload':payload,'images':images,'schema':schema()}
  for attempt in range(2):
   if attempt==0 and preplanned is not None:result=copy.deepcopy(preplanned)
-  else:result=api.vision(instruction,payload,images,schema(),max_output=18000) if images else api.text(instruction,payload,schema(),max_output=18000)
+  else:result=api.vision(instruction,payload,images,schema(),max_output=10000) if images else api.text(instruction,payload,schema(),max_output=10000)
   save_json(directory/(fingerprint+f'-draft-{attempt}.json'),result)
   try:
    if str(result.get('scene_id'))!=str(scene['scene_id']):raise PipelineError('Director returned a different scene ID')
@@ -122,34 +124,8 @@ Return valid JSON exactly matching schema. scene_id must equal the supplied stri
  raise PipelineError('No valid directed scene')
 
 def editorial_review(api,video,style,output):
- # Actual video+audio; an honest craft assessment, never a pixel-motion pass.
- schema={'type':'object','required':['verdict','scores','observations','problems','revision_priorities'],
- 'properties':{'verdict':{'type':'string','enum':['ready','revise','reject']},
- 'scores':{'type':'object','required':['visual_specificity','acting','composition','narration_delivery','editorial_pacing'],
- 'properties':{k:{'type':'integer','minimum':1,'maximum':10} for k in ['visual_specificity','acting','composition','narration_delivery','editorial_pacing']}},
- 'observations':{'type':'array','items':{'type':'string'}},'problems':{'type':'array','items':{'type':'string'}},
- 'revision_priorities':{'type':'array','items':{'type':'string'}}}}
- prompt=CRAFT+'''
-Watch and listen to the supplied actual output. Evaluate it critically as a history video director.
-Reference craft analysis is context, not proof of a match. Do NOT claim to have watched any reference
-unless supplied as actual media here. Report timestamped observations and specific shortcomings.
-Does acting visibly communicate decisions and consequences? Does narration sound naturally spoken?
-Are scenes bespoke, varied and relevant, or generic SVG figures/cards with meaningless movement?
-Technical movement alone merits no credit. Don't praise merely because limbs move. Judge illustration,
-composition, blocking, comic timing, clarity, rhythmic variation, audio and overall editorial finish.
-Reject incoherent staging, badly drawn/overlapping actors, tiny illegible labels, random asset insertion,
-or repetitive same-background scenes. Score honestly. This is NOT historical fact verification.
-ready requires every category>=7 and no major craft failure; otherwise revise or reject.'''
- from .review_media import video_part
- model=os.getenv('GEMINI_MODEL','gemini-3.5-flash-lite')
- with video_part(api,video) as part:
-  part={**part,'videoMetadata':{'fps':2}}
-  parts=[{'text':prompt+'\nREFERENCE CRAFT DATA:\n'+json.dumps(style or {})},part]
-  result=api.request(model,'models/'+model+':generateContent',{'contents':[{'role':'user','parts':parts}],
-   'generationConfig':{'temperature':.15,'maxOutputTokens':5000,'responseMimeType':'application/json',
-   'responseJsonSchema':schema,'thinkingConfig':{'thinkingLevel':'LOW'}}},'text')
- report=json.loads(''.join(p.get('text','') for p in result['candidates'][0]['content']['parts'] if not p.get('thought')))
- save_json(output/'editorial-review.json',report);return report
+ from .director_review import review
+ return review(api,video,style,output)
 
 def package(api,script,speech,assets,output,work):
  from .typography import font
@@ -162,7 +138,7 @@ def package(api,script,speech,assets,output,work):
  previous=read_json(metadata_path) if metadata_path.exists() else {}
  metadata=previous if previous.get('fingerprint')==metadata_id else api.text(
   'Package this original history video for YouTube. Return a clear searchable title naming the subject, a concrete truthful thumbnail curiosity hook of2–4short words (not the full title), and a concise description of the actual scope and endpoint. No fake quotes, sensational invented claims, marketing filler, channel branding or technical implementation details. The hook should be readily legible on a mobile thumbnail. Do not copy any reference title.',
-  {'working_title':source_script['title'],'summary':source_script['summary'],'opening':source_script['scenes'][0]['narration'],'ending':source_script['scenes'][-1]['narration']},metadata_schema,max_output=1200)
+  {'working_title':source_script['title'],'summary':source_script['summary'],'opening':source_script['scenes'][0]['narration'],'ending':source_script['scenes'][-1]['narration']},metadata_schema,max_output=1200,model=os.getenv('GEMINI_PACKAGE_MODEL','gemini-3.5-flash-lite'))
  metadata['fingerprint']=metadata_id;save_json(metadata_path,metadata)
  (output/'title.txt').write_text(metadata['title']+'\n')
  # Authentic large portrait/architecture: purposeful composition, no tiny icon collage.
@@ -306,7 +282,7 @@ def produce(api,work,output,profile='cinematic',proof=False,resume=None,revise=F
  save_json(work/'editorial-feedback.json',review)
  acceptable=review['verdict']=='ready' and min(review['scores'].values())>=7
  request=read_json(work/'request.json') if (work/'request.json').exists() else {}
- save_json(output/'production.json',{'technical_passed':technical['passed'],'editorial_accepted':acceptable,'proof':proof,'reference_craft_used':style,'runtime_target_seconds':request.get('minutes',8.75)*60,'runtime_seconds':position,'editorial_review_scope':'entire candidate at reduced resolution, with audio'})
+ save_json(output/'production.json',{'technical_passed':technical['passed'],'editorial_accepted':acceptable,'proof':proof,'reference_craft_used':style,'runtime_target_seconds':request.get('minutes',8.75)*60,'runtime_seconds':position,'editorial_review_scope':review.get('scope','entire candidate in consecutive audiovisual chunks')})
  if not acceptable:raise PipelineError('Creative review requires revision; output is a review candidate, not upload-ready')
  print('DIRECTED_FILM '+str(final),flush=True)
 

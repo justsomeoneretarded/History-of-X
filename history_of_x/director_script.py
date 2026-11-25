@@ -107,6 +107,130 @@ def chapter_script_schema(source_ids, budget, count, chars_per_word=5.6):
     return {"type": "object", "required": ["scenes"], "properties": {"scenes": {"type": "array", "minItems": count, "maxItems": count, "items": scene}}}
 
 
+# Keep source routing local to writing; these IDs are the reviewed episode evidence.
+ETHIOPIA_CHAPTER_SOURCES = {
+    "Hook": {"S3": 1700, "S4": 3800},
+    "Roots": {"S1": 2300, "S2": 3200},
+    "Catalyst": {"S3": 3700, "S4": 1800},
+    "Turning Point": {"S4": 800, "S5": 2000, "S6": 2700},
+    "Aftermath": {"S7": 850, "S8": 600, "S9": 900, "S10": 2700, "S11": 450},
+}
+ETHIOPIA_CHAPTER_TERMS = {
+    "Hook": ("adwa", "baratieri", "albertone", "arimondi", "dabormida", "column", "isolated", "1896"),
+    "Roots": ("aksum", "ezana", "christian", "trade", "decline", "zagwe", "1270", "solomonic", "adal", "portuguese", "gondar", "zemene"),
+    "Catalyst": ("shewa", "tewodros", "yohannes", "menelik", "conquer", "wuchale", "rifles", "adwa", "taytu"),
+    "Turning Point": ("1935", "mustard", "1941", "selassie", "1974", "mengistu", "red terror"),
+    "Aftermath": ("1991", "eprdf", "famine", "military policies", "1993", "independence", "abiy", "2018", "2019", "2020", "2022", "cessation"),
+}
+
+
+def strip_source_citations(text, source_ids):
+    """Source codes belong in metadata, never in spoken words or word counts."""
+    choices = "|".join(re.escape(s) for s in sorted(source_ids, key=len, reverse=True))
+    if choices:
+        text = re.sub(r"\[(?:" + choices + r")(?:\s*[,;]\s*(?:" + choices + r"))*\]", "", text)
+    return re.sub(r"\s+([,.!?;:])", r"\1", re.sub(r"\s+", " ", text)).strip()
+
+
+def clean_chapter_narration(part, source_ids):
+    return {**part, "scenes": [{**s, "narration": strip_source_citations(s["narration"], source_ids)} for s in part["scenes"]]}
+
+
+def _source_terms(chapter_outline):
+    text = " ".join(str(chapter_outline.get(k, "")) for k in ("era", "dramatic_question", "events"))
+    stop = {"about", "after", "before", "chapter", "could", "from", "have", "into", "their", "there", "these", "they", "this", "through", "what", "when", "which", "with", "would"}
+    return tuple(dict.fromkeys(t for t in re.findall(r"[a-z0-9]{4,}", text.casefold()) if t not in stop))
+
+
+def _matching_terms(text, terms):
+    text = text.casefold()
+    return {term for term in terms if term in text}
+
+
+def _source_passage(text, limit, terms):
+    """Keep whole sentences where possible, including relevant material deep in a paragraph."""
+    if len(text) <= limit:
+        return text
+    sentences = re.split(r"(?<=[.!?])\s+", text)
+    windows = []
+    for start in range(len(sentences)):
+        window = ""
+        for sentence in sentences[start:]:
+            candidate = (window + " " + sentence).strip()
+            if len(candidate) > limit:
+                break
+            window = candidate
+        if window:
+            windows.append(window)
+    if windows:
+        return max(windows, key=lambda s: (len(_matching_terms(s, terms)), len(s))) if terms else windows[0]
+    # An unusually long single sentence still must obey the request context cap.
+    position = min((text.casefold().find(t) for t in terms if t in text.casefold()), default=0)
+    start = max(0, position - limit // 3)
+    return text[start:start + limit].rsplit(" ", 1)[0]
+
+
+def compact_source_extract(extract, limit, terms=(), cutoff_2022=False):
+    """An introduction plus relevant paragraphs, rather than only the article opening."""
+    paragraphs = []
+    for paragraph in re.split(r"\n\s*\n|\n", extract):
+        paragraph = paragraph.strip()
+        if not paragraph or paragraph.startswith("=="):
+            continue
+        if cutoff_2022:
+            paragraph = " ".join(s for s in re.split(r"(?<=[.!?])\s+", paragraph) if not re.search(r"\b202[3-9]\b", s))
+        if paragraph:
+            paragraphs.append(paragraph)
+    if not paragraphs:
+        return ""
+    if len("\n".join(paragraphs)) <= limit:
+        return "\n".join(paragraphs)
+    intro = _source_passage(paragraphs[0], min(360, limit), ())
+    selected = [(0, intro)]
+    seen = _matching_terms(intro, terms)
+    remaining = limit - len(intro)
+    candidates = list(enumerate(paragraphs[1:], 1))
+    while candidates and remaining > 80:
+        index, paragraph = max(candidates, key=lambda p: (
+            len(_matching_terms(p[1], terms) - seen) * 10 + len(_matching_terms(p[1], terms)), -p[0]))
+        candidates = [p for p in candidates if p[0] != index]
+        passage = _source_passage(paragraph, min(1200, remaining - 1), terms)
+        if not passage:
+            continue
+        selected.append((index, passage))
+        seen.update(_matching_terms(passage, terms))
+        remaining -= len(passage) + 1
+    return "\n".join(p for _, p in sorted(selected))[:limit]
+
+
+def compact_chapter_evidence(evidence, chapter_outline, is_ethiopia=False):
+    sources = evidence["sources"]
+    chapter = chapter_outline["chapter"]
+    terms = ETHIOPIA_CHAPTER_TERMS[chapter] if is_ethiopia else _source_terms(chapter_outline)
+    routing = ETHIOPIA_CHAPTER_SOURCES[chapter] if is_ethiopia else {}
+    selected = [s for s in sources if s["id"] in routing]
+    if not selected:
+        selected = sorted(sources, key=lambda s: len(_matching_terms(s.get("title", ""), terms)) * 4 + len(_matching_terms(s["extract"], terms)), reverse=True)[:4]
+        routing = {s["id"]: 5500 // max(1, len(selected)) for s in selected}
+    return [
+        {**{k: s[k] for k in ("id", "title", "url") if k in s},
+         "extract": compact_source_extract(s["extract"], routing[s["id"]], terms, cutoff_2022=is_ethiopia)}
+        for s in selected
+    ]
+
+
+def chapter_revision_reasons(part, budget, cached=False):
+    words = sum(len(s["narration"].split()) for s in part["scenes"])
+    reasons = []
+    if not budget * (.85 if cached else .9) <= words <= min(450, budget * 1.1):
+        reasons.append(f"length is {words} words; use about {budget}")
+    metrics = script_metrics({"scenes": [{**s, "chapter": "Hook"} for s in part["scenes"]]})
+    median = metrics["median_sentence_words"]
+    if median > 16 or 0 < median < 7:
+        reasons.append(f"sentence median is {median:g} words; use natural complete sentences with median 10–14")
+    return reasons
+
+
 def recover_draft_chapter(draft, title, chapter, budget, count, source_ids):
     """Recover a complete accepted chapter structurally, without rewriting its narration."""
     if not isinstance(draft, dict) or draft.get("title") != title:
@@ -123,7 +247,7 @@ def recover_draft_chapter(draft, title, chapter, budget, count, source_ids):
             order.append(name)
     if order != CHAPTERS[:len(order)]:
         return None
-    selected = [s for s in scenes if s.get("chapter") == chapter]
+    selected = [{**s, "narration": strip_source_citations(s.get("narration", ""), source_ids)} if isinstance(s.get("narration"), str) else s for s in scenes if s.get("chapter") == chapter]
     if len(selected) != count:
         return None
     allowed = set(source_ids)
@@ -158,7 +282,7 @@ def write(api, title, brief, minutes, evidence, directory):
         result = read_json(path)
         validate(result, source_ids, target)
         return result
-    compact = [{**s, "extract": s["extract"][:3400]} for s in evidence["sources"]]
+    compact = [{**{k: s[k] for k in ("id", "title", "url") if k in s}, "extract": compact_source_extract(s["extract"], 400, cutoff_2022=is_ethiopia)} for s in evidence["sources"]]
     outline_path = directory / "outline.json"
     previous_outline_fingerprint = read_json(outline_path).get("fingerprint") if outline_path.exists() else None
     if outline_path.exists() and read_json(outline_path).get("fingerprint") == fingerprint:
@@ -195,8 +319,8 @@ def write(api, title, brief, minutes, evidence, directory):
     instruction = (
         "Write the complete ORIGINAL spoken documentary from this outline. The audience hears a person telling a story, not an essay. "
         f"Target {target} words, within5 percent. Use five ordered chapters: {', '.join(CHAPTERS)}. "
-        "Each scene is a complete thought of roughly45–90 spoken words; vary lengths. Each chapter must have at most450 words for TTS. "
-        "Many sentences should be5–12 words; aim median10–14. Use contractions, concrete subjects and active verbs. "
+        "Each scene has about 55–70 spoken words in 5–7 natural complete sentences. Each chapter must have at most450 words for TTS. "
+        "Aim for a sentence median of 10–14 words. Use contractions, concrete people and actions, and plain active verbs. "
         "Mix short emphatic lines with longer explanations. No sentence fragments merely to game the length target. "
         "The voice is conversational, informed, curious, occasionally dryly funny. Never a trailer announcer or academic lecturer. "
         "The first sentence must show a concrete person doing something in the opening SCENE. Do not open with an abstract question or a historical overview. "
@@ -204,11 +328,11 @@ def write(api, title, brief, minutes, evidence, directory):
         "Avoid repeated bureaucracy/paperwork jokes, administrative jargon, grand generalizations and padding. "
         "Every century must advance the same organizing question. Close the historical gaps specified in the outline. "
         "Humor targets hubris and contradictions, never victims. Slow down emotionally for occupation, famine and war. "
-        "Use source IDs supplied with the evidence; every claim must remain within those extracts. No invented statistics or dialogue. "
+        "Put source IDs only in source_ids metadata. Never put inline citations such as [S1] in narration. Every claim must remain within the extracts. No invented statistics or dialogue. "
         "This is writing, not an additional fact-review workflow. Do not refer to the reference video or its creator. "
         "Do not copy its wording, metaphors, jokes, songs or opening. No CTA, channel branding, chapter labels or stage directions in narration. "
         "Write dates in comfortable spoken form. date_label remains a concise readable calendar label for visual use. "
-        "Return all fields in the schema, with 1-based consecutive scene IDs. Avoid: " + ", ".join(BANNED)
+        "Return the fields in the chapter schema. Avoid: " + ", ".join(BANNED)
     )
     if is_ethiopia:
         instruction += " Start with the Italian command's1896 campaign going wrong, build curiosity about what they misunderstood, then rewind in Roots."
@@ -237,24 +361,43 @@ def write(api, title, brief, minutes, evidence, directory):
             if recovered is not None:
                 save_json(chapter_path, recovered)
                 print(f"Recovered complete {chapter} from saved draft without an API request", flush=True)
-        if chapter_path.exists():
+        cached = chapter_path.exists()
+        chapter_outline = outline["chapters"][index]
+        chapter_evidence = compact_chapter_evidence(evidence, chapter_outline, is_ethiopia)
+        chapter_source_ids = [s["id"] for s in chapter_evidence]
+        chapter_instruction = instruction + (
+            f"\nNOW WRITE ONLY chapter {index + 1}/5: {chapter}. Exactly {count} scenes, about {budget} spoken words TOTAL, averaging {budget / count:.0f} words per scene. "
+            "The whole-film question and payoff are continuity context. Write only this_chapter. "
+            "Opening instructions apply ONLY to Hook. In later chapters continue naturally, never repeat the opening or recap earlier chapters. "
+            "Do not resolve later chapters early. End on this chapter's transition. Keep source_ids metadata and date labels. "
+            "No extra review, commentary, stage directions or chapter announcements in narration."
+        )
+        payload = {"title": title, "brief": brief,
+                   "whole_film_outline": {k: outline[k] for k in ("organizing_question", "ending_payoff") if k in outline},
+                   "this_chapter": chapter_outline, "target_chapter_words": budget,
+                   "previous_chapter_ending": merged[-1]["narration"] if merged else "", "evidence": chapter_evidence}
+        if cached:
             part = read_json(chapter_path)
         else:
-            chapter_instruction = instruction + (
-                f"\nNOW WRITE ONLY chapter{index + 1}/5:{chapter}. Exactly{count} scenes, exactly about{budget} spoken words TOTAL, averaging{budget / count:.0f} words per scene. "
-                "The whole-film outline is continuity context, not a request to write other chapters. "
-                "Opening instructions apply ONLY to Hook. In later chapters continue the story naturally, never repeat the opening or recap earlier chapters. "
-                "Do not resolve later chapters early. End on this chapter's transition. Keep source citations and date labels. "
-                "No extra review, commentary, stage directions or chapter announcements in narration."
-            )
-            payload = {"title": title, "brief": brief, "whole_film_outline": outline, "this_chapter": outline["chapters"][index], "target_chapter_words": budget,
-                       "previous_chapter_ending": " ".join(s["narration"] for s in merged[-2:]), "evidence": compact}
-            part = api.text(chapter_instruction, payload, chapter_script_schema(source_ids, budget, count), max_output=6500, preserve_bounds=True)
+            part = api.text(chapter_instruction, payload, chapter_script_schema(chapter_source_ids, budget, count), max_output=6500, preserve_bounds=True)
+        part = clean_chapter_narration(part, source_ids)
+        # Persist usable work before a conditional repair so service outages can resume.
+        save_json(chapter_path, part)
+        reasons = chapter_revision_reasons(part, budget, cached)
+        if reasons and not part.get("cadence_length_revision"):
             words = sum(len(s["narration"].split()) for s in part["scenes"])
-            if not budget * .9 <= words <= min(450, budget * 1.1):
-                char_rate = sum(len(s["narration"]) for s in part["scenes"]) / max(1, words)
-                part = api.text(chapter_instruction + f"\nThe draft has{words} words; target{budget}. Revise ONLY its spoken length/cadence without inventing facts. Use the whole word budget, not short summaries.",
-                                {**payload, "draft": part}, chapter_script_schema(source_ids, budget, count, char_rate * 1.04), max_output=6500, preserve_bounds=True)
+            char_rate = sum(len(s["narration"]) for s in part["scenes"]) / max(1, words)
+            revision_sources = list(dict.fromkeys(chapter_source_ids + [sid for s in part["scenes"] for sid in s["source_ids"]]))
+            revised = api.text(
+                chapter_instruction + "\nRevise this draft ONCE for spoken length and conversational cadence together: " + "; ".join(reasons) + ". "
+                "Preserve its facts, sequence, date labels and source_ids. Use concrete phrasing and complete connected sentences, roughly 5–7 per 55–70-word scene. "
+                "Use the full word budget. No new fact-review workflow and no inline source-code citations.",
+                {**payload, "draft": part}, chapter_script_schema(revision_sources, budget, count, char_rate * 1.04),
+                max_output=6500, preserve_bounds=True)
+            revised = clean_chapter_narration(revised, source_ids)
+            for original, scene in zip(part["scenes"], revised["scenes"]):
+                scene["source_ids"] = list(original["source_ids"])
+            part = {**revised, "cadence_length_revision": 1}
             save_json(chapter_path, part)
         print(f"Director drafted {chapter}: {sum(len(s['narration'].split()) for s in part['scenes'])} words", flush=True)
         for scene in part["scenes"]:

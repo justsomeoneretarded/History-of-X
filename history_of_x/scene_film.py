@@ -33,13 +33,15 @@ ALLOWED = {'svg', 'g', 'defs', 'path', 'rect', 'circle', 'ellipse', 'line',
 
 
 def schema():
-    """Portable structured-output schema for the Gemini scene director."""
+    """Portable schema: sparse frames inherit prior channels, initially DEFAULT."""
     number = {'type': 'number'}
     point = {'type': 'array', 'items': number, 'minItems': 2, 'maxItems': 2}
     kprops = {'time': number, **{name: number for name in DEFAULT},
               'ease': {'type': 'string', 'enum': list(EASES)}}
     frames = {'type': 'array', 'minItems': 1, 'items': {
-        'type': 'object', 'required': list(kprops), 'properties': kprops}}
+        'type': 'object', 'required': ['time'], 'properties': kprops,
+        'description': 'Only changed channels are needed. Omitted channels retain the previous pose; '
+                       'initial x/y/rotation=0, scale/opacity/reveal=1. Easing defaults to smooth.'}}
     props = {'id': {'type': 'string'}, 'pivot': point, 'start': number,
              'end': number, 'keyframes': frames,
              'parent': {'type': 'string'}}

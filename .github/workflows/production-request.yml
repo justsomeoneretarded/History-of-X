@@ -42,7 +42,7 @@ jobs:
       - name: Verify code before spending provider quota
         run: |
           python -m compileall -q history_of_x scripts
-          pytest -q
+          env -u GEMINI_MEDIA_LEDGER -u GEMINI_TEXT_REQUEST_BUDGET -u GEMINI_TTS_REQUEST_BUDGET -u GEMINI_INPUT_TOKEN_BUDGET -u GEMINI_SCHEMA_MODE pytest -q
       - name: Read production request
         run: |
           if [[ -n "$REQUEST_FILE" ]]; then
@@ -70,6 +70,8 @@ jobs:
         env:
           GEMINI_API: ${{ secrets.GEMINI_API }}
           GEMINI_MODEL: ${{ env.WRITER_MODEL }}
+          GEMINI_SCHEMA_MODE: prompt
+          GEMINI_AUDIO_REVIEW_MODEL: gemini-3.5-flash-lite
         run: python -m history_of_x.director_script --stage all
       - name: Preserve accepted narration
         if: ${{ always() }}
@@ -88,6 +90,10 @@ jobs:
         env:
           GEMINI_API: ${{ secrets.GEMINI_API }}
           GEMINI_MODEL: ${{ env.DIRECTOR_MODEL }}
+          GEMINI_SCHEMA_MODE: prompt
+          GEMINI_PACKAGE_MODEL: gemini-3.5-flash-lite
+          GEMINI_REVIEW_MODEL: gemini-3.5-flash-lite
+          GEMINI_REVIEW_CACHE: work/director/editorial-review-parts
         run: |
           args=(--profile "$FILM_PROFILE")
           if [[ "$REQUEST_PHASE" == "proof" ]]; then args+=(--proof); fi
@@ -113,6 +119,7 @@ jobs:
             work/director/voice-auditions
             work/director/media
             work/director/scene-programs
+            work/director/editorial-review-parts
           retention-days: 90
       - uses: actions/upload-artifact@v4
         if: ${{ always() }}
