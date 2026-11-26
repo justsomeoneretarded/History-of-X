@@ -108,3 +108,25 @@ def test_archive_to_illustration_cut_is_a_real_visual_development():
                   {"type":"move","node":"column","time":16,"duration":2,"x":1450,"y":600,"description":"The movement reaches the defended approach."}]}
  program=rig_director._program(spec,21,[],"archive-test",9,[{},{}])
  assert [event["time"] for event in program["events"]]==[0.,4.5,9,12.,15.,18.]
+
+def test_resuming_a_rejected_repair_requests_a_new_correction_and_then_caches_success(tmp_path):
+ from history_of_x.core import PipelineError
+ valid=json.loads((ROOT/"assets/style/rig-demo.json").read_text())
+ invalid=copy.deepcopy(valid)
+ next(node for node in invalid["nodes"] if node["id"]=="treaty")["x"]=1750
+ class API:
+  def __init__(self,responses):self.responses=responses;self.calls=[]
+  def text(self,instruction,payload,schema,**options):
+   self.calls.append(copy.deepcopy(payload))
+   return copy.deepcopy(self.responses.pop(0))
+ assets={"assets":[],"scenes":{}}
+ first=API([invalid,invalid])
+ with pytest.raises(PipelineError,match="cannot reach"):
+  rig_director.plan_scene(first,passage(),spoken(),assets,tmp_path)
+ assert len(first.calls)==2 and first.calls[-1]["repair_round"]==1
+ resumed=API([valid])
+ program=rig_director.plan_scene(resumed,passage(),spoken(),assets,tmp_path)
+ assert program["scene_id"]=="1" and len(resumed.calls)==1
+ assert resumed.calls[0]["repair_round"]==2
+ assert "shoulder=" in resumed.calls[0]["validation_error"]
+ assert rig_director.plan_scene(API([]),passage(),spoken(),assets,tmp_path)==program

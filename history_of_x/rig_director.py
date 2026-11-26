@@ -194,7 +194,19 @@ def plan_scene(api,scene,spoken,assets,directory,style=None,request_only=False,p
  if preplanned is None and draft is not None:preplanned=draft
  for attempt in range(2):
   draft_path=directory/(identity+"-"+feedback_id+f"-draft-{attempt}.json")
-  spec=copy.deepcopy(preplanned) if attempt==0 and preplanned is not None else read_json(draft_path) if draft_path.exists() else _request(api,payload,primary)
+  if attempt==0:
+   spec=copy.deepcopy(preplanned) if preplanned is not None else read_json(draft_path) if draft_path.exists() else _request(api,payload,primary)
+  else:
+   # draft-1 is useful as the starting point after a restart, but it has
+   # already failed validation here. Never read that same rejected draft
+   # again as the new repair. A persisted round also distinguishes the
+   # request from the provider's response cache after a resumed failure.
+   repair_state=directory/(identity+"-"+feedback_id+"-repair-state.json")
+   previous=read_json(repair_state) if repair_state.exists() else {}
+   repair_round=int(previous.get("round",0))+1
+   save_json(repair_state,{"round":repair_round})
+   payload={**payload,"repair_round":repair_round}
+   spec=_request(api,payload,primary)
   save_json(draft_path,spec)
   try:
    from .rig_repair import explicit_pickups
