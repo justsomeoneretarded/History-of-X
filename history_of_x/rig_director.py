@@ -69,8 +69,8 @@ def schema():
   "head":num,"lean":num,"front_hand":point,"back_hand":point,"description":{"type":"string"},
   "sfx":{"type":"string","enum":["none","paper","stamp","soft_impact","sting"]}}}
  return {"type":"object","required":["setting","nodes","actions"],"properties":{
-  "setting":{"type":"string","enum":list(SETTINGS)},"nodes":{"type":"array","minItems":1,"maxItems":10,"items":node},
-  "actions":{"type":"array","minItems":3,"maxItems":18,"items":action},
+  "setting":{"type":"string","enum":list(SETTINGS)},"nodes":{"type":"array","minItems":1,"maxItems":12,"items":node},
+  "actions":{"type":"array","minItems":3,"maxItems":24,"items":action},
   "camera":{"type":"array","items":{"type":"object","required":["time"],"properties":{
    "time":num,"zoom":num,"focus_x":num,"focus_y":num}}}}}
 
@@ -123,7 +123,7 @@ def _text_request(api,instruction,payload,shape,max_output,primary):
  except PipelineError as exc:
   unavailable=isinstance(exc,QuotaDeferred) or any(reason in str(exc) for reason in ("unavailable after three attempts","network deadline"))
   if not unavailable or selected!=primary:raise
-  backup="gemini-3.6-flash" if primary.startswith("gemma-") else "gemma-4-31b-it" if primary in ("gemini-3.6-flash","gemini-3.8-flash","gemini-4-hydrogen") else "gemma-4-26b-a4b-it"
+  backup="gemini-3.6-flash" if primary.startswith("gemma-") else "gemini-3.5-flash-lite" if primary=="gemini-3.1-flash-lite" else "gemma-4-31b-it" if primary in ("gemini-3.6-flash","gemini-3.8-flash","gemini-4-hydrogen") else "gemma-4-26b-a4b-it"
   print(f"Scene direction: {primary} unavailable or free quota deferred; trying verified free model {backup}.",flush=True)
   result=request(backup)
   api._director_fallbacks={**routes,primary:backup}

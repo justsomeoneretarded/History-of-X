@@ -35,7 +35,7 @@ class Scene:
   self.events=[];self.used=set();self.order=[]
   self.add("environment",background(spec["setting"]),pivot=(960,540),order=-100)
   records=spec.get("nodes")
-  if not isinstance(records,list) or not 1<=len(records)<=10 or any(not isinstance(n,dict) for n in records):raise PipelineError("Use 1–10 scene node objects")
+  if not isinstance(records,list) or not 1<=len(records)<=12 or any(not isinstance(n,dict) for n in records):raise PipelineError("Use 1–12 scene node objects")
   if sum(n.get("kind")=="actor" for n in records)>4:raise PipelineError("Use at most four readable actors")
   for n in records:self.node(n)
 
@@ -68,6 +68,7 @@ class Scene:
   allowed={"id","kind","x","y","scale","start","end","visible","z","appearance","facing","expression","count","prop","text","asset_id","width","height","points","color","dashed"}
   if set(n)-allowed:raise PipelineError("Unknown node direction; refusing to ignore it")
   kind=n.get("kind")
+  if kind=="route":n={"x":0,"y":0,**n}
   if kind=="image":
    # Documentary insert is an editorial full-frame shot, never a prop/card on set.
    n={**n,"x":960,"y":540,"scale":1,"width":1920,"height":1080,"z":8}
@@ -232,7 +233,7 @@ class Scene:
 
  def execute(self):
   actions=self.spec.get("actions")
-  if not isinstance(actions,list) or not 3<=len(actions)<=18 or any(not isinstance(a,dict) for a in actions):raise PipelineError("Use 3–18 purposeful timed action objects")
+  if not isinstance(actions,list) or not 3<=len(actions)<=24 or any(not isinstance(a,dict) for a in actions):raise PipelineError("Use 3–24 purposeful timed action objects")
   normalized=[]
   for a in actions:
    if a.get("type")=="take" and a.get("object"):

@@ -66,7 +66,7 @@ def test_free_model_failover_is_bounded_and_does_not_retry_schema_errors():
    return {"nodes":[]}
  api=API("Gemini gemini-3.1-flash-lite unavailable after three attempts")
  assert rig_director._request(api,{},"gemini-3.1-flash-lite")=={"nodes":[]}
- assert api.models==["gemini-3.1-flash-lite","gemma-4-26b-a4b-it"]
+ assert api.models==["gemini-3.1-flash-lite","gemini-3.5-flash-lite"]
  api=API("Invalid Gemini structured output")
  with pytest.raises(PipelineError):
   rig_director._request(api,{},"gemini-3.1-flash-lite")

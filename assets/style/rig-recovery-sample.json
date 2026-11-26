@@ -1,0 +1,323 @@
+{
+  "setting": "mountains_night",
+  "nodes": [
+    {
+      "id": "baratieri",
+      "kind": "actor",
+      "x": 680,
+      "y": 1000,
+      "appearance": "italian_officer",
+      "scale": 0.85,
+      "facing": "right",
+      "expression": "confident"
+    },
+    {
+      "id": "map_table",
+      "kind": "prop",
+      "x": 960,
+      "y": 770,
+      "prop": "table"
+    },
+    {
+      "id": "orders_paper",
+      "kind": "prop",
+      "x": 940,
+      "y": 740,
+      "prop": "paper"
+    },
+    {
+      "id": "baratieri_photo",
+      "kind": "image",
+      "x": 960,
+      "y": 540,
+      "asset_id": "ethiopia-b79e9add8a53d883870832ec",
+      "width": 1920,
+      "height": 1080,
+      "visible": false
+    },
+    {
+      "id": "col_left",
+      "kind": "formation",
+      "x": 400,
+      "y": 300,
+      "appearance": "italian_officer",
+      "count": 3,
+      "visible": false
+    },
+    {
+      "id": "col_mid",
+      "kind": "formation",
+      "x": 960,
+      "y": 300,
+      "appearance": "italian_officer",
+      "count": 3,
+      "visible": false
+    },
+    {
+      "id": "col_right",
+      "kind": "formation",
+      "x": 1520,
+      "y": 300,
+      "appearance": "italian_officer",
+      "count": 3,
+      "visible": false
+    },
+    {
+      "id": "ethiopian_army",
+      "kind": "formation",
+      "x": 960,
+      "y": 900,
+      "appearance": "civilian",
+      "count": 5,
+      "visible": false
+    },
+    {
+      "id": "route_left",
+      "kind": "route",
+      "points": [
+        [
+          400,
+          300
+        ],
+        [
+          200,
+          600
+        ]
+      ],
+      "color": "rust",
+      "visible": false
+    },
+    {
+      "id": "route_mid",
+      "kind": "route",
+      "points": [
+        [
+          960,
+          300
+        ],
+        [
+          960,
+          600
+        ]
+      ],
+      "color": "rust",
+      "visible": false
+    },
+    {
+      "id": "route_right",
+      "kind": "route",
+      "points": [
+        [
+          1520,
+          300
+        ],
+        [
+          1760,
+          600
+        ]
+      ],
+      "color": "rust",
+      "visible": false
+    }
+  ],
+  "actions": [
+    {
+      "type": "take",
+      "time": 0,
+      "duration": 0.6,
+      "node": "baratieri",
+      "target": "orders_paper",
+      "hand": "front",
+      "description": "Baratieri seizes the operational orders for the advance.",
+      "sfx": "paper"
+    },
+    {
+      "type": "pose",
+      "time": 0.7,
+      "duration": 0.8,
+      "node": "baratieri",
+      "expression": "confident",
+      "head": -5,
+      "lean": 5,
+      "front_hand": [
+        300,
+        -400
+      ],
+      "description": "He gestures decisively, ordering the columns to split."
+    },
+    {
+      "type": "show",
+      "time": 1.6,
+      "duration": 0.2,
+      "node": "baratieri_photo",
+      "description": "Archival portrait identifies General Baratieri."
+    },
+    {
+      "type": "hide",
+      "time": 3,
+      "duration": 0.15,
+      "node": "baratieri_photo",
+      "description": "Transition from portrait to the tactical reality."
+    },
+    {
+      "type": "hide",
+      "time": 3.2,
+      "duration": 0.2,
+      "node": "baratieri",
+      "description": "The commander exits the frame as the focus shifts to the field."
+    },
+    {
+      "type": "hide",
+      "time": 3.2,
+      "duration": 0.2,
+      "node": "map_table",
+      "description": "The planning table is replaced by the rugged terrain."
+    },
+    {
+      "type": "show",
+      "time": 3.2,
+      "duration": 0.3,
+      "node": "col_left",
+      "description": "The separated Italian columns appear in the hills."
+    },
+    {
+      "type": "show",
+      "time": 3.2,
+      "duration": 0.3,
+      "node": "col_mid",
+      "description": "The separated Italian columns appear in the hills."
+    },
+    {
+      "type": "show",
+      "time": 3.2,
+      "duration": 0.3,
+      "node": "col_right",
+      "description": "The separated Italian columns appear in the hills."
+    },
+    {
+      "type": "show",
+      "time": 3.2,
+      "duration": 0.3,
+      "node": "route_left",
+      "description": "Routes are established for the diverging advance."
+    },
+    {
+      "type": "show",
+      "time": 3.2,
+      "duration": 0.3,
+      "node": "route_mid",
+      "description": "Routes are established for the diverging advance."
+    },
+    {
+      "type": "show",
+      "time": 3.2,
+      "duration": 0.3,
+      "node": "route_right",
+      "description": "Routes are established for the diverging advance."
+    },
+    {
+      "type": "move",
+      "time": 3.6,
+      "duration": 4.5,
+      "node": "col_left",
+      "x": 200,
+      "y": 600,
+      "walk": true,
+      "description": "The left column marches blindly into the western ravine."
+    },
+    {
+      "type": "move",
+      "time": 3.6,
+      "duration": 4.5,
+      "node": "col_mid",
+      "x": 960,
+      "y": 600,
+      "walk": true,
+      "description": "The center column pushes forward, losing sight of its flanks."
+    },
+    {
+      "type": "move",
+      "time": 3.6,
+      "duration": 4.5,
+      "node": "col_right",
+      "x": 1760,
+      "y": 600,
+      "walk": true,
+      "description": "The right column drifts far to the east."
+    },
+    {
+      "type": "hide",
+      "time": 8.5,
+      "duration": 0.3,
+      "node": "route_left",
+      "description": "Contact is lost; the coordination links vanish."
+    },
+    {
+      "type": "hide",
+      "time": 8.5,
+      "duration": 0.3,
+      "node": "route_mid",
+      "description": "Contact is lost; the coordination links vanish."
+    },
+    {
+      "type": "hide",
+      "time": 8.5,
+      "duration": 0.3,
+      "node": "route_right",
+      "description": "Contact is lost; the coordination links vanish."
+    },
+    {
+      "type": "show",
+      "time": 9.5,
+      "duration": 0.4,
+      "node": "ethiopian_army",
+      "description": "The coordinated Ethiopian forces emerge to exploit the gaps."
+    },
+    {
+      "type": "move",
+      "time": 10.5,
+      "duration": 3,
+      "node": "ethiopian_army",
+      "x": 960,
+      "y": 550,
+      "walk": true,
+      "description": "The Ethiopian army strikes the isolated center column."
+    },
+    {
+      "type": "move",
+      "time": 14,
+      "duration": 4,
+      "node": "col_mid",
+      "x": 960,
+      "y": 200,
+      "walk": true,
+      "description": "The Italian advance collapses into a blind, desperate retreat."
+    }
+  ],
+  "camera": [
+    {
+      "time": 0,
+      "zoom": 1,
+      "focus_x": 820,
+      "focus_y": 880
+    },
+    {
+      "time": 3.2,
+      "zoom": 1,
+      "focus_x": 960,
+      "focus_y": 540
+    },
+    {
+      "time": 8.5,
+      "zoom": 1.2,
+      "focus_x": 960,
+      "focus_y": 600
+    },
+    {
+      "time": 18.65,
+      "zoom": 1.2,
+      "focus_x": 960,
+      "focus_y": 600
+    }
+  ]
+}

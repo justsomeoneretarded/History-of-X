@@ -142,7 +142,7 @@ def test_rejected_preflight_can_inform_a_full_candidate_without_becoming_accepte
   raise PipelineError("Creative review requires revision")
  monkeypatch.setattr(runner,"produce",produce)
  candidate=runner.render_phase(object(),tmp_path/"work",tmp_path/"output",True,"cinematic",preflight_advisory=True)
- assert len(calls)==2 and candidate==calls[-1]
+ assert len(calls)==1 and candidate==calls[-1]
  assert runner._accepted(candidate,True) is False
  with pytest.raises(PipelineError,match="complete"):
   runner.upload_package(candidate,tmp_path/"work",tmp_path/"output")

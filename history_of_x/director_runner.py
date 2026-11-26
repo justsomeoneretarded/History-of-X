@@ -76,6 +76,9 @@ def render_phase(api, work, output, proof, profile, preflight_advisory=False):
             produce(api, work, candidate, profile=profile, proof=proof, revise=attempt == 2)
         except PipelineError as exc:
             save_json(candidate / "failure.json", {"phase": phase, "error": str(exc)})
+            if proof and preflight_advisory and _creative_failure(candidate, proof):
+                print("The technically valid preflight is retained with its real revision report; producing the complete film candidate for whole-film review.",flush=True)
+                return candidate
             if attempt == 1 and _creative_failure(candidate, proof):
                 feedback = read_json(candidate / "editorial-review.json")
                 if (candidate / "timeline.json").exists():
