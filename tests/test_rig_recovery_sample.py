@@ -21,3 +21,10 @@ def test_lalibela_ruler_picks_up_cross_with_real_contact_and_continuous_ownershi
     result=compile_scene(spec,25.,[{"id":"ethiopia-447565849691fcf32ca512ed","path":str(picture),"medium":"modern_documentary_photo"}],"5")
     assert any(event["time"]==9 for event in result["events"])
     assert len(result["layers"])<=100
+
+
+def test_1941_archive_cannot_illustrate_a_medieval_dynastic_restoration():
+    from history_of_x.documentary_assets import matching_assets
+    archive={"id":"1941","tags":["restoration"],"medium":"historical_photo","event_period":[1941,1941]}
+    assert matching_assets({"date_label":"1270 AD","narration":"The Solomonic restoration."},[archive])==[]
+    assert matching_assets({"date_label":"1941","narration":"The monarchy's restoration."},[archive])==["1941"]

@@ -15,6 +15,7 @@ import requests
 from PIL import Image
 
 from .core import ROOT, read_json, save_json
+from .generic_assets import scene_period
 
 TIMEOUT = (10, 25)
 MAX_IMAGE_BYTES = 12 * 1024 * 1024
@@ -44,6 +45,28 @@ _RULES = [
 ]
 
 
+# Periods describe the depicted subject, not the image file's upload date.
+_EVENT_PERIODS = {
+    "battle of adwa": (1896, 1896),
+    "menelik": (1844, 1913),
+    "taytu betul": (1851, 1918),
+    "baratieri": (1841, 1901),
+    "mustard gas": (1935, 1936),
+    "swedish-red-cross": (1935, 1936),
+    "wolchefit": (1941, 1941),
+    "gebrehiwot meshesha": (1936, 1941),
+    "haile selassie": (1916, 1975),
+    "mengistu": (1974, 1991),
+}
+
+
+def period_matches(scene, asset):
+    period = scene_period(scene)
+    depicted = asset.get("event_period")
+    return not (period and depicted and
+                (depicted[0] > period[1] or depicted[1] < period[0]))
+
+
 def _tokens(text):
     return re.sub(r"[^\w\s-]", " ", text.casefold())
 
@@ -61,6 +84,8 @@ def matching_assets(scene, assets, limit=8):
     text = " ".join(str(scene.get(k, "")) for k in ("narration", "asset_search_term", "location"))
     matches = []
     for asset in assets:
+        if not period_matches(scene, asset):
+            continue
         hits = [tag for tag in asset.get("tags", []) if _mentions(text, tag)]
         if not hits:
             continue
@@ -106,6 +131,7 @@ def bundled_assets():
             "subject": raw["title"].removeprefix("File:"),
             "title": raw["title"].removeprefix("File:"),
             "date": date, "medium": medium, "context": context,
+            "event_period": _EVENT_PERIODS.get(rule[0]),
             "tags": tags, "license": raw["license"],
             "license_url": raw.get("license_url", ""),
             "source_url": raw["source_url"],
