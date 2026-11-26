@@ -17,7 +17,8 @@ CATEGORIES = (
 CHUNK_SECONDS = 30
 INLINE_LIMIT = 12_000_000
 REVIEW_VERSION = "director-review-chunks-v2"
-TRANSCODE = {"size": "640x360", "fps": 15, "video_kbps": 180, "audio_kbps": 64}
+TRANSCODE = {"size": "640x360", "fps": 15, "video_kbps": 180, "audio_kbps": 64,
+             "sampling_fps": 3}
 PROMPT = """Watch and listen to this actual history-film segment. Judge craft from the media, not from
 its description. Assess semantic visual explanation, purposeful action/reaction and prop contact,
 readable varied composition, natural spoken narration and music balance, and editorial pacing.
@@ -274,7 +275,7 @@ def review(api, video, style, output):
                         "mimeType": "video/mp4",
                         "data": base64.b64encode(clip.read_bytes()).decode(),
                     },
-                    "videoMetadata": {"fps": 1},
+                    "videoMetadata": {"fps": TRANSCODE["sampling_fps"]},
                 },
             ]
             body = {
@@ -336,7 +337,7 @@ def review(api, video, style, output):
         "reviewed_seconds": sum(part["end_seconds"] - part["start_seconds"] for part in reviewed),
         "chunk_seconds": chunk_seconds, "chunk_count": len(reviewed),
         "models": sorted({part["model"] for part in reviewed}),
-        "audio_included": True, "video_sampling_fps": 1, "video_sha256": video_hash,
+        "audio_included": True, "video_sampling_fps": TRANSCODE["sampling_fps"], "video_sha256": video_hash,
         "ranges": [
             {name: part[name] for name in ("start_seconds", "end_seconds", "model", "checkpoint")}
             for part in reviewed

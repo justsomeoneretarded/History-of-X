@@ -78,6 +78,7 @@ def test_entire_film_including_tail_uses_actual_inline_audio_video(film):
     assert scope["coverage"] == "entire_film_chunks"
     assert scope["duration_seconds"] == scope["reviewed_seconds"] == 68.25
     assert scope["chunk_count"] == 3 and scope["audio_included"]
+    assert scope["video_sampling_fps"] == 3
     assert [(part["start_seconds"], part["end_seconds"]) for part in scope["ranges"]] == [
         (0, 30), (30, 60), (60, 68.25),
     ]
@@ -89,7 +90,7 @@ def test_entire_film_including_tail_uses_actual_inline_audio_video(film):
         part = body["contents"][0]["parts"][1]
         assert part["inlineData"]["mimeType"] == "video/mp4"
         assert part["inlineData"]["data"]
-        assert "fileData" not in part and part["videoMetadata"] == {"fps": 1}
+        assert "fileData" not in part and part["videoMetadata"] == {"fps": 3}
         assert 1500 <= body["generationConfig"]["maxOutputTokens"] <= 2000
         args = transcode["args"]
         assert args[args.index("-c:v") + 1] == "libx264"
