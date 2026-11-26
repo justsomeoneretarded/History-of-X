@@ -159,7 +159,7 @@ def plan_all(api, script, speech, assets, directory, style=None,
         raise PipelineError("Script and speech scene IDs do not match")
     accepted = {}
     if os.getenv("GEMINI_DIRECTOR_MODE", "svg") == "rigged":
-        if os.getenv("GEMINI_MODEL") in {"gemini-4-hydrogen","gemini-3.6-flash"} and batch_size > 1:
+        if os.getenv("GEMINI_MODEL") in {"gemini-4-hydrogen","gemini-3.6-flash","gemini-3.8-flash"} and batch_size > 1:
             from .rig_batch import plan
             return plan(api,script_index,speech_index,assets,directory,style,selected,batch_size)
         from .rig_director import plan_scene as plan_rigged

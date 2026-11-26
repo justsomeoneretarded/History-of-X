@@ -5,6 +5,7 @@ import os
 import re
 from pathlib import Path
 from .core import ROOT,PipelineError,key,read_json,save_json
+from .gemini import QuotaDeferred
 from .rig_art import CAST,EXPRESSIONS,SETTINGS,PROPS,VERSION
 from .rig_scene import compile_scene
 
@@ -113,16 +114,23 @@ def compact_payload(payload):
   payload["phrase_timing"]=[[" ".join(str(w[0]) for w in words[i:i+5]),words[i][1],words[min(i+4,len(words)-1)][2]] for i in range(0,len(words),5)]
  return payload
 
-def _request(api,payload,primary):
- payload=compact_payload(payload)
- try:
-  return api.text(CONTRACT,payload,schema(),max_output=5000 if primary.startswith('gemma-') else 3500,preserve_bounds=True,model=primary)
+def _text_request(api,instruction,payload,shape,max_output,primary):
+ routes=getattr(api,"_director_fallbacks",{})
+ selected=routes.get(primary,primary)
+ def request(model):
+  return api.text(instruction,payload,shape,max_output=max(max_output,5000) if model.startswith("gemma-") else max_output,preserve_bounds=True,model=model)
+ try:return request(selected)
  except PipelineError as exc:
-  message=str(exc)
-  if "unavailable after three attempts" not in message and "network deadline" not in message:raise
-  backup="gemini-3.6-flash" if primary.startswith("gemma-") else "gemma-4-31b-it" if primary in ("gemini-3.6-flash","gemini-4-hydrogen") else "gemma-4-26b-a4b-it"
-  print(f"Scene direction: {primary} unavailable; trying verified free model {backup}.",flush=True)
-  return api.text(CONTRACT,payload,schema(),max_output=5000 if backup.startswith('gemma-') else 3500,preserve_bounds=True,model=backup)
+  unavailable=isinstance(exc,QuotaDeferred) or any(reason in str(exc) for reason in ("unavailable after three attempts","network deadline"))
+  if not unavailable or selected!=primary:raise
+  backup="gemini-3.6-flash" if primary.startswith("gemma-") else "gemma-4-31b-it" if primary in ("gemini-3.6-flash","gemini-3.8-flash","gemini-4-hydrogen") else "gemma-4-26b-a4b-it"
+  print(f"Scene direction: {primary} unavailable or free quota deferred; trying verified free model {backup}.",flush=True)
+  result=request(backup)
+  api._director_fallbacks={**routes,primary:backup}
+  return result
+
+def _request(api,payload,primary):
+ return _text_request(api,CONTRACT,compact_payload(payload),schema(),3500,primary)
 
 def plan_scene(api,scene,spoken,assets,directory,style=None,request_only=False,preplanned=None,repair=True):
  seconds=float(spoken["duration"]);ident=str(scene["scene_id"])

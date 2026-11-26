@@ -40,15 +40,12 @@ def plan(api,script_index,speech_index,assets,directory,style,selected,size):
   path=directory/"rig-batches"/(key("rig-batch-v1",model,instruction,payload,shape)+".json")
   if path.exists():response=read_json(path)
   else:
-   try:response=api.text(instruction,payload,shape,max_output=14000,preserve_bounds=True,model=model)
-   except PipelineError as exc:
-    if "unavailable after three attempts" not in str(exc) and "network deadline" not in str(exc):raise
-    backup="gemma-4-31b-it"
-    print(f"Scene batch {model} unavailable; trying verified free text model {backup}.",flush=True)
-    response=api.text(instruction,payload,shape,max_output=14000,preserve_bounds=True,model=backup)
+   response=rig_director._text_request(api,instruction,payload,shape,14000,model)
+   actual=getattr(api,"_director_fallbacks",{}).get(model,model)
+   if actual!=model:
     if isinstance(response,list):response={"scenes":response}
     if not isinstance(response,dict):raise PipelineError("Free batch recovery returned no object")
-    response={**response,"generation_model":backup}
+    response={**response,"generation_model":actual}
   save_json(path,response)
   specs=response if isinstance(response,list) else response.get("scenes") if isinstance(response,dict) else None
   if not isinstance(specs,list):raise PipelineError("Batched direction returned no scenes array; response type="+type(response).__name__+" keys="+str(list(response) if isinstance(response,dict) else []))

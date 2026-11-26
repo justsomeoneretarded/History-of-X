@@ -130,3 +130,17 @@ def test_resuming_a_rejected_repair_requests_a_new_correction_and_then_caches_su
  assert resumed.calls[0]["repair_round"]==2
  assert "shoulder=" in resumed.calls[0]["validation_error"]
  assert rig_director.plan_scene(API([]),passage(),spoken(),assets,tmp_path)==program
+
+
+def test_free_quota_fallback_is_shared_and_reuses_the_available_model():
+ from history_of_x.gemini import QuotaDeferred
+ class API:
+  def __init__(self):self.models=[]
+  def text(self,*args,**options):
+   self.models.append(options["model"])
+   if options["model"]=="gemini-3.8-flash":raise QuotaDeferred("Free daily limit reached")
+   return {"nodes":[]}
+ api=API()
+ assert rig_director._request(api,{},"gemini-3.8-flash")=={"nodes":[]}
+ assert rig_director._request(api,{},"gemini-3.8-flash")=={"nodes":[]}
+ assert api.models==["gemini-3.8-flash","gemma-4-31b-it","gemma-4-31b-it"]
