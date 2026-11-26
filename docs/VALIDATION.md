@@ -1,5 +1,15 @@
 # Validation record
 
+## November 26, 2026 animation repair
+
+[The repair CI run](https://github.com/justsomeoneretarded/History-of-X/actions/runs/45774702631) passed **305 tests**. Unreachable-contact errors now report the actual shoulder position, target, distance, maximum reach and contact time, so model repairs can correct the geometry. The arm-stretch limit remains enforced. Army formations now articulate each figure's legs during horizontal or vertical travel and settle to a held pose when stopped.
+
+The saved failed trade and treaty plans have new, explicitly reachable blocking; the opening now cuts from the commander's decision to independently advancing formations. These are original production-director refinements of saved Gemini plans, with provenance and contact/ownership regression checks. Tests verify execution, not the artistic quality of the rendered film.
+
+Preflight reviews identify the candidate as nonconsecutive scene samples. In a full run, a technically valid sample that remains creatively rejected after its bounded revision can inform a complete film candidate without being relabeled accepted. Proof-only acceptance, geometry checks, and the final complete-film review remain strict. A failed provider or incomplete review cannot enter the upload package.
+
+[The resumed production run](https://github.com/justsomeoneretarded/History-of-X/actions/runs/45774702568) is using the saved complete narration. **The full Ethiopia film is not yet accepted or upload-ready.** This record will be updated from the actual rendered-media results.
+
 ## November25,2026 rebuild: current status
 
 The films in the older records below were rejected creatively and are retained as implementation history. Their technical passes and old artifact labels do not establish that the current directed film is finished. Older14-day artifacts may have expired.
