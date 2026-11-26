@@ -12,3 +12,12 @@ def test_saved_eleven_node_twenty_one_action_scene_compiles_with_bounded_layers(
     assert len(result["layers"])<=100
     assert len(result["events"])==21
     assert any("figure" in layer["id"] for layer in result["layers"])
+
+
+def test_lalibela_ruler_picks_up_cross_with_real_contact_and_continuous_ownership(tmp_path):
+    records=json.loads((ROOT/"assets/style/production-corrections.json").read_text())["records"]
+    spec=next(row["spec"] for row in records if row["scene_id"]==5)
+    picture=tmp_path/"church.jpg";Image.new("RGB",(32,32),"#967654").save(picture)
+    result=compile_scene(spec,25.,[{"id":"ethiopia-447565849691fcf32ca512ed","path":str(picture),"medium":"modern_documentary_photo"}],"5")
+    assert any(event["time"]==9 for event in result["events"])
+    assert len(result["layers"])<=100

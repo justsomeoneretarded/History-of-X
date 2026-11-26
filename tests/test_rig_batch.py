@@ -26,8 +26,10 @@ def accepted_ids(directory):
   if isinstance(value,dict) and isinstance(value.get("program"),dict):records.append(value["program"]["scene_id"])
  return set(records)
 
-def test_reordered_three_scene_reply_is_mapped_and_reused_without_another_call(tmp_path,monkeypatch):
+@pytest.mark.parametrize("model",["gemini-4-hydrogen","gemini-3.1-flash-lite","gemini-3.5-flash-lite"])
+def test_reordered_three_scene_reply_is_mapped_and_reused_without_another_call(tmp_path,monkeypatch,model):
  setup(monkeypatch)
+ monkeypatch.setenv("GEMINI_MODEL",model)
  class API:
   calls=0
   def text(self,*args,**kwargs):

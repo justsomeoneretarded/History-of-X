@@ -688,6 +688,196 @@
           }
         ]
       }
+    },
+    {
+      "scene_id": 5,
+      "narration": "Eventually, trade routes shifted and Aksum’s power waned. The center of gravity moved into the highlands. The Zagwe dynasty took charge, carving massive churches directly into the living rock at Lalibela. These monuments were a physical expression of their authority, proving that even as the old trade empire faded, the spirit of the state remained quite strong and deeply rooted.",
+      "feedback_ids": [
+        "e10808d43975dc4007310533",
+        "37abc7a5b1e24352a461381a"
+      ],
+      "from_run": 45785937389,
+      "spec": {
+        "setting": "port",
+        "nodes": [
+          {
+            "id": "aksum_merchant",
+            "kind": "actor",
+            "x": 600,
+            "y": 800,
+            "scale": 0.9,
+            "appearance": "aksum_merchant",
+            "facing": "right",
+            "visible": true
+          },
+          {
+            "id": "ship",
+            "kind": "prop",
+            "prop": "ship",
+            "x": 1200,
+            "y": 700,
+            "visible": true
+          },
+          {
+            "id": "church_image",
+            "kind": "image",
+            "asset_id": "ethiopia-447565849691fcf32ca512ed",
+            "x": 960,
+            "y": 540,
+            "width": 1920,
+            "height": 1080,
+            "visible": false
+          },
+          {
+            "id": "highland_ruler",
+            "kind": "actor",
+            "x": 960,
+            "y": 1000,
+            "scale": 0.85,
+            "appearance": "highland_ruler",
+            "facing": "right",
+            "visible": false
+          },
+          {
+            "id": "cross",
+            "kind": "prop",
+            "prop": "cross",
+            "x": 1050,
+            "y": 750,
+            "visible": false
+          }
+        ],
+        "actions": [
+          {
+            "type": "move",
+            "time": 0.5,
+            "duration": 3,
+            "node": "ship",
+            "x": 2000,
+            "y": 700,
+            "walk": false,
+            "description": "The trade ship departs, symbolizing the waning of Aksumite maritime power."
+          },
+          {
+            "type": "hide",
+            "time": 3.5,
+            "duration": 0.5,
+            "node": "aksum_merchant",
+            "description": "The merchant departs as the scene shifts away from the coast."
+          },
+          {
+            "type": "show",
+            "time": 4,
+            "duration": 0.5,
+            "node": "church_image",
+            "description": "A documentary view of the rock-cut church reveals the new highland center."
+          },
+          {
+            "type": "hide",
+            "time": 7,
+            "duration": 0.5,
+            "node": "church_image",
+            "description": "The image fades, transitioning to the active scene in the highlands."
+          },
+          {
+            "type": "show",
+            "time": 7,
+            "duration": 0.5,
+            "node": "highland_ruler",
+            "description": "The Zagwe ruler appears, establishing a new authority."
+          },
+          {
+            "type": "show",
+            "time": 7.5,
+            "duration": 0.3,
+            "node": "cross",
+            "description": "A cross appears, held by the ruler as a symbol of the new spiritual focus."
+          },
+          {
+            "type": "pose",
+            "time": 8,
+            "duration": 1,
+            "node": "highland_ruler",
+            "expression": "confident",
+            "head": 10,
+            "lean": 0,
+            "front_hand": [
+              200,
+              -300
+            ],
+            "description": "The ruler stands with confidence, gesturing toward the new monument."
+          },
+          {
+            "type": "take",
+            "time": 9,
+            "duration": 1,
+            "node": "highland_ruler",
+            "hand": "front",
+            "target": "cross",
+            "description": "The ruler touches the cross, grounding the authority in religious expression."
+          },
+          {
+            "type": "pose",
+            "time": 11,
+            "duration": 1,
+            "node": "highland_ruler",
+            "front_hand": [
+              210,
+              -360
+            ],
+            "expression": "confident",
+            "description": "The ruler lifts the held cross; religious patronage becomes a visible claim to authority."
+          },
+          {
+            "type": "show",
+            "time": 14,
+            "duration": 0.2,
+            "node": "church_image",
+            "description": "Return to the actual surviving rock-cut church as the narration explains the monuments."
+          },
+          {
+            "type": "hide",
+            "time": 17,
+            "duration": 0.2,
+            "node": "church_image",
+            "description": "The physical monument gives way to the ruler whose dynasty drew legitimacy from religious construction."
+          },
+          {
+            "type": "pose",
+            "time": 18,
+            "duration": 1,
+            "node": "highland_ruler",
+            "head": -5,
+            "front_hand": [
+              240,
+              -350
+            ],
+            "expression": "thinking",
+            "description": "The ruler holds the cross and considers the new highland center; the older coastal trade has receded."
+          }
+        ],
+        "camera": [
+          {
+            "time": 0,
+            "zoom": 1,
+            "focus_x": 960,
+            "focus_y": 540
+          },
+          {
+            "time": 7.5,
+            "zoom": 1,
+            "focus_x": 960,
+            "focus_y": 540
+          },
+          {
+            "time": 8,
+            "zoom": 1.05,
+            "focus_x": 960,
+            "focus_y": 540
+          }
+        ],
+        "scene_id": "5"
+      }
     }
   ]
 }
