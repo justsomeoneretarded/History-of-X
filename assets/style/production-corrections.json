@@ -2,14 +2,251 @@
   "authorship": "Original production-director refinements to Gemini's generated blocking. These are exact-passage overrides for the Ethiopia episode, not new narration or factual-review approvals.",
   "records": [
     {
+      "scene_id": 1,
+      "narration": "General Oreste Baratieri sends separated Italian columns into the rugged hills at Adwa in March 1896, expecting a quick and easy colonial victory. But the troops lose contact in the dark, and that basic mistake makes their whole advance collapse completely. They march blindly into disaster. The plan fails. No one coordinates properly.",
+      "feedback_ids": [
+        "e10808d43975dc4007310533",
+        "5512eb87b5d638d83f2ac25e",
+        "c4aea3c10425d105dd005c25"
+      ],
+      "duration_seconds": 18.65,
+      "from_run": 45771585081,
+      "spec": {
+        "scene_id": "1",
+        "setting": "mountains_night",
+        "nodes": [
+          {
+            "id": "commander",
+            "kind": "actor",
+            "x": 540,
+            "y": 1000,
+            "appearance": "italian_officer",
+            "scale": 0.85,
+            "expression": "confident",
+            "facing": "right"
+          },
+          {
+            "id": "orders",
+            "kind": "prop",
+            "x": 740,
+            "y": 740,
+            "prop": "paper"
+          },
+          {
+            "id": "col_left",
+            "kind": "formation",
+            "x": 350,
+            "y": 320,
+            "count": 3,
+            "appearance": "italian_officer",
+            "visible": false
+          },
+          {
+            "id": "col_mid",
+            "kind": "formation",
+            "x": 960,
+            "y": 250,
+            "count": 3,
+            "appearance": "italian_officer",
+            "visible": false
+          },
+          {
+            "id": "col_right",
+            "kind": "formation",
+            "x": 1570,
+            "y": 320,
+            "count": 3,
+            "appearance": "italian_officer",
+            "visible": false
+          },
+          {
+            "id": "ethiopian_force",
+            "kind": "formation",
+            "x": 960,
+            "y": 880,
+            "count": 5,
+            "appearance": "civilian",
+            "visible": false
+          },
+          {
+            "id": "baratieri_img",
+            "kind": "image",
+            "x": 960,
+            "y": 540,
+            "asset_id": "ethiopia-b79e9add8a53d883870832ec",
+            "width": 1920,
+            "height": 1080,
+            "visible": false
+          }
+        ],
+        "actions": [
+          {
+            "type": "take",
+            "time": 0,
+            "duration": 0.65,
+            "node": "commander",
+            "description": "The commander takes the orders that will split his army.",
+            "target": "orders",
+            "hand": "front"
+          },
+          {
+            "type": "pose",
+            "time": 0.7,
+            "duration": 0.55,
+            "node": "commander",
+            "description": "A confident order sends the force into separate advances.",
+            "front_hand": [
+              280,
+              -350
+            ],
+            "head": 6,
+            "expression": "confident"
+          },
+          {
+            "type": "show",
+            "time": 1.3,
+            "duration": 0.2,
+            "node": "baratieri_img",
+            "description": "A brief genuine portrait identifies Baratieri."
+          },
+          {
+            "type": "hide",
+            "time": 2.7,
+            "duration": 0.2,
+            "node": "baratieri_img",
+            "description": "Return to the consequences of the command."
+          },
+          {
+            "type": "hide",
+            "time": 3.1,
+            "duration": 0.2,
+            "node": "commander",
+            "description": "Cut from the commander's decision to the movement of his troops."
+          },
+          {
+            "type": "hide",
+            "time": 3.1,
+            "duration": 0.2,
+            "node": "orders",
+            "description": "The command close-up clears with its held paper."
+          },
+          {
+            "type": "show",
+            "time": 3.1,
+            "duration": 0.2,
+            "node": "col_left",
+            "description": "The mountain battlefield replaces the command close-up."
+          },
+          {
+            "type": "show",
+            "time": 3.1,
+            "duration": 0.2,
+            "node": "col_mid",
+            "description": "The mountain battlefield replaces the command close-up."
+          },
+          {
+            "type": "show",
+            "time": 3.1,
+            "duration": 0.2,
+            "node": "col_right",
+            "description": "The mountain battlefield replaces the command close-up."
+          },
+          {
+            "type": "show",
+            "time": 3.1,
+            "duration": 0.2,
+            "node": "ethiopian_force",
+            "description": "The mountain battlefield replaces the command close-up."
+          },
+          {
+            "type": "move",
+            "time": 3.4,
+            "duration": 4.6,
+            "node": "col_left",
+            "description": "One marching column follows the western ravine away from the others.",
+            "x": 230,
+            "y": 680,
+            "walk": true
+          },
+          {
+            "type": "move",
+            "time": 3.4,
+            "duration": 4.6,
+            "node": "col_right",
+            "description": "The eastern column marches out of supporting distance.",
+            "x": 1710,
+            "y": 690,
+            "walk": true
+          },
+          {
+            "type": "move",
+            "time": 3.4,
+            "duration": 4.6,
+            "node": "col_mid",
+            "description": "The middle column advances alone into the gap.",
+            "x": 960,
+            "y": 520,
+            "walk": true
+          },
+          {
+            "type": "move",
+            "time": 10.5,
+            "duration": 3.5,
+            "node": "ethiopian_force",
+            "description": "The coordinated Ethiopian force advances into the isolated column.",
+            "x": 960,
+            "y": 580,
+            "walk": true
+          },
+          {
+            "type": "move",
+            "time": 15,
+            "duration": 3.1,
+            "node": "col_mid",
+            "description": "The isolated column retreats as its planned advance collapses.",
+            "x": 960,
+            "y": 280,
+            "walk": true
+          }
+        ],
+        "camera": [
+          {
+            "time": 0,
+            "zoom": 1,
+            "focus_x": 960,
+            "focus_y": 540
+          },
+          {
+            "time": 3.3,
+            "zoom": 1,
+            "focus_x": 960,
+            "focus_y": 540
+          },
+          {
+            "time": 3.8,
+            "zoom": 1.08,
+            "focus_x": 960,
+            "focus_y": 520
+          },
+          {
+            "time": 18.65,
+            "zoom": 1.08,
+            "focus_x": 960,
+            "focus_y": 520
+          }
+        ]
+      }
+    },
+    {
       "scene_id": 3,
       "narration": "Around the first century, Aksum rose to dominate the region. They were savvy merchants, minting their own gold coins to turn local power into international status. These coins traveled across the Red Sea, marking Aksum as a major player in global trade. It was a bold move that put them firmly on the map. They controlled the flow of goods.",
       "feedback_ids": [
         "e10808d43975dc4007310533",
-        "5512eb87b5d638d83f2ac25e"
+        "5512eb87b5d638d83f2ac25e",
+        "c4aea3c10425d105dd005c25"
       ],
       "duration_seconds": 17.96,
-      "from_run": 45682399449,
+      "from_run": 45771585081,
       "spec": {
         "scene_id": "3",
         "setting": "port",
@@ -18,7 +255,7 @@
             "id": "merchant_aksum",
             "kind": "actor",
             "appearance": "aksum_merchant",
-            "x": 680,
+            "x": 750,
             "y": 1000,
             "scale": 0.85,
             "facing": "right",
@@ -28,44 +265,36 @@
             "id": "trader_foreign",
             "kind": "actor",
             "appearance": "roman",
-            "x": 1220,
-            "y": 1010,
+            "x": 1150,
+            "y": 1000,
             "scale": 0.85,
             "facing": "left",
             "expression": "neutral"
           },
           {
-            "id": "goods_stack",
-            "kind": "prop",
-            "prop": "crate",
-            "x": 1220,
-            "y": 980,
-            "scale": 1
-          },
-          {
             "id": "trade_crate",
             "kind": "prop",
             "prop": "crate",
-            "x": 1220,
-            "y": 850,
-            "scale": 1
+            "x": 1100,
+            "y": 780,
+            "scale": 0.9
           },
           {
             "id": "gold_coin",
             "kind": "prop",
             "prop": "coin",
-            "x": 680,
+            "x": 800,
             "y": 750,
-            "scale": 1,
-            "visible": false
+            "scale": 0.8,
+            "visible": true
           },
           {
             "id": "ship_node",
             "kind": "prop",
             "prop": "ship",
-            "x": 1600,
-            "y": 600,
-            "scale": 1.2
+            "x": 1650,
+            "y": 620,
+            "scale": 1.1
           },
           {
             "id": "coin_photo",
@@ -81,132 +310,97 @@
         "actions": [
           {
             "type": "take",
-            "time": 0.15,
-            "duration": 0.55,
+            "time": 0.2,
+            "duration": 0.5,
             "node": "merchant_aksum",
             "hand": "front",
             "target": "gold_coin",
-            "description": "The merchant reaches into his belt to produce payment."
-          },
-          {
-            "type": "show",
-            "time": 0.65,
-            "duration": 0.05,
-            "node": "gold_coin",
-            "description": "The gold coin becomes visible in the merchant's exact grip."
+            "description": "Aksumite merchant holds up the minted gold coin."
           },
           {
             "type": "take",
-            "time": 0.2,
-            "duration": 0.6,
+            "time": 0.4,
+            "duration": 0.5,
             "node": "trader_foreign",
             "hand": "front",
             "target": "trade_crate",
-            "description": "The trader lifts the upper cargo crate from the goods stack."
+            "description": "Foreign trader picks up the cargo crate to offer it."
           },
           {
             "type": "pose",
-            "time": 1.5,
-            "duration": 1,
-            "node": "trader_foreign",
+            "time": 1.4,
+            "duration": 0.7,
+            "node": "merchant_aksum",
             "front_hand": [
               300,
               -350
             ],
             "head": 4,
-            "description": "The trader brings the cargo forward for the exchange."
+            "description": "The merchant extends his payment toward the cargo owner."
           },
           {
             "type": "pose",
-            "time": 2,
-            "duration": 0.8,
-            "node": "merchant_aksum",
+            "time": 2.2,
+            "duration": 0.7,
+            "node": "trader_foreign",
             "front_hand": [
               300,
               -350
             ],
-            "head": 5,
-            "expression": "confident",
-            "description": "The Aksumite offers the coin where the other trader can take it."
+            "head": 3,
+            "description": "The cargo is offered in the opposite direction, within the buyer's reach."
           },
           {
             "type": "show",
             "time": 3.5,
             "duration": 0.2,
             "node": "coin_photo",
-            "description": "A brief authentic coin detail connects minting to the physical payment."
+            "description": "Show genuine historical photo of ancient Aksumite coin."
           },
           {
             "type": "hide",
-            "time": 4.98,
+            "time": 4.8,
             "duration": 0.2,
             "node": "coin_photo",
-            "description": "The close-up clears before the exchange takes place."
-          },
-          {
-            "type": "move",
-            "time": 5.5,
-            "duration": 0.8,
-            "node": "trader_foreign",
-            "x": 1090,
-            "y": 1010,
-            "walk": true,
-            "description": "The trader steps closer with the cargo held continuously in his front hand."
+            "description": "Return to physical trade exchange on the quay."
           },
           {
             "type": "take",
-            "time": 6.5,
-            "duration": 0.8,
+            "time": 5.5,
+            "duration": 0.7,
             "node": "trader_foreign",
             "hand": "back",
             "target": "gold_coin",
-            "description": "The trader's free hand takes the offered coin from the merchant."
+            "description": "Trader reaches with back hand and takes the gold coin."
           },
           {
             "type": "take",
-            "time": 8,
-            "duration": 1,
+            "time": 7.5,
+            "duration": 0.8,
             "node": "merchant_aksum",
             "hand": "front",
             "target": "trade_crate",
-            "description": "The merchant's now-free hand takes the crate from the trader."
+            "description": "Aksumite merchant receives the cargo crate."
           },
           {
             "type": "move",
             "time": 9.5,
-            "duration": 1.5,
+            "duration": 1.8,
             "node": "merchant_aksum",
-            "x": 530,
+            "x": 520,
             "y": 1000,
             "walk": true,
-            "description": "The buyer carries away the purchased cargo; the other trader keeps the payment."
-          },
-          {
-            "type": "pose",
-            "time": 10.8,
-            "duration": 1,
-            "node": "trader_foreign",
-            "expression": "confident",
-            "head": 5,
-            "description": "The trader acknowledges the completed exchange while holding the coin."
+            "description": "Aksumite merchant carries away the goods."
           },
           {
             "type": "move",
             "time": 11.5,
-            "duration": 5,
+            "duration": 5.5,
             "node": "ship_node",
-            "x": 2150,
-            "y": 550,
+            "x": 2200,
+            "y": 580,
             "walk": false,
-            "description": "The merchant vessel leaves the port, carrying the trading story across the sea."
-          },
-          {
-            "type": "pose",
-            "time": 13,
-            "duration": 0.6,
-            "node": "merchant_aksum",
-            "head": -5,
-            "description": "The merchant turns attention from the completed deal toward the departing vessel."
+            "description": "Merchant vessel sails across the Red Sea trade route."
           }
         ],
         "camera": [
@@ -217,31 +411,31 @@
             "focus_y": 540
           },
           {
-            "time": 5.2,
+            "time": 5,
             "zoom": 1,
             "focus_x": 960,
             "focus_y": 540
           },
           {
-            "time": 6.1,
-            "zoom": 1.1,
-            "focus_x": 940,
+            "time": 5.5,
+            "zoom": 1.15,
+            "focus_x": 960,
             "focus_y": 650
           },
           {
-            "time": 10.9,
-            "zoom": 1.1,
-            "focus_x": 940,
+            "time": 8.5,
+            "zoom": 1.15,
+            "focus_x": 960,
             "focus_y": 650
           },
           {
-            "time": 12,
+            "time": 9.1,
             "zoom": 1,
             "focus_x": 960,
             "focus_y": 540
           },
           {
-            "time": 17.8,
+            "time": 17.96,
             "zoom": 1,
             "focus_x": 960,
             "focus_y": 540
@@ -254,39 +448,40 @@
       "narration": "Menelik’s wife, Empress Taytu, was no passive observer in these high-stakes politics. She helped organize resistance against encroaching colonial powers. Tensions peaked over the Treaty of Wuchale. Article seventeen was the trap. The Amharic text let Ethiopia choose diplomacy, while the Italian version made it mandatory, declaring a protectorate. Menelik spotted the deceit. He rejected their claim.",
       "feedback_ids": [
         "e10808d43975dc4007310533",
-        "5512eb87b5d638d83f2ac25e"
+        "5512eb87b5d638d83f2ac25e",
+        "c4aea3c10425d105dd005c25"
       ],
       "duration_seconds": 22.33,
-      "from_run": 45682399449,
+      "from_run": 45771585081,
       "spec": {
         "scene_id": "11",
         "setting": "court",
         "nodes": [
           {
+            "id": "taytu_actor",
+            "kind": "actor",
+            "appearance": "taytu",
+            "x": 550,
+            "y": 1000,
+            "scale": 0.85,
+            "facing": "right",
+            "expression": "angry"
+          },
+          {
             "id": "menelik_actor",
             "kind": "actor",
             "appearance": "menelik",
-            "x": 680,
+            "x": 900,
             "y": 1000,
             "scale": 0.85,
             "facing": "right",
             "expression": "confident"
           },
           {
-            "id": "taytu_actor",
-            "kind": "actor",
-            "appearance": "taytu",
-            "x": 350,
-            "y": 1000,
-            "scale": 0.85,
-            "facing": "right",
-            "expression": "worried"
-          },
-          {
             "id": "italian_envoy",
             "kind": "actor",
             "appearance": "european_official",
-            "x": 1270,
+            "x": 1220,
             "y": 1000,
             "scale": 0.85,
             "facing": "left",
@@ -305,22 +500,20 @@
             "kind": "prop",
             "prop": "paper",
             "text": "MAY",
-            "x": 850,
+            "x": 830,
             "y": 740,
             "scale": 1,
-            "visible": false,
-            "z": 4
+            "visible": true
           },
           {
             "id": "doc_italian",
             "kind": "prop",
             "prop": "paper",
             "text": "MUST",
-            "x": 1080,
+            "x": 1020,
             "y": 740,
             "scale": 1,
-            "visible": false,
-            "z": 4
+            "visible": true
           },
           {
             "id": "taytu_img",
@@ -336,84 +529,69 @@
         "actions": [
           {
             "type": "pose",
-            "time": 0,
-            "duration": 0.5,
+            "time": 0.2,
+            "duration": 0.8,
             "node": "taytu_actor",
             "expression": "angry",
-            "head": 7,
-            "lean": 5,
+            "head": 10,
+            "lean": 8,
             "front_hand": [
               300,
               -400
             ],
-            "description": "Taytu actively challenges the proposed colonial demand."
+            "description": "Empress Taytu actively gestures in counsel against foreign encroachment."
           },
           {
             "type": "show",
             "time": 2.6,
             "duration": 0.2,
             "node": "taytu_img",
-            "description": "A short authentic Taytu portrait establishes the woman driving the resistance."
+            "description": "Show archival illustration of Empress Taytu Betul."
           },
           {
             "type": "hide",
-            "time": 3.88,
+            "time": 3.8,
             "duration": 0.2,
             "node": "taytu_img",
-            "description": "Return promptly to the negotiation and its concrete consequences."
-          },
-          {
-            "type": "show",
-            "time": 6.2,
-            "duration": 0.2,
-            "node": "doc_amharic",
-            "description": "The optional obligation is introduced as a large readable MAY."
-          },
-          {
-            "type": "move",
-            "time": 7.4,
-            "duration": 2,
-            "node": "menelik_actor",
-            "x": 880,
-            "y": 1000,
-            "walk": true,
-            "description": "Menelik approaches the disputed documents while Taytu holds her position."
-          },
-          {
-            "type": "show",
-            "time": 10.1,
-            "duration": 0.2,
-            "node": "doc_italian",
-            "description": "A separate MUST appears with space between the two obligations."
+            "description": "Return to active negotiation table in court."
           },
           {
             "type": "take",
-            "time": 10.3,
-            "duration": 0.7,
+            "time": 6.2,
+            "duration": 0.6,
+            "node": "taytu_actor",
+            "hand": "front",
+            "target": "doc_amharic",
+            "description": "Taytu picks up the Amharic version (MAY) to examine."
+          },
+          {
+            "type": "take",
+            "time": 10.2,
+            "duration": 0.6,
             "node": "italian_envoy",
             "hand": "front",
             "target": "doc_italian",
-            "description": "The envoy takes up the compulsory version."
+            "description": "Italian envoy lifts the compulsory Italian version (MUST)."
           },
           {
             "type": "pose",
-            "time": 11.1,
-            "duration": 0.6,
+            "time": 11,
+            "duration": 0.8,
             "node": "italian_envoy",
             "front_hand": [
               240,
               -350
             ],
-            "description": "The envoy presents the compulsory text within Menelik's reach."
+            "description": "Envoy extends the Italian text toward Menelik."
           },
           {
             "type": "take",
-            "time": 12.4,
+            "time": 12.5,
             "duration": 0.8,
             "node": "menelik_actor",
             "hand": "front",
             "target": "doc_italian",
-            "description": "Menelik physically receives the document before reacting to its obligation."
+            "description": "Emperor Menelik takes the Italian text to inspect Article 17."
           },
           {
             "type": "pose",
@@ -421,47 +599,51 @@
             "duration": 1,
             "node": "menelik_actor",
             "expression": "surprised",
-            "head": -12,
-            "lean": -10,
+            "head": -10,
+            "lean": -5,
             "front_hand": [
               240,
               -350
             ],
-            "description": "Reading becomes recognition of the contradictory demand."
+            "description": "Menelik discovers the deceptive compulsory protectorate clause."
           },
           {
             "type": "place",
             "time": 20.08,
-            "duration": 1.2,
+            "duration": 1,
             "node": "menelik_actor",
             "hand": "front",
             "object": "doc_italian",
             "target": "treaty_table",
             "sfx": "soft_impact",
-            "description": "Menelik places the rejected compulsory version back on the table."
+            "description": "Menelik firmly slams the rejected document back onto the table."
           },
           {
             "type": "pose",
-            "time": 21.35,
-            "duration": 0.5,
+            "time": 21.2,
+            "duration": 0.8,
             "node": "menelik_actor",
             "expression": "angry",
-            "head": 8,
+            "head": 12,
             "lean": 10,
             "front_hand": [
               110,
               -670
             ],
-            "description": "An unmistakable stop gesture follows the completed rejection."
+            "description": "Menelik raises a firm stop gesture rejecting the claim completely."
           },
           {
             "type": "pose",
-            "time": 21.9,
-            "duration": 0.25,
-            "node": "italian_envoy",
+            "time": 7.3,
+            "duration": 0.6,
+            "node": "taytu_actor",
+            "front_hand": [
+              220,
+              -350
+            ],
+            "head": -7,
             "expression": "worried",
-            "head": -8,
-            "description": "The envoy registers that the protectorate claim has been refused."
+            "description": "Taytu brings the optional version beside her to compare it with the compulsory demand."
           }
         ],
         "camera": [
@@ -472,34 +654,34 @@
             "focus_y": 540
           },
           {
-            "time": 10.8,
+            "time": 5.8,
             "zoom": 1,
             "focus_x": 960,
             "focus_y": 540
           },
           {
-            "time": 11.5,
-            "zoom": 1.6,
-            "focus_x": 1000,
-            "focus_y": 700
-          },
-          {
-            "time": 16.2,
-            "zoom": 1.6,
-            "focus_x": 1000,
-            "focus_y": 700
+            "time": 6.4,
+            "zoom": 1.3,
+            "focus_x": 950,
+            "focus_y": 650
           },
           {
             "time": 17,
-            "zoom": 1.15,
-            "focus_x": 960,
-            "focus_y": 600
+            "zoom": 1.3,
+            "focus_x": 950,
+            "focus_y": 650
           },
           {
-            "time": 22.2,
-            "zoom": 1.15,
+            "time": 17.6,
+            "zoom": 1.1,
             "focus_x": 960,
-            "focus_y": 600
+            "focus_y": 590
+          },
+          {
+            "time": 22.33,
+            "zoom": 1.1,
+            "focus_x": 960,
+            "focus_y": 590
           }
         ]
       }

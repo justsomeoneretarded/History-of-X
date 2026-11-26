@@ -6,7 +6,7 @@ No actor contains an automatic idle, walking or reaction loop.
 from __future__ import annotations
 from html import escape
 
-VERSION = "original-history-cast-v1"
+VERSION = "original-history-cast-v2-articulated-formations"
 PALETTE = {"ink":"#293631","cream":"#F4E6C8","gold":"#D5AD58",
            "teal":"#34756F","rust":"#B85F47","blue":"#36546C"}
 

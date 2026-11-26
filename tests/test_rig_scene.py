@@ -88,3 +88,26 @@ def test_historical_images_are_full_frame_inserts_above_the_acting_set(tmp_path)
  program=scene.execute().finish("test")
  assert program["layers"][-1]["id"]=="archive__art"
  assert program["asset_ids"]==["A1"]
+
+def test_unreachable_contact_reports_the_actual_geometry_and_time():
+ spec=demo()
+ next(n for n in spec["nodes"] if n["id"]=="treaty")["y"]=1000
+ with pytest.raises(PipelineError,match=r"shoulder=.*target=.*distance=.*maximum=") as failure:
+  compile_scene(spec,15)
+ assert "2.2s" in str(failure.value)
+ assert "vertical gap" in str(failure.value)
+
+
+def test_vertical_formation_movement_has_articulated_gait_and_holds_when_stopped():
+ from history_of_x.scene_film import interpolate
+ spec={"setting":"mountains_night",
+       "nodes":[{"id":"army","kind":"formation","x":960,"y":400,"count":3}],
+       "actions":[{"type":"move","time":1,"duration":3,"node":"army","x":960,"y":700,"walk":True,"description":"The formation advances down the pass."},
+                  {"type":"hide","time":5,"duration":.2,"node":"army","description":"The troops disappear behind the ridge."},
+                  {"type":"show","time":7,"duration":.2,"node":"army","description":"The separated formation emerges."}]}
+ scene=Scene(spec,9,[]).execute();program=scene.finish("army")
+ legs=[l for l in program["layers"] if "_leg_" in l["id"]]
+ assert len(legs)==6 and len(program["layers"])<20
+ assert all(any(abs(k["rotation"])>0 for k in l["keyframes"]) for l in legs)
+ assert all(interpolate(l["keyframes"],4.5)["rotation"]==0 for l in legs)
+ assert interpolate(scene.layers["army__motion"]["keyframes"],4)["y"]==300

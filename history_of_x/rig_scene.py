@@ -31,7 +31,7 @@ def _number(value,label,low=-20000,high=20000):
 class Scene:
  def __init__(self,spec,seconds,assets):
   self.spec=spec;self.seconds=seconds;self.assets={a["id"]:a for a in assets}
-  self.layers={};self.art={};self.nodes={};self.actors={};self.props={};self.busy={};self.busy_kind={};self.gesture_interruptions=[]
+  self.layers={};self.art={};self.nodes={};self.actors={};self.formations={};self.props={};self.busy={};self.busy_kind={};self.gesture_interruptions=[]
   self.events=[];self.used=set();self.order=[]
   self.add("environment",background(spec["setting"]),pivot=(960,540),order=-100)
   records=spec.get("nodes")
@@ -102,11 +102,21 @@ class Scene:
    appearance=n.get("appearance","italian_officer")
    if appearance not in CAST:raise PipelineError("Unsupported formation appearance")
    count=int(_number(n.get("count",3),"formation count",2,5))
-   pieces=[]
+   self.formations[ident]=[]
    for i in range(count):
     b=np.array([[scale*.32,0,x+(i-(count-1)/2)*scale*110-180*scale*.32],[0,scale*.32,y-760*scale*.32],[0,0,1.]])
-    pieces.append('<g transform="'+_matrix_text(b)+'">'+''.join(s for p,s,_,_ in actor_parts(appearance) if not p.startswith("face_") or p=="face_neutral")+'</g>')
-   self.add(ident+"__art","".join(pieces),master,(x,y),start,end,order=z)
+    parts=actor_parts(appearance)
+    body=''.join(art for part,art,_,_ in parts if not part.startswith("leg_") and (not part.startswith("face_") or part=="face_neutral"))
+    # Marching figures have articulated legs. Their body art remains a single
+    # recording, keeping even a five-person formation inside the layer budget.
+    self.add(f"{ident}__figure_{i}",'<g transform="'+_matrix_text(b)+'">'+body+'</g>',master,(x,y),start,end,order=z)
+    legs={}
+    for part,art,_,pivot in parts:
+     if not part.startswith("leg_"):continue
+     lid=f"{ident}__figure_{i}_{part}";point=b@np.array([*pivot,1.])
+     self.add(lid,'<g transform="'+_matrix_text(b)+'">'+art+'</g>',master,point[:2],start,end,order=z)
+     legs[part]=lid
+    self.formations[ident].append(legs)
    return
   if kind=="prop":
    if n.get("prop") not in PROPS:raise PipelineError("Choose a supplied original prop")
@@ -171,7 +181,17 @@ class Scene:
   dx,dy=float(target[0]-sx),float(target[1]-280);dist=math.hypot(dx,dy)
   stretch=max(1.,dist/249.9)
   if stretch>1.25:
-   raise PipelineError(f"{actor_id} cannot reach target from that position; move the actor closer or move the prop. Reach is about {round(250*float(actor['node']['scale']))} screen pixels from the shoulder.")
+   frame=self.world(torso,end)@base
+   origin=(frame@np.array([sx,280.,1.]))[:2]
+   requested=(frame@target)[:2]
+   limit=249.9*1.25*float(actor["node"]["scale"])
+   distance=float(np.linalg.norm(requested-origin))
+   raise PipelineError(
+    f"{actor_id}.{hand} cannot reach at {end:g}s: shoulder=({origin[0]:.1f},{origin[1]:.1f}), "
+    f"target=({requested[0]:.1f},{requested[1]:.1f}), distance={distance:.1f}px, maximum={limit:.1f}px. "
+    "Move the actor into reach BEFORE contact, or reposition the unheld prop in the plan. "
+    "Walking horizontally cannot fix a vertical gap larger than the arm's reach. "
+    "Do not teleport a held prop or increase limb stretch.")
   a,b=130*stretch,120*stretch
   cosine=max(-1.,min(1.,(dist*dist-a*a-b*b)/(2*a*b)))
   elbow=(-1 if hand=="front" else 1)*math.acos(cosine)
@@ -240,18 +260,20 @@ class Scene:
     if "x" in a:changes["x"]=_number(a["x"],"move x")-n["x"]
     if "y" in a:changes["y"]=_number(a["y"],"move y")-n["y"]
     if not changes:raise PipelineError("Move needs a destination")
+    previous=interpolate(self.layers[n["master"]]["keyframes"],t)
     self.animate(n["master"],t,end,changes)
-    if ident in self.actors and a.get("walk",True) and d>.4:
-     distance=abs(changes.get("x",0)-interpolate(self.layers[n["master"]]["keyframes"],t)["x"])
-     if distance<20:continue
-     steps=max(2,min(8,round(distance/90)))
-     actor=self.actors[ident]
-     for side,phase in (("front",1),("back",-1)):
-      lid=actor["parts"]["leg_"+side]
-      for i in range(steps*2+1):
-       at=t+d*i/(steps*2)
-       angle=0 if i in (0,steps*2) else phase*(13 if i%2 else -13)
-       self.animate(lid,at,at,{"rotation":angle})
+    walkers=[self.actors[ident]["parts"]] if ident in self.actors else self.formations.get(ident,[])
+    if walkers and a.get("walk",True) and d>.4:
+     distance=math.hypot(changes.get("x",previous["x"])-previous["x"],changes.get("y",previous["y"])-previous["y"])
+     if distance>=20:
+      steps=max(2,min(8,round(distance/(90 if ident in self.actors else 55))))
+      for index,parts in enumerate(walkers):
+       for side,phase in (("front",1),("back",-1)):
+        lid=parts["leg_"+side]
+        for i in range(steps*2+1):
+         at=t+d*i/(steps*2)
+         angle=0 if i in (0,steps*2) else phase*((-1)**index)*(13 if i%2 else -13)
+         self.animate(lid,at,at,{"rotation":angle})
    elif op in ("show","hide"):
     self.animate(n["master"],t,end,{"opacity":1 if op=="show" else 0})
    elif op=="pose":
