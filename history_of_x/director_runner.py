@@ -64,7 +64,7 @@ def _creative_failure(output, proof):
                      or min(reports[2]["scores"].values()) < 7))
 
 
-def render_phase(api, work, output, proof, profile):
+def render_phase(api, work, output, proof, profile, preflight_advisory=False):
     phase = "preflight" if proof else "film"
     for attempt in (1, 2):
         candidate = output / "candidates" / f"{phase}-{uuid.uuid4().hex[:12]}-attempt-{attempt}"
@@ -83,6 +83,12 @@ def render_phase(api, work, output, proof, profile):
                 save_json(work / "editorial-feedback.json", feedback)
                 print(f"Creative revision: {phase}; applying this candidate's observed feedback once.", flush=True)
                 continue
+            if proof and preflight_advisory and _creative_failure(candidate, proof):
+                # A sample diagnosis should not prevent production of the
+                # complete context. It remains rejected in its own reports;
+                # the final film still needs a fresh whole-film acceptance.
+                print("Preflight remains creatively rejected after revision; rendering the full review candidate. Upload approval is still blocked.", flush=True)
+                return candidate
             raise
         if not _accepted(candidate, proof):
             raise PipelineError("Candidate did not produce complete accepted technical and audiovisual review reports")
@@ -173,8 +179,10 @@ def run(title, brief, voice="Charon", minutes=8.75, work=None, output=None,
             raise PipelineError("Writing or narration stopped; inspect the preserved work/failure.json")
         os.environ["GEMINI_MODEL"] = os.getenv("GEMINI_DIRECTOR_MODEL", "gemini-3.6-flash")
         api = MediaAPI(work / "gemini")
-        preflight = render_phase(api, work, output, True, profile)
-        save_json(work / "runner-preflight.json", {"accepted": True, "candidate": str(preflight)})
+        preflight = render_phase(api, work, output, True, profile, preflight_advisory=not proof_only)
+        save_json(work / "runner-preflight.json", {
+            "accepted": _accepted(preflight, True), "candidate": str(preflight),
+            "full_film_review_required": not proof_only})
         if proof_only:
             print("DIRECTOR_ACCEPTED_PROOF " + str(preflight), flush=True)
             return preflight

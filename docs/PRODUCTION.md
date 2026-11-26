@@ -8,8 +8,8 @@ The user supplies a title and short brief. Charon is the default Gemini narrator
 
 1. Gather bounded source material, then write an original outline and five chronological chapters: Hook, Roots, Catalyst, Turning Point and Aftermath. Chapter budgets, complete thoughts and spoken cadence are checked. There is no additional manual finished-script factual-approval stage.
 2. Generate Gemini speech by chapter, verify completeness using local faster-whisper, preserve the accepted audio, and align the written words to actual scene audio. No global time stretching is used to force the runtime.
-3. Select genuinely relevant licensed media and direct scene graphs using actual spoken timing. The Ethiopia episode also contains exact-passage production notes and two director-refined choreographies, recorded transparently in the saved programs.
-4. Compile original illustrated characters, props, formations, routes and authentic inserts into executable animation. Inspect complete sample scenes; apply one automatic creative revision if the actual media review calls for it.
+3. Select genuinely relevant licensed media and direct scene graphs using actual spoken timing. The Ethiopia episode also contains exact-passage production notes and three director-refined choreographies, recorded transparently in the saved programs.
+4. Compile original illustrated characters, props, formations, routes and authentic inserts into executable animation. Inspect complete sample scenes; apply one automatic creative revision if the actual media review calls for it. For a full run, a technically valid sample that remains creatively rejected is retained as diagnostic evidence and production continues to the complete review candidate; it is never relabeled accepted. Provider failures and invalid geometry still stop the run. A proof-only request still requires sample acceptance.
 5. Render the complete film, mix sound, package the thumbnail and metadata, and review every consecutive section of the actual audiovisual film. Only a complete accepted 1080p film can enter the upload package.
 
 ## Models and their roles

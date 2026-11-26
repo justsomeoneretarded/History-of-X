@@ -307,7 +307,8 @@ def produce(api,work,output,profile='cinematic',proof=False,resume=None,revise=F
   # Send the entire film, including audio, with a bounded payload. No three-excerpt acceptance shortcut.
   ffmpeg('-i',final,'-vf','scale=640:360','-c:v','libx264','-b:v','180k','-maxrate','220k','-bufsize','440k','-c:a','aac','-b:a','64k',sample,timeout=max(900,position*4))
  else:ffmpeg('-i',final,'-vf','scale=960:540','-c:v','libx264','-crf','27','-c:a','aac','-b:a','80k',sample)
- review=editorial_review(api,final,style,output)
+ review_style={**style,'candidate_kind':'nonconsecutive_scene_samples'} if proof else style
+ review=editorial_review(api,final,review_style,output)
  save_json(work/'editorial-feedback.json',{**review,'candidate_timeline':shots})
  acceptable=review['verdict']=='ready' and min(review['scores'].values())>=7
  request=read_json(work/'request.json') if (work/'request.json').exists() else {}

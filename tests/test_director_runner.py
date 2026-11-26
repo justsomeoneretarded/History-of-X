@@ -116,7 +116,7 @@ def test_one_command_routes_models_and_preserves_selected_voice(tmp_path, monkey
     def writing(args):
         calls.append(("writing", list(args), runner.os.environ["GEMINI_MODEL"]))
         return 0
-    def phase(api, work, output, proof, profile):
+    def phase(api, work, output, proof, profile, **options):
         calls.append(("proof" if proof else "film", profile, runner.os.environ["GEMINI_MODEL"]))
         return output / ("proof" if proof else "film")
     monkeypatch.setattr(runner.director_script, "main", writing)
@@ -133,3 +133,31 @@ def test_one_command_routes_models_and_preserves_selected_voice(tmp_path, monkey
     assert calls[0][1][calls[0][1].index("--voice") + 1] == "Charon"
     assert calls[1][2] == calls[2][2] == "gemini-3.8-flash"
     assert runner.os.environ["GEMINI_MODEL"] == "previous-value"
+
+def test_rejected_preflight_can_inform_a_full_candidate_without_becoming_accepted(tmp_path,monkeypatch):
+ calls=[]
+ def produce(api,work,output,**options):
+  calls.append(output)
+  reports(output,True,ready=False)
+  raise PipelineError("Creative review requires revision")
+ monkeypatch.setattr(runner,"produce",produce)
+ candidate=runner.render_phase(object(),tmp_path/"work",tmp_path/"output",True,"cinematic",preflight_advisory=True)
+ assert len(calls)==2 and candidate==calls[-1]
+ assert runner._accepted(candidate,True) is False
+ with pytest.raises(PipelineError,match="complete"):
+  runner.upload_package(candidate,tmp_path/"work",tmp_path/"output")
+ assert not (tmp_path/"output"/"upload-ready").exists()
+
+
+def test_advisory_samples_cannot_bypass_a_provider_or_full_film_failure(tmp_path,monkeypatch):
+ def unavailable(api,work,output,**options):
+  raise PipelineError("Provider unavailable")
+ monkeypatch.setattr(runner,"produce",unavailable)
+ with pytest.raises(PipelineError,match="Provider unavailable"):
+  runner.render_phase(object(),tmp_path/"work",tmp_path/"output",True,"cinematic",preflight_advisory=True)
+ def rejected(api,work,output,**options):
+  reports(output,False,ready=False)
+  raise PipelineError("Creative review requires revision")
+ monkeypatch.setattr(runner,"produce",rejected)
+ with pytest.raises(PipelineError,match="Creative review"):
+  runner.render_phase(object(),tmp_path/"work",tmp_path/"output",False,"cinematic",preflight_advisory=True)

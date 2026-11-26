@@ -262,3 +262,16 @@ def test_a_low_creative_score_never_triggers_reviewer_fallback(film,monkeypatch)
     assert len(api.calls)==1 and report["verdict"]=="revise"
     assert report["scores"]["acting"]==4
     assert report["scope"]["models"]==["gemini-3.6-flash"]
+
+def test_sample_review_context_cannot_be_reused_as_complete_film_context(film):
+ video,output,_=film
+ api=FakeAPI()
+ subject.review(api,video,{"candidate_kind":"nonconsecutive_scene_samples"},output)
+ assert len(api.calls)==3
+ first_context=json.loads(api.calls[0][2]["contents"][0]["parts"][0]["text"].split("SEGMENT CONTEXT:\n",1)[1])
+ assert first_context["candidate_kind"]=="nonconsecutive_scene_samples"
+ api2=FakeAPI()
+ subject.review(api2,video,{},output)
+ assert len(api2.calls)==3
+ whole_context=json.loads(api2.calls[0][2]["contents"][0]["parts"][0]["text"].split("SEGMENT CONTEXT:\n",1)[1])
+ assert whole_context["candidate_kind"]=="complete_film"
