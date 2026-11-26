@@ -230,3 +230,35 @@ def test_larger_model_review_ranges_cover_every_second_without_gaps():
     assert all(a[1]==b[0] for a,b in zip(spans,spans[1:]))
     assert sum(b-a for a,b in spans)==pytest.approx(508.64)
     assert _ranges(184.,90)==[(0.,90.),(90.,184.)]
+
+
+def test_available_free_reviewer_recovers_same_clip_and_reuses_its_real_report(film,monkeypatch):
+    video,output,transcodes=film
+    monkeypatch.setenv("GEMINI_REVIEW_MODEL","gemini-3.6-flash")
+    class AvailabilityAPI(FakeAPI):
+        def request(self,model,endpoint,body,kind):
+            if model=="gemini-3.6-flash":
+                self.calls.append((model,endpoint,copy.deepcopy(body),kind))
+                raise PipelineError("Gemini gemini-3.6-flash unavailable after three attempts")
+            return super().request(model,endpoint,body,kind)
+    api=AvailabilityAPI()
+    report=subject.review(api,video,{},output)
+    assert [call[0] for call in api.calls]==["gemini-3.6-flash","gemini-3.5-flash-lite"]
+    assert report["scope"]["models"]==["gemini-3.5-flash-lite"]
+    assert report["scope"]["reviewed_seconds"]==68.25
+    assert report["scope"]["chunk_count"]==1
+    again=AvailabilityAPI()
+    assert subject.review(again,video,{},output)==report
+    assert again.calls==[] and len(transcodes)==2
+
+
+def test_a_low_creative_score_never_triggers_reviewer_fallback(film,monkeypatch):
+    video,output,_=film
+    monkeypatch.setenv("GEMINI_REVIEW_MODEL","gemini-3.6-flash")
+    bad=ready();bad["scores"]["acting"]=4;bad["verdict"]="revise"
+    bad["problems"]=["The object visibly misses the hand at 00:12."]
+    api=FakeAPI([bad])
+    report=subject.review(api,video,{},output)
+    assert len(api.calls)==1 and report["verdict"]=="revise"
+    assert report["scores"]["acting"]==4
+    assert report["scope"]["models"]==["gemini-3.6-flash"]

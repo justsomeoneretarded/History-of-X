@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 
 from .core import PipelineError, duration, ffmpeg, key, read_json, save_json
+from .gemini import QuotaDeferred
 
 CATEGORIES = (
     "visual_specificity", "acting", "composition", "narration_delivery", "editorial_pacing",
@@ -214,6 +215,10 @@ def review(api, video, style, output):
     directory = Path(os.getenv("GEMINI_REVIEW_CACHE", str(output / "editorial-review-parts")))
     media = directory / "media"
     media.mkdir(parents=True, exist_ok=True)
+    # Recovery changes provider availability only; a low or invalid review is
+    # never retried with another model to seek a more favorable verdict.
+    models = list(dict.fromkeys([model, "gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"]))[:3]
+    disabled = set()
     reviewed = []
     for index, (start, end) in enumerate(_ranges(seconds, chunk_seconds)):
         context = {
@@ -221,16 +226,40 @@ def review(api, video, style, output):
             "clip_duration_seconds": end - start,
             "visual_rules": rules, "narration_context": _narration_context(timeline, start, end),
         }
-        identity = {
-            "version": REVIEW_VERSION, "video_sha256": video_hash, "model": model,
-            "context": context, "transcode": TRANSCODE,
-            "prompt_sha256": _json_hash(PROMPT), "schema_sha256": _json_hash(SCHEMA),
-            "schema_mode": "native" if model=="gemini-4-hydrogen" else os.getenv("GEMINI_SCHEMA_MODE", "prompt"),
-        }
-        fingerprint = key(identity)
-        checkpoint_path = directory / f"{index:04d}-{fingerprint}.json"
-        report = _cached(checkpoint_path, identity)
-        if report is None:
+
+        def checkpoint(selected_model):
+            identity = {
+                "version": REVIEW_VERSION, "video_sha256": video_hash, "model": selected_model,
+                "context": context, "transcode": TRANSCODE,
+                "prompt_sha256": _json_hash(PROMPT), "schema_sha256": _json_hash(SCHEMA),
+                "schema_mode": "native" if selected_model == "gemini-4-hydrogen" else os.getenv("GEMINI_SCHEMA_MODE", "prompt"),
+            }
+            fingerprint = key(identity)
+            return identity, fingerprint, directory / f"{index:04d}-{fingerprint}.json"
+
+        primary_identity, _, _ = checkpoint(model)
+        route_path = directory / "routes" / (key("review-recovery-v1", primary_identity) + ".json")
+        order = list(models)
+        if route_path.exists():
+            try:
+                previous_model = read_json(route_path)["model"]
+                if previous_model in models:
+                    # Reuse a prior real fallback result for this exact request.
+                    previous_identity, _, previous_path = checkpoint(previous_model)
+                    if _cached(previous_path, previous_identity) is not None:
+                        order.remove(previous_model)
+                        order.insert(0, previous_model)
+            except (OSError, ValueError, KeyError, TypeError):
+                pass
+        report = None
+        last_error = None
+        for selected_model in order:
+            identity, fingerprint, checkpoint_path = checkpoint(selected_model)
+            report = _cached(checkpoint_path, identity)
+            if report is not None:
+                break
+            if selected_model in disabled:
+                continue
             clip = media / f"{index:04d}-{fingerprint}.mp4"
             _transcode(video, clip, start, end - start)
             parts = [
@@ -251,18 +280,35 @@ def review(api, video, style, output):
                     "thinkingConfig": {"thinkingLevel": "LOW"},
                 },
             }
-            print(f"Editorial audiovisual review {start:.2f}–{end:.2f}s via {model}", flush=True)
-            # Explicit model keeps the art/writing model's daily quota available.
-            report = _parse_response(api.request(
-                model, "models/" + model + ":generateContent", body, "text",
-            ))
+            print(f"Editorial audiovisual review {start:.2f}–{end:.2f}s via {selected_model}", flush=True)
+            try:
+                response = api.request(selected_model, "models/" + selected_model + ":generateContent", body, "text")
+            except PipelineError as exc:
+                unavailable = isinstance(exc, QuotaDeferred) or any(
+                    reason in str(exc) for reason in ("unavailable after three attempts", "network deadline"))
+                if not unavailable:
+                    raise
+                disabled.add(selected_model)
+                last_error = exc
+                print(f"Editorial model {selected_model} unavailable; preserving the same clip and trying the next verified free Gemini model.", flush=True)
+                continue
+            # Parsing is deliberately outside availability recovery. A malformed
+            # score or an unfavorable verdict cannot trigger another reviewer.
+            report = _parse_response(response)
             save_json(checkpoint_path, {
                 "fingerprint": fingerprint, "identity": identity,
                 "clip_sha256": _file_hash(clip), "request_sha256": _json_hash(body),
                 "report_sha256": _json_hash(report), "report": report,
             })
+            if selected_model != model:
+                save_json(route_path, {"model": selected_model, "primary_identity": primary_identity})
+            break
+        if report is None:
+            if last_error is not None:
+                raise last_error
+            raise PipelineError("All verified free audiovisual reviewers are unavailable; checkpoints preserved")
         reviewed.append({
-            "start_seconds": start, "end_seconds": end, "model": model,
+            "start_seconds": start, "end_seconds": end, "model": selected_model,
             "checkpoint": checkpoint_path.name, "report": report,
         })
 
